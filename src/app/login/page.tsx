@@ -6,6 +6,7 @@ import { signIn } from 'next-auth/react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [cpf, setCpf] = useState('')
@@ -57,6 +58,13 @@ export default function LoginPage() {
         <Button onClick={handleLogin} className="w-full bg-[#9C66FF] hover:bg-[#8450e6]">
           Entrar
         </Button>
+
+        <p className="text-center text-sm mt-4">
+          Ainda não tem conta?{' '}
+          <Link href="/register" className="text-[#9C66FF] hover:underline font-medium">
+            Cadastre-se aqui
+          </Link>
+        </p>
       </div>
     </div>
   )
