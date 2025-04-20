@@ -1,26 +1,45 @@
-@import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fontes */
+html, body {
+  @apply bg-gray-50 text-gray-900 font-sans;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Links */
+a {
+  @apply text-[#9C66FF] hover:underline;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Inputs e botÃµes */
+input, select, textarea {
+  @apply border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#9C66FF];
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+button {
+  @apply rounded-md px-4 py-2 font-medium transition-colors;
+}
+
+/* Cards */
+.card {
+  @apply bg-white p-6 rounded-xl shadow-sm;
+}
+
+/* Headers */
+h1, h2, h3, h4 {
+  @apply font-semibold text-[#333];
+}
+
+h1 {
+  @apply text-3xl mb-4;
+}
+
+h2 {
+  @apply text-2xl mb-3;
+}
+
+h3 {
+  @apply text-xl mb-2;
 }
