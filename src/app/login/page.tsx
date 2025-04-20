@@ -37,11 +37,6 @@ export default function LoginPage() {
 
         <div className="space-y-2">
           <Input
-            placeholder="CPF"
-            value={cpf}
-            onChange={(e) => setCpf(e.target.value)}
-          />
-          <Input
             placeholder="E-mail"
             type="email"
             value={email}
