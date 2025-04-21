@@ -11,35 +11,55 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { useState, useTransition } from 'react'
+import { useTransition, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+
+const schema = z.object({
+  name: z.string().min(2, 'Nome obrigatório'),
+  cpf: z.string().min(11, 'CPF inválido'),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'Mínimo 6 caracteres'),
+  role: z.enum(['consultor', 'admin', 'white-label']),
+  status: z.enum(['aprovado', 'aguardando', 'inativo']),
+})
+
+type FormData = z.infer<typeof schema>
 
 export default function NovoUsuarioModal() {
-  const [name, setName] = useState('')
-  const [cpf, setCpf] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState('consultor')
-  const [status, setStatus] = useState('aprovado')
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  const handleSubmit = async () => {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      cpf: '',
+      email: '',
+      password: '',
+      role: 'consultor',
+      status: 'aprovado',
+    },
+  })
+
+  const onSubmit = (data: FormData) => {
     startTransition(async () => {
       const res = await fetch('/api/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, cpf, email, password, role, status }),
+        body: JSON.stringify(data),
       })
 
       if (res.ok) {
         toast.success('Usuário criado com sucesso!')
         setOpen(false)
-        setName('')
-        setCpf('')
-        setEmail('')
-        setPassword('')
-        setRole('consultor')
-        setStatus('aprovado')
+        reset()
         window.location.reload()
       } else {
         toast.error('Erro ao criar usuário.')
@@ -54,62 +74,98 @@ export default function NovoUsuarioModal() {
           + Novo Usuário
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-white border border-zinc-200 rounded-2xl shadow-2xl px-6 py-6">
         <DialogHeader>
           <DialogTitle>Novo Usuário</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3 py-4">
-          <Input
-            placeholder="Nome"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <Input
-            placeholder="CPF"
-            value={cpf}
-            onChange={(e) => setCpf(e.target.value)}
-          />
-          <Input
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Input
-            placeholder="Senha"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <select
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <option value="consultor">consultor</option>
-            <option value="admin">admin</option>
-            <option value="white-label">white-label</option>
-          </select>
-          <select
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="aprovado">aprovado</option>
-            <option value="aguardando">aguardando</option>
-            <option value="inativo">inativo</option>
-          </select>
-        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 py-4">
+          <div className="space-y-4 py-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-700">Nome</label>
+              <Input placeholder="Nome completo" {...register('name')} />
+              {errors.name && (
+                <p className="text-red-500 text-xs">{errors.name.message}</p>
+              )}
+            </div>
 
-        <div className="flex justify-end space-x-2">
-          <DialogClose asChild>
-            <Button variant="outline">Cancelar</Button>
-          </DialogClose>
-          <Button onClick={handleSubmit} disabled={isPending}>
-            {isPending ? 'Criando...' : 'Criar'}
-          </Button>
-        </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-700">CPF</label>
+              <Input placeholder="CPF" {...register('cpf')} />
+              {errors.cpf && (
+                <p className="text-red-500 text-xs">{errors.cpf.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-700">
+                E-mail
+              </label>
+              <Input placeholder="E-mail" type="email" {...register('email')} />
+              {errors.email && (
+                <p className="text-red-500 text-xs">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-700">Senha</label>
+              <Input
+                placeholder="Senha"
+                type="password"
+                {...register('password')}
+              />
+              {errors.password && (
+                <p className="text-red-500 text-xs">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-700">Cargo</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm bg-white"
+                {...register('role')}
+              >
+                <option value="consultor">Consultor</option>
+                <option value="admin">Admin</option>
+                <option value="white-label">White Label</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-700">
+                Status
+              </label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm bg-white"
+                {...register('status')}
+              >
+                <option value="aprovado">Aprovado</option>
+                <option value="aguardando">Aguardando</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-2">
+            <DialogClose asChild>
+              <Button
+                variant="outline"
+                className="text-zinc-600 border-zinc-300"
+              >
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button
+              type="submit"
+              className="bg-[#9C66FF] hover:bg-[#8450e6] text-white transition"
+              disabled={isPending}
+            >
+              {isPending ? 'Criando...' : 'Criar'}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   )
