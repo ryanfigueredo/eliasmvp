@@ -2,6 +2,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import SelectRole from '@/components/SelectRole'
+import SelectStatus from '@/components/SelectStatus'
 
 export default async function UsuariosPage() {
   const session = await getServerSession(authOptions)
@@ -33,24 +35,13 @@ export default async function UsuariosPage() {
               <td className="p-4">{user.name || '-'}</td>
               <td className="p-4">{user.email}</td>
               <td className="p-4">
-                <form action="/api/update-role" method="POST">
-                  <input type="hidden" name="id" value={user.id} />
-                  <select
-                    name="role"
-                    defaultValue={user.role}
-                    className="border rounded px-2 py-1 text-sm"
-                    onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                  >
-                    <option value="consultor">consultor</option>
-                    <option value="admin">admin</option>
-                    <option value="white-label">white-label</option>
-                    <option value="master" disabled>
-                      master
-                    </option>
-                  </select>
-                </form>
+                <SelectStatus id={user.id} status={user.status} />
               </td>
-              <td className="p-4">{user.status}</td>
+
+              <td className="p-4">
+                <SelectRole id={user.id} role={user.role} />
+              </td>
+
               <td className="p-4">
                 {new Date(user.createdAt).toLocaleDateString()}
               </td>
