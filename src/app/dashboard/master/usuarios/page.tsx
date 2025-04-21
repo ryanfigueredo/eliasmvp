@@ -4,16 +4,28 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import SelectRole from '@/components/SelectRole'
 import SelectStatus from '@/components/SelectStatus'
-import Link from 'next/link'
 import NovoUsuarioModal from '@/components/NovoUsuarioModal'
 import EditarUsuarioModal from '@/components/EditarUsuarioModal'
 
-export default async function UsuariosPage() {
+export default async function UsuariosPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>
+}) {
   const session = await getServerSession(authOptions)
   if (!session || !session.user || session.user.role !== 'master')
     return redirect('/login')
 
+  const search =
+    typeof searchParams?.search === 'string' ? searchParams.search : ''
+
   const users = await prisma.user.findMany({
+    where: {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ],
+    },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -29,6 +41,22 @@ export default async function UsuariosPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Todos os usuários</h1>
+
+      <form method="GET" className="flex items-center gap-4 mb-4">
+        <input
+          type="text"
+          name="search"
+          placeholder="Buscar por nome ou e-mail"
+          defaultValue={search}
+          className="px-4 py-2 border border-zinc-300 rounded-md text-sm w-full max-w-md"
+        />
+        <button
+          type="submit"
+          className="bg-[#9C66FF] text-white text-sm px-4 py-2 rounded hover:bg-[#8450e6]"
+        >
+          Buscar
+        </button>
+      </form>
 
       <NovoUsuarioModal />
 
