@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import SelectRole from '@/components/SelectRole'
 import SelectStatus from '@/components/SelectStatus'
+import Link from 'next/link'
+import NovoUsuarioModal from '@/components/NovoUsuarioModal'
 
 export default async function UsuariosPage() {
   const session = await getServerSession(authOptions)
@@ -17,6 +19,8 @@ export default async function UsuariosPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Todos os usuários</h1>
+
+      <NovoUsuarioModal />
 
       <table className="w-full border-collapse bg-white rounded-xl shadow-sm text-sm overflow-hidden">
         <thead>
