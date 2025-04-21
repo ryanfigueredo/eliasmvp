@@ -1,34 +1,34 @@
-import { getServerSession } from "next-auth"
-import { DefaultSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
-declare module "next-auth" {
+import { getServerSession } from 'next-auth'
+import { DefaultSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
+declare module 'next-auth' {
   interface Session {
     user?: {
       role?: string | null
-    } & DefaultSession["user"]
+    } & DefaultSession['user']
   }
 }
 
 export default async function MasterDashboardPage() {
-export default async function MasterDashboardPage() {
   const session = await getServerSession(authOptions)
 
-  if (!session || !session.user || session.user.role !== "master") {
-    return redirect("/login")
+  if (!session || !session.user || session.user.role !== 'master') {
+    return redirect('/login')
   }
 
-  const [total, aprovados, aguardando, consultores, admins, whiteLabels] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { status: "aprovado" } }),
-    prisma.user.count({ where: { status: "aguardando" } }),
-    prisma.user.count({ where: { role: "consultor" } }),
-    prisma.user.count({ where: { role: "admin" } }),
-    prisma.user.count({ where: { role: "white-label" } }),
-  ])
+  const [total, aprovados, aguardando, consultores, admins, whiteLabels] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { status: 'aprovado' } }),
+      prisma.user.count({ where: { status: 'aguardando' } }),
+      prisma.user.count({ where: { role: 'consultor' } }),
+      prisma.user.count({ where: { role: 'admin' } }),
+      prisma.user.count({ where: { role: 'white-label' } }),
+    ])
 
-  const cardClass = "bg-white rounded-xl p-6 shadow-sm border"
+  const cardClass = 'bg-white rounded-xl p-6 shadow-sm border'
 
   return (
     <div className="space-y-6">
@@ -47,7 +47,9 @@ export default async function MasterDashboardPage() {
 
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Aguardando aprovação</p>
-          <h2 className="text-2xl font-semibold text-yellow-500">{aguardando}</h2>
+          <h2 className="text-2xl font-semibold text-yellow-500">
+            {aguardando}
+          </h2>
         </div>
 
         <div className={cardClass}>
