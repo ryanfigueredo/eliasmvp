@@ -6,6 +6,7 @@ import SelectRole from '@/components/SelectRole'
 import SelectStatus from '@/components/SelectStatus'
 import Link from 'next/link'
 import NovoUsuarioModal from '@/components/NovoUsuarioModal'
+import EditarUsuarioModal from '@/components/EditarUsuarioModal'
 
 export default async function UsuariosPage() {
   const session = await getServerSession(authOptions)
@@ -14,6 +15,15 @@ export default async function UsuariosPage() {
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      cpf: true,
+      role: true,
+      status: true,
+      createdAt: true,
+    },
   })
 
   return (
@@ -50,8 +60,7 @@ export default async function UsuariosPage() {
                 {new Date(user.createdAt).toLocaleDateString()}
               </td>
               <td className="p-4 text-right">
-                {/* Ações como editar futuramente */}
-                <span className="text-gray-400 italic">[editar]</span>
+                <EditarUsuarioModal user={{ ...user, name: user.name || '' }} />
               </td>
             </tr>
           ))}
