@@ -1,14 +1,19 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   if (req.method !== 'POST') return res.status(405).end()
 
   const { email, cpf, password } = req.body
 
   if (!email || !cpf || !password) {
-    return res.status(400).json({ message: 'Todos os campos são obrigatórios.' })
+    return res
+      .status(400)
+      .json({ message: 'Todos os campos são obrigatórios.' })
   }
 
   try {
@@ -32,7 +37,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     })
 
-    return res.status(201).json({ message: 'Cadastro enviado. Aguarde aprovação.' })
+    return res
+      .status(201)
+      .json({ message: 'Cadastro enviado. Aguarde aprovação.' })
   } catch (error) {
     console.error(error)
     return res.status(500).json({ message: 'Erro ao cadastrar usuário.' })

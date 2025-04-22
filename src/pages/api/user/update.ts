@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getToken } from 'next-auth/jwt'
 import { NextApiRequest, NextApiResponse } from 'next'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { writeFile } from 'fs/promises'
 import path from 'path'
 import formidable from 'formidable'

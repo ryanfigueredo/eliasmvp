@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
@@ -8,48 +11,71 @@ import NovoUsuarioModal from '@/components/NovoUsuarioModal'
 import EditarUsuarioModal from '@/components/EditarUsuarioModal'
 import UsuarioFiltroModal from '@/components/UsuarioFiltroModal'
 import ExportarUsuarios from '@/components/ExportarUsuarios'
+import { Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
-export default async function UsuariosPage({
+export default function UsuariosPage({
   searchParams,
 }: {
   searchParams: Record<string, string | string[] | undefined>
 }) {
-  const session = await getServerSession(authOptions)
+  const session = getServerSession(authOptions)
   if (!session || !session.user || session.user.role !== 'master')
     return redirect('/login')
 
-  const search =
-    typeof searchParams?.search === 'string' ? searchParams.search : ''
+  const [users, setUsers] = useState<any[]>([]) // Estado para armazenar os usuários
+  const [search, setSearch] = useState('')
+  const [role, setRole] = useState('')
+  const [status, setStatus] = useState('')
 
-  const role = typeof searchParams?.role === 'string' ? searchParams.role : ''
+  // Função para buscar os usuários
+  const fetchUsers = async () => {
+    const usersResponse = await prisma.user.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+          role ? { role } : {},
+          status ? { status } : {},
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        cpf: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    })
 
-  const status =
-    typeof searchParams?.status === 'string' ? searchParams.status : ''
+    setUsers(usersResponse)
+  }
 
-  const users = await prisma.user.findMany({
-    where: {
-      AND: [
-        {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ],
-        },
-        role ? { role } : {},
-        status ? { status } : {},
-      ],
-    },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      cpf: true,
-      role: true,
-      status: true,
-      createdAt: true,
-    },
-  })
+  // Realiza a consulta ao banco quando os parâmetros de pesquisa mudam
+  useEffect(() => {
+    fetchUsers()
+  }, [search, role, status]) // Reexecuta a consulta ao banco sempre que o filtro mudar
+
+  const handleDeleteUser = async (userId: string) => {
+    // Função para excluir o usuário
+    const res = await fetch(`/api/users/${userId}`, {
+      method: 'DELETE',
+    })
+    if (res.ok) {
+      toast.success('Usuário excluído com sucesso!')
+      window.location.reload() // Recarrega a página para atualizar a lista de usuários
+    } else {
+      toast.error('Erro ao excluir o usuário.')
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -86,11 +112,21 @@ export default async function UsuariosPage({
               </td>
 
               <td className="p-4">
-                {new Date(user.createdAt).toLocaleDateString()}
+                {new Date(user.createdAt).toLocaleDateString('pt-BR')}
               </td>
-              {/* Colocar aqui filtro de data para DD/MM/AAAA */}
+
               <td className="p-4 text-right">
                 <EditarUsuarioModal user={{ ...user, name: user.name || '' }} />
+
+                {/* Botão de excluir com ícone de lixeira */}
+                <Button
+                  onClick={() => handleDeleteUser(user.id)}
+                  variant="ghost"
+                  className="text-red-600 text-xs px-0 justify-start hover:underline flex items-center gap-1"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Excluir
+                </Button>
               </td>
             </tr>
           ))}
