@@ -2,13 +2,20 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import NovoDocumentoModal from '@/components/NovoDocumentoModal'
 
 export default async function DocumentosPage() {
   const session = await getServerSession(authOptions)
 
-  if (!session || !session.user || session.user.role !== 'master') {
-    return redirect('/login')
-  }
+  if (!session?.user?.email) return redirect('/login')
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  })
+
+  if (!user || user.role !== 'master') return redirect('/login')
+
+  const userId = user.id
 
   const documentos = await prisma.document.findMany({
     include: {
@@ -27,6 +34,10 @@ export default async function DocumentosPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Documentos</h1>
 
+      <div className="mb-4">
+        <NovoDocumentoModal userId={userId} />
+      </div>
+
       <table className="w-full bg-white border text-sm rounded-xl overflow-hidden shadow">
         <thead className="bg-zinc-100 text-left">
           <tr>
@@ -38,42 +49,33 @@ export default async function DocumentosPage() {
           </tr>
         </thead>
         <tbody>
-          {documentos.map(
-            (doc: {
-              id: string
-              fileUrl: string
-              orgao: string
-              status: 'INICIADO' | 'EM_ANDAMENTO' | 'FINALIZADO'
-              user?: { name: string }
-              updatedAt: string
-            }) => (
-              <tr key={doc.id} className="border-t">
-                <td className="p-4">
-                  <a
-                    href={doc.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline"
-                  >
-                    Ver documento
-                  </a>
-                </td>
-                <td className="p-4">{doc.orgao}</td>
-                <td className="p-4">
-                  <span
-                    className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                      statusColor[doc.status]
-                    }`}
-                  />
-                  {doc.status.replace('_', ' ')}
-                </td>
-                <td className="p-4">{doc.user?.name || '—'}</td>
-                <td className="p-4">
-                  {new Date(doc.updatedAt).toLocaleDateString('pt-BR')}
-                </td>
-              </tr>
-            ),
-          )}
+          {documentos.map((doc) => (
+            <tr key={doc.id} className="border-t">
+              <td className="p-4">
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  Ver documento
+                </a>
+              </td>
+              <td className="p-4">{doc.orgao}</td>
+              <td className="p-4">
+                <span
+                  className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                    statusColor[doc.status]
+                  }`}
+                />
+                {doc.status.replace('_', ' ')}
+              </td>
+              <td className="p-4">{doc.user?.name ?? '—'}</td>
+              <td className="p-4">
+                {doc.updatedAt.toLocaleDateString('pt-BR')}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
