@@ -23,6 +23,8 @@ model User {
   status    String     @default("aguardando") // aguardando | aprovado
   createdAt DateTime   @default(now())
   documents Document[]
+
+  Cliente Cliente[]
 }
 
 model Document {
@@ -38,6 +40,16 @@ model Document {
   user User @relation(fields: [userId], references: [id])
 }
 
+model DocumentoCliente {
+  id        String   @id @default(uuid())
+  clienteId String
+  cliente   Cliente  @relation(fields: [clienteId], references: [id])
+  tipo      String   // RG, CNH, Contrato...
+  fileUrl   String
+  createdAt DateTime @default(now())
+}
+
+
 enum Orgao {
   CENPROT
   SPC
@@ -49,4 +61,17 @@ enum DocumentoStatus {
   INICIADO
   EM_ANDAMENTO
   FINALIZADO
+}
+
+
+model Cliente {
+  id        String   @id @default(uuid())
+  nome      String
+  cpfCnpj   String   @unique
+  valor     Float
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  documentos DocumentoCliente[]
 }

@@ -3,6 +3,7 @@ import { DefaultSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { Button } from '@/components/ui/button'
 declare module 'next-auth' {
   interface Session {
     user?: {
@@ -66,6 +67,18 @@ export default async function MasterDashboardPage() {
           <p className="text-sm text-gray-500">White Labels</p>
           <h2 className="text-xl font-semibold">{whiteLabels}</h2>
         </div>
+      </div>
+
+      <div className="flex gap-4 mt-4">
+        <Button asChild variant="outline">
+          <a href="/dashboard/master/clientes">Clientes</a>
+        </Button>
+        <Button asChild variant="outline">
+          <a href="/dashboard/master/documentos">Documentos</a>
+        </Button>
+        <Button asChild variant="outline">
+          <a href="/dashboard/master/usuarios">Usuários</a>
+        </Button>
       </div>
     </div>
   )
