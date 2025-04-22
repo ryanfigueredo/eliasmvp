@@ -48,18 +48,32 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          <a
+            href="/auth/forgot-password"
+            className="text-[#9C66FF] hover:underline text-[12px] font-medium"
+          >
+            Esqueci minha senha
+          </a>
         </div>
 
-        <Button onClick={handleLogin} className="w-full bg-[#9C66FF] hover:bg-[#8450e6]">
+        <Button
+          onClick={handleLogin}
+          className="w-full bg-[#9C66FF] text-white hover:bg-[#8450e6]"
+        >
           Entrar
         </Button>
 
         <p className="text-center text-sm mt-4">
           Ainda não tem conta?{' '}
-          <Link href="/register" className="text-[#9C66FF] hover:underline font-medium">
+          <Link
+            href="/register"
+            className="text-[#9C66FF] hover:underline font-medium"
+          >
             Cadastre-se aqui
           </Link>
         </p>
+
+        <div className="mt-4 text-center"></div>
       </div>
     </div>
   )

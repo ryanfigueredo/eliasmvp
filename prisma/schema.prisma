@@ -24,6 +24,10 @@ model User {
   createdAt DateTime   @default(now())
   documents Document[]
   image String?
+
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+  
   Cliente Cliente[]
 }
 
