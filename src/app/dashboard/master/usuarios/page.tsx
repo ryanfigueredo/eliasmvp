@@ -6,6 +6,8 @@ import SelectRole from '@/components/SelectRole'
 import SelectStatus from '@/components/SelectStatus'
 import NovoUsuarioModal from '@/components/NovoUsuarioModal'
 import EditarUsuarioModal from '@/components/EditarUsuarioModal'
+import UsuarioFiltroModal from '@/components/UsuarioFiltroModal'
+import ExportarUsuarios from '@/components/ExportarUsuarios'
 
 export default async function UsuariosPage({
   searchParams,
@@ -19,11 +21,22 @@ export default async function UsuariosPage({
   const search =
     typeof searchParams?.search === 'string' ? searchParams.search : ''
 
+  const role = typeof searchParams?.role === 'string' ? searchParams.role : ''
+
+  const status =
+    typeof searchParams?.status === 'string' ? searchParams.status : ''
+
   const users = await prisma.user.findMany({
     where: {
-      OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
+      AND: [
+        {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+        role ? { role } : {},
+        status ? { status } : {},
       ],
     },
     orderBy: { createdAt: 'desc' },
@@ -42,24 +55,10 @@ export default async function UsuariosPage({
     <div className="space-y-6">
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Todos os usuários</h1>
-
-        <form method="GET" className="flex items-center gap-4 mb-4">
-          <input
-            type="text"
-            name="search"
-            placeholder="Buscar por nome ou e-mail"
-            defaultValue={search}
-            className="px-4 py-2 border border-zinc-300 rounded-md text-sm w-full max-w-md"
-          />
-          <button
-            type="submit"
-            className="bg-[#9C66FF] text-white text-sm px-4 py-2 rounded hover:bg-[#8450e6]"
-          >
-            Buscar
-          </button>
-        </form>
-
-        <NovoUsuarioModal />
+        <div className="flex space-x-6 justify-between items-center">
+          <UsuarioFiltroModal />
+          <NovoUsuarioModal />
+        </div>
       </div>
 
       <table className="w-full border-collapse bg-white rounded-xl shadow-sm text-sm overflow-hidden">
@@ -97,6 +96,8 @@ export default async function UsuariosPage({
           ))}
         </tbody>
       </table>
+
+      <ExportarUsuarios data={users} />
     </div>
   )
 }
