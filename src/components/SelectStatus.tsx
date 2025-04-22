@@ -37,9 +37,9 @@ export default function SelectStatus({ id, status }: Props) {
       onChange={handleChange}
       disabled={isPending}
     >
-      <option value="aprovado">aprovado</option>
-      <option value="aguardando">aguardando</option>
-      <option value="inativo">inativo</option>
+      <option value="aprovado">Aprovado</option>
+      <option value="aguardando">Sem pagamento</option>
+      <option value="inativo">Inativo</option>
     </select>
   )
 }

@@ -37,9 +37,9 @@ export default function SelectRole({ id, role }: Props) {
       onChange={handleChange}
       disabled={isPending}
     >
-      <option value="consultor">consultor</option>
-      <option value="admin">admin</option>
-      <option value="white-label">white-label</option>
+      <option value="consultor">Consultor</option>
+      <option value="admin">Admin</option>
+      <option value="white-label">White-Label</option>
       <option value="master" disabled>
         master
       </option>

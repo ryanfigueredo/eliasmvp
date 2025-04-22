@@ -70,7 +70,7 @@ export default function NovoUsuarioModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#9C66FF] hover:bg-[#8450e6]">
+        <Button className="bg-[#9C66FF] text-white hover:bg-[#8450e6]">
           + Novo Usuário
         </Button>
       </DialogTrigger>
