@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import NovoDocumentoModal from '@/components/NovoDocumentoModal'
+import SelectStatusDocumento from '@/components/SelectStatusDocumento'
 
 export default async function DocumentosPage() {
   const session = await getServerSession(authOptions)
@@ -63,12 +64,7 @@ export default async function DocumentosPage() {
               </td>
               <td className="p-4">{doc.orgao}</td>
               <td className="p-4">
-                <span
-                  className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                    statusColor[doc.status]
-                  }`}
-                />
-                {doc.status.replace('_', ' ')}
+                <SelectStatusDocumento id={doc.id} status={doc.status} />
               </td>
               <td className="p-4">{doc.user?.name ?? '—'}</td>
               <td className="p-4">
