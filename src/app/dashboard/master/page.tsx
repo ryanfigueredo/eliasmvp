@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 declare module 'next-auth' {
   interface Session {
     user?: {
-      role?: string | null
+      id: string
+      role: string
     } & DefaultSession['user']
   }
 }

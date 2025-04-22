@@ -12,16 +12,24 @@ export default async function ClientesPage({
   searchParams: Record<string, string | string[] | undefined>
 }) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || session.user.role !== 'master')
+  if (!session?.user || session.user.role !== 'master') {
     return redirect('/login')
+  }
 
-  const busca = Array.isArray(searchParams.busca)
-    ? searchParams.busca[0]
-    : searchParams.busca ?? ''
+  // 🔧 Correção robusta de searchParams
+  const busca =
+    typeof searchParams.busca === 'string'
+      ? searchParams.busca
+      : Array.isArray(searchParams.busca)
+      ? searchParams.busca[0]
+      : ''
 
-  const responsavel = Array.isArray(searchParams.responsavel)
-    ? searchParams.responsavel[0]
-    : searchParams.responsavel ?? ''
+  const responsavel =
+    typeof searchParams.responsavel === 'string'
+      ? searchParams.responsavel
+      : Array.isArray(searchParams.responsavel)
+      ? searchParams.responsavel[0]
+      : ''
 
   const clientes = await prisma.cliente.findMany({
     where: {
@@ -34,7 +42,7 @@ export default async function ClientesPage({
               ],
             }
           : {},
-        typeof responsavel === 'string' ? { userId: responsavel } : {},
+        responsavel ? { userId: responsavel } : {},
       ],
     },
     include: { user: true },
@@ -45,11 +53,13 @@ export default async function ClientesPage({
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Clientes</h1>
 
-      <NovoClienteModal />
-      <FiltroClienteModal
-        defaultNomeCpf={busca}
-        defaultResponsavel={typeof responsavel === 'string' ? responsavel : ''}
-      />
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        <NovoClienteModal />
+        <FiltroClienteModal
+          defaultNomeCpf={busca}
+          defaultResponsavel={responsavel}
+        />
+      </div>
 
       <table className="w-full text-sm bg-white border rounded-xl overflow-hidden shadow">
         <thead className="bg-zinc-100 text-left">
@@ -59,9 +69,9 @@ export default async function ClientesPage({
             <th className="p-4">Valor</th>
             <th className="p-4">Responsável</th>
             <th className="p-4">Criado em</th>
+            <th className="p-4 text-right">Ações</th>
           </tr>
         </thead>
-
         <tbody>
           {clientes.map((cliente) => (
             <tr key={cliente.id} className="border-t">

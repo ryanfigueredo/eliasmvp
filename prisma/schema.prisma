@@ -23,7 +23,7 @@ model User {
   status    String     @default("aguardando") // aguardando | aprovado
   createdAt DateTime   @default(now())
   documents Document[]
-
+  image String?
   Cliente Cliente[]
 }
 
