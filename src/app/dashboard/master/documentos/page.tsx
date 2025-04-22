@@ -7,6 +7,7 @@ import NovoDocumentoModal from '@/components/NovoDocumentoModal'
 import SelectStatusDocumento from '@/components/SelectStatusDocumento'
 import FiltroDocumentoModal from '@/components/FiltroDocumentoModal'
 import { Orgao, DocumentoStatus } from '@prisma/client'
+import PreviewDocumentoModal from '@/components/PreviewDocumentoModal'
 
 export default async function DocumentosPage({
   searchParams,
@@ -85,14 +86,7 @@ export default async function DocumentosPage({
           {documentos.map((doc) => (
             <tr key={doc.id} className="border-t">
               <td className="p-4">
-                <a
-                  href={doc.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline"
-                >
-                  Ver documento
-                </a>
+                <PreviewDocumentoModal fileUrl={doc.fileUrl} />
               </td>
               <td className="p-4">{doc.orgao}</td>
               <td className="p-4">

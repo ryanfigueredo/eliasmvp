@@ -30,15 +30,15 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
       console.log({ userId, orgao, status, fileUrl })
       console.log('User ID recebido no modal:', userId)
 
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('userId', userId)
+      formData.append('orgao', orgao)
+      formData.append('status', status)
+
       const res = await fetch('/api/document/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          orgao,
-          status,
-          fileUrl,
-        }),
+        body: formData,
       })
 
       if (res.ok) {
