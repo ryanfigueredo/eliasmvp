@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { writeFile } from 'fs/promises'
 import path from 'path'
 import formidable from 'formidable'
+import fs from 'fs'
 
 export const config = {
   api: {
@@ -50,7 +51,7 @@ export default async function handler(
     if (foto) {
       const fileName = `${Date.now()}-${foto.originalFilename}`
       const filePath = path.join(process.cwd(), 'public/uploads', fileName)
-      const fileBuffer = await foto.toBuffer?.()
+      const fileBuffer = await fs.promises.readFile(foto.filepath)
       if (fileBuffer) {
         await writeFile(filePath, fileBuffer)
         updateData.image = `/uploads/${fileName}`
