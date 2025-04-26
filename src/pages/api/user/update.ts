@@ -1,11 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import { getToken } from 'next-auth/jwt'
 import { NextApiRequest, NextApiResponse } from 'next'
-import bcrypt from 'bcryptjs'
-import { writeFile } from 'fs/promises'
-import path from 'path'
+import bcrypt from 'bcrypt'
 import formidable from 'formidable'
-import fs from 'fs'
+import fs from 'fs/promises'
+import path from 'path'
 
 export const config = {
   api: {
@@ -18,24 +17,25 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   if (req.method !== 'POST') {
-    res.status(405).end()
-    return
+    return res.status(405).json({ message: 'Método não permitido.' })
   }
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   if (!token?.id) {
-    res.status(401).json({ message: 'Não autorizado' })
-    return
+    return res.status(401).json({ message: 'Não autorizado' })
   }
 
-  const form = formidable({ multiples: false })
-  console.log('Token recebido:', token)
+  const form = formidable({ multiples: false, keepExtensions: true })
 
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      res.status(500).json({ message: 'Erro ao processar formulário.' })
-      return
-    }
+  try {
+    const [fields, files] = await new Promise<
+      [formidable.Fields, formidable.Files]
+    >((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err)
+        else resolve([fields, files])
+      })
+    })
 
     const nome = fields.nome?.toString()
     const email = fields.email?.toString()
@@ -48,26 +48,25 @@ export default async function handler(
     if (email) updateData.email = email
     if (senha) updateData.password = await bcrypt.hash(senha, 10)
 
-    if (foto) {
+    if (foto && foto.filepath) {
       const fileName = `${Date.now()}-${foto.originalFilename}`
-      const filePath = path.join(process.cwd(), 'public/uploads', fileName)
-      const fileBuffer = await fs.promises.readFile(foto.filepath)
-      if (fileBuffer) {
-        await writeFile(filePath, fileBuffer)
-        updateData.image = `/uploads/${fileName}`
-      }
+      const newPath = path.join(process.cwd(), 'public/uploads', fileName)
+
+      const data = await fs.readFile(foto.filepath)
+      await fs.writeFile(newPath, data)
+      updateData.image = `/uploads/${fileName}`
     }
 
-    try {
-      await prisma.user.update({
-        where: { id: token.id as string },
-        data: updateData,
-      })
+    await prisma.user.update({
+      where: { id: token.id as string },
+      data: updateData,
+    })
 
-      res.status(200).json({ message: 'Atualizado com sucesso.' })
-    } catch (error) {
-      console.error(error)
-      res.status(500).json({ message: 'Erro interno.' })
-    }
-  })
+    return res.status(200).json({ message: 'Usuário atualizado com sucesso.' })
+  } catch (error) {
+    console.error('❌ Erro ao atualizar usuário:', error)
+    return res
+      .status(500)
+      .json({ message: 'Erro interno ao atualizar usuário.' })
+  }
 }

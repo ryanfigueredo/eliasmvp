@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
 import { ReactNode } from 'react'
 import Link from 'next/link'
 import { Home, Users, UserCheck, LogOut, FileText } from 'lucide-react'
@@ -16,6 +17,20 @@ export default async function MasterLayout({
 
   if (!session?.user || session.user.role !== 'master') {
     return redirect('/login')
+  }
+
+  // 🔥 Agora busca o usuário atualizado no banco
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      name: true,
+      email: true,
+      image: true,
+    },
+  })
+
+  if (!user) {
+    return redirect('/login') // Se não achar no banco
   }
 
   return (
@@ -57,27 +72,26 @@ export default async function MasterLayout({
         {/* Rodapé com usuário e logout */}
         <div className="px-2 mt-6 space-y-1">
           <div className="flex items-center gap-3">
-            {session.user.image ? (
+            {user.image ? (
               <img
-                src={session.user.image}
+                src={user.image}
                 alt="Avatar"
                 className="w-10 h-10 rounded-full object-cover border"
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-semibold text-zinc-600">
-                {session.user.name?.charAt(0).toUpperCase() ?? 'U'}
+                {user.name?.charAt(0).toUpperCase() ?? 'U'}
               </div>
             )}
 
             <div className="flex flex-col text-sm text-zinc-700">
-              <span className="font-medium">{session.user.name}</span>
-              <span className="text-xs text-zinc-500">
-                {session.user.email}
-              </span>
+              <span className="font-medium">{user.name}</span>
+              <span className="text-xs text-zinc-500">{user.email}</span>
             </div>
           </div>
 
           <ConfigUsuarioModal user={session.user} />
+
           <form action="/api/auth/signout" method="POST">
             <Button
               type="submit"
@@ -91,7 +105,6 @@ export default async function MasterLayout({
         </div>
       </aside>
 
-      {/* Conteúdo */}
       <main className="flex-1 p-8">{children}</main>
     </div>
   )

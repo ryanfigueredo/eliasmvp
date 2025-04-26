@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { Settings } from 'lucide-react'
 import { toast } from 'sonner'
+import { getSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 type Props = {
   user: {
@@ -22,6 +24,8 @@ type Props = {
 }
 
 export default function ConfigUsuarioModal({ user }: Props) {
+  const router = useRouter()
+
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -44,9 +48,10 @@ export default function ConfigUsuarioModal({ user }: Props) {
       })
 
       if (res.ok) {
+        await getSession() // 🆕 Atualiza a session do NextAuth automaticamente
         toast.success('Informações atualizadas!')
         setOpen(false)
-        window.location.reload()
+        router.refresh() // Atualiza a tela pra carregar novos dados visuais
       } else {
         toast.error('Erro ao atualizar dados.')
       }
