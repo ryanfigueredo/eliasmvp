@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { writeFile } from 'fs/promises'
+import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { v4 as uuid } from 'uuid'
+import busboy from 'busboy'
 
 export const config = {
   api: {
@@ -16,14 +17,14 @@ export default async function handler(
 ) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const chunks: Uint8Array[] = []
-  const busboy = require('busboy')
   const bb = busboy({ headers: req.headers })
+  const chunks: Uint8Array[] = []
 
   let userId = ''
   let orgao = ''
   let status = ''
   let fileUrl = ''
+  let filename = ''
 
   bb.on('field', (name, val) => {
     if (name === 'userId') userId = val
@@ -32,11 +33,14 @@ export default async function handler(
   })
 
   bb.on('file', async (name, file, info) => {
-    const { filename } = info
-    const uniqueName = `${Date.now()}-${uuid()}-${filename}`
-    const uploadPath = path.join(process.cwd(), 'public', 'uploads', uniqueName)
+    filename = `${Date.now()}-${uuid()}-${info.filename}`
+    const uploadFolder = path.join(process.cwd(), 'public', 'uploads')
 
-    fileUrl = `/uploads/${uniqueName}`
+    // Garante que a pasta uploads exista
+    await mkdir(uploadFolder, { recursive: true })
+
+    const uploadPath = path.join(uploadFolder, filename)
+    fileUrl = `/uploads/${filename}`
 
     for await (const chunk of file) {
       chunks.push(chunk)
@@ -50,16 +54,21 @@ export default async function handler(
       return res.status(400).json({ message: 'Campos obrigatórios ausentes.' })
     }
 
-    await prisma.document.create({
-      data: {
-        userId,
-        orgao,
-        status,
-        fileUrl,
-      },
-    })
+    try {
+      await prisma.document.create({
+        data: {
+          userId,
+          orgao,
+          status,
+          fileUrl,
+        },
+      })
 
-    return res.status(201).json({ message: 'Documento criado com sucesso.' })
+      return res.status(201).json({ message: 'Documento criado com sucesso.' })
+    } catch (error) {
+      console.error('Erro ao criar documento:', error)
+      return res.status(500).json({ message: 'Erro ao criar documento.' })
+    }
   })
 
   req.pipe(bb)

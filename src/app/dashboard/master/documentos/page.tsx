@@ -8,6 +8,7 @@ import SelectStatusDocumento from '@/components/SelectStatusDocumento'
 import FiltroDocumentoModal from '@/components/FiltroDocumentoModal'
 import { Orgao, DocumentoStatus } from '@prisma/client'
 import PreviewDocumentoModal from '@/components/PreviewDocumentoModal'
+import ExcluirDocumentoButton from '@/components/ExcluirDocumentoButton'
 
 export default async function DocumentosPage({
   searchParams,
@@ -26,13 +27,13 @@ export default async function DocumentosPage({
 
   const file = Array.isArray(searchParams.file)
     ? searchParams.file[0]
-    : searchParams.file ?? ''
+    : (searchParams.file ?? '')
   const orgao = Array.isArray(searchParams.orgao)
     ? searchParams.orgao[0]
-    : searchParams.orgao ?? ''
+    : (searchParams.orgao ?? '')
   const status = Array.isArray(searchParams.status)
     ? searchParams.status[0]
-    : searchParams.status ?? ''
+    : (searchParams.status ?? '')
 
   const documentos = await prisma.document.findMany({
     where: {
@@ -95,6 +96,9 @@ export default async function DocumentosPage({
               <td className="p-4">{doc.user?.name ?? '—'}</td>
               <td className="p-4">
                 {doc.updatedAt.toLocaleDateString('pt-BR')}
+              </td>
+              <td className="p-4 text-right">
+                <ExcluirDocumentoButton id={doc.id} />
               </td>
             </tr>
           ))}
