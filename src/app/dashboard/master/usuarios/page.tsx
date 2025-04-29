@@ -47,5 +47,12 @@ export default async function UsuariosPage({
     },
   })
 
-  return <UsuariosContent users={users} />
+  return (
+    <UsuariosContent
+      users={users.map((user) => ({
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+      }))}
+    />
+  )
 }

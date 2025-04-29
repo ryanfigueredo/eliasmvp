@@ -92,7 +92,12 @@ export default function UsuariosContent({
         </tbody>
       </table>
 
-      <ExportarUsuarios data={users} />
+      <ExportarUsuarios
+        data={users.map((user) => ({
+          ...user,
+          createdAt: new Date(user.createdAt),
+        }))}
+      />
     </div>
   )
 }
