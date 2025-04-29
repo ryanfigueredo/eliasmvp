@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
-import { writeFile } from 'fs/promises'
-import { v4 as uuid } from 'uuid'
+import { readFile, writeFile } from 'fs/promises'
 import { IncomingForm } from 'formidable'
 
 export const config = {
@@ -24,8 +23,10 @@ export default async function handler(
   })
 
   form.parse(req, async (err, fields, files) => {
-    if (err)
+    if (err) {
+      console.error('Erro ao fazer parse do formulário:', err)
       return res.status(500).json({ message: 'Erro ao processar formulário.' })
+    }
 
     const nome = fields.nome?.toString()
     const cpfCnpj = fields.cpfCnpj?.toString()
@@ -48,32 +49,63 @@ export default async function handler(
 
       const documentos = []
 
-      const salvarDocumento = async (tipo: string, file?: any) => {
-        if (!file) return
-
-        const ext = path.extname(file.originalFilename || '')
-        const filename = `${uuid()}-${tipo}${ext}`
+      // Função para salvar o arquivo no servidor
+      const salvarDocumento = async (
+        file: any,
+        tipo: string,
+        clienteId: string,
+      ) => {
+        const filename = `${Date.now()}-${file.originalFilename}`
         const uploadPath = path.join(process.cwd(), 'public/uploads', filename)
 
-        await writeFile(uploadPath, await file.toBuffer?.())
-        documentos.push({
-          clienteId: cliente.id,
+        const data = await readFile(file.filepath)
+        await writeFile(uploadPath, data)
+
+        return {
+          clienteId,
           tipo,
           fileUrl: `/uploads/${filename}`,
-        })
+        }
       }
 
-      await salvarDocumento('RG', files.rg?.[0] || files.rg)
-      await salvarDocumento('CNH', files.cnh?.[0] || files.cnh)
-      await salvarDocumento('CONTRATO', files.contrato?.[0] || files.contrato)
+      // Verificar e salvar documentos, se existirem
+      if (files.rg) {
+        const documentoRG = await salvarDocumento(
+          files.rg[0] || files.rg,
+          'RG',
+          cliente.id,
+        )
+        documentos.push(documentoRG)
+      }
 
+      if (files.cnh) {
+        const documentoCNH = await salvarDocumento(
+          files.cnh[0] || files.cnh,
+          'CNH',
+          cliente.id,
+        )
+        documentos.push(documentoCNH)
+      }
+
+      if (files.contrato) {
+        const documentoContrato = await salvarDocumento(
+          files.contrato[0] || files.contrato,
+          'CONTRATO',
+          cliente.id,
+        )
+        documentos.push(documentoContrato)
+      }
+
+      // Se houver documentos, salvar no banco
       if (documentos.length > 0) {
-        await prisma.documentoCliente.createMany({ data: documentos })
+        await prisma.documentoCliente.createMany({
+          data: documentos,
+        })
       }
 
       return res.status(201).json({ message: 'Cliente criado com sucesso.' })
     } catch (error) {
-      console.error('Erro ao salvar cliente:', error)
+      console.error('Erro ao salvar cliente e documentos:', error)
       return res
         .status(500)
         .json({ message: 'Erro interno ao salvar cliente.' })

@@ -36,7 +36,9 @@ export default function NovoClienteModal() {
       .then((data) => setUsuarios(data))
   }, [])
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault() // 🔥 Agora prevenimos o comportamento padrão
+
     if (!nome || !cpfCnpj || !valor || !responsavelId) {
       return toast.error('Preencha todos os campos obrigatórios.')
     }
@@ -51,7 +53,8 @@ export default function NovoClienteModal() {
     if (contrato) formData.append('contrato', contrato)
 
     startTransition(async () => {
-      const res = await fetch('/api/clientes/create', {
+      const res = await fetch('/api/cliente/create', {
+        // 🔥 Corrigido aqui para "cliente" (sem s)
         method: 'POST',
         body: formData,
       })
@@ -81,7 +84,7 @@ export default function NovoClienteModal() {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <Input
             placeholder="Nome completo"
             value={nome}
@@ -138,16 +141,18 @@ export default function NovoClienteModal() {
               onChange={(e) => setContrato(e.target.files?.[0] || null)}
             />
           </div>
-        </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <DialogClose asChild>
-            <Button variant="outline">Cancelar</Button>
-          </DialogClose>
-          <Button onClick={handleSubmit} disabled={isPending}>
-            {isPending ? 'Criando...' : 'Criar'}
-          </Button>
-        </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Criando...' : 'Criar'}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   )
