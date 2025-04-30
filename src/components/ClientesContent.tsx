@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import NovoClienteModal from '@/components/NovoClienteModal'
 import DocumentosClienteModal from '@/components/DocumentosClienteModal'
 import FiltroClienteModal from '@/components/FiltroClienteModal'

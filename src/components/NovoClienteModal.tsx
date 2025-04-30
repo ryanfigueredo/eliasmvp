@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { useEffect, useState, useTransition } from 'react'
 import { User } from '@prisma/client'
 import { useCpfCnpjMask } from '@/hooks/useCpfCnpjMask'
+import { formatCurrency } from '@/hooks/useCurrencyMask'
 
 export default function NovoClienteModal() {
   const formatCpfCnpj = useCpfCnpjMask()
@@ -96,10 +97,13 @@ export default function NovoClienteModal() {
             onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
           />
           <Input
-            type="number"
+            type="text"
             placeholder="Valor"
             value={valor}
-            onChange={(e) => setValor(e.target.value)}
+            onChange={(e) => {
+              const formatted = formatCurrency(e.target.value)
+              setValor(formatted)
+            }}
           />
 
           <div className="space-y-1">
