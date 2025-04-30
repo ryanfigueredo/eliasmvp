@@ -52,16 +52,29 @@ export default function DocumentosClienteModal({
       return
     }
 
+    if (
+      !['application/pdf', 'image/png', 'image/jpeg'].includes(arquivo.type)
+    ) {
+      toast.error('Tipo de arquivo inválido. Use PDF, JPG ou PNG.')
+      return
+    }
+
+    if (arquivo.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Tamanho máximo: 5MB.')
+      return
+    }
+
     const formData = new FormData()
     formData.append('tipo', tipo)
     formData.append('file', arquivo)
 
     startTransition(async () => {
       const res = await fetch(`/api/cliente/${clienteId}/documentos`, {
-        // 🔥 corrigido aqui
         method: 'POST',
         body: formData,
       })
+
+      const result = await res.json()
 
       if (res.ok) {
         toast.success('Documento enviado com sucesso!')
@@ -69,7 +82,8 @@ export default function DocumentosClienteModal({
         setTipo('RG')
         await fetchDocumentos()
       } else {
-        toast.error('Erro ao enviar o documento.')
+        console.error('Erro do servidor:', result)
+        toast.error(result.message || 'Erro ao enviar o documento.')
       }
     })
   }
