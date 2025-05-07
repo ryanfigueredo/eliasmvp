@@ -14,8 +14,7 @@ export default async function MasterLayout({
   children: ReactNode
 }) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || session.user.role !== 'master')
-    return redirect('/login')
+  if (!session?.user || session.user.role !== 'admin') return redirect('/login')
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -32,7 +31,7 @@ export default async function MasterLayout({
           <h2 className="text-xl font-bold text-[#9C66FF] mb-6 px-2">
             Painel Master
           </h2>
-          <SidebarContent role="master" />
+          <SidebarContent role="admin" />
         </div>
 
         {/* Footer */}

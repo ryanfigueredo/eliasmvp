@@ -18,6 +18,8 @@ type Cliente = {
 
 interface ClientesContentProps {
   searchParams: { [key: string]: string | string[] | undefined }
+  role: 'master' | 'admin' | 'consultor' | string
+  userId: string
 }
 
 export default function ClientesContent({

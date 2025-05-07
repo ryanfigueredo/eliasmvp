@@ -11,7 +11,12 @@ export default async function UsuariosPage({
 }) {
   const session = await getServerSession(authOptions)
 
-  if (!session || !session.user || session.user.role !== 'master') {
+  // Permitir apenas MASTER e ADMIN
+  if (
+    !session ||
+    !session.user ||
+    !['master', 'admin'].includes(session.user.role)
+  ) {
     return redirect('/login')
   }
 
