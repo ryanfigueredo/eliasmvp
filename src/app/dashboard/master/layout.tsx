@@ -42,10 +42,7 @@ export default async function MasterLayout({
             Painel Master
           </h2>
           <nav className="space-y-2 text-sm">
-            <SidebarLink
-              href="/dashboard/master"
-              icon={<Home className="w-4 h-4" />}
-            >
+            <SidebarLink href="/dashboard" icon={<Home className="w-4 h-4" />}>
               Dashboard
             </SidebarLink>
             <SidebarLink

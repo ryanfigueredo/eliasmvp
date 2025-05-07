@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { registrarLog } from '@/lib/log'
+import { getToken } from 'next-auth/jwt'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
@@ -17,6 +17,11 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   if (req.method !== 'POST') return res.status(405).end()
+
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  if (!token?.id) {
+    return res.status(401).json({ message: 'Não autorizado.' })
+  }
 
   const bb = busboy({ headers: req.headers })
   const chunks: Uint8Array[] = []
@@ -37,9 +42,7 @@ export default async function handler(
     filename = `${Date.now()}-${uuid()}-${info.filename}`
     const uploadFolder = path.join(process.cwd(), 'public', 'uploads')
 
-    // Garante que a pasta uploads exista
     await mkdir(uploadFolder, { recursive: true })
-
     const uploadPath = path.join(uploadFolder, filename)
     fileUrl = `/uploads/${filename}`
 
@@ -56,7 +59,7 @@ export default async function handler(
     }
 
     try {
-      await prisma.document.create({
+      const documento = await prisma.document.create({
         data: {
           userId,
           orgao,
@@ -65,11 +68,13 @@ export default async function handler(
         },
       })
 
-      await registrarLog(
-        userId,
-        'Upload de Documento',
-        `Arquivo ${filename} enviado para ${orgao} com status ${status}`,
-      )
+      await prisma.log.create({
+        data: {
+          userId: String(token.id),
+          acao: 'UPLOAD DE DOCUMENTO',
+          detalhes: `Enviou o documento "${documento.fileUrl}" com status ${status} para o órgão ${orgao}`,
+        },
+      })
 
       return res.status(201).json({ message: 'Documento criado com sucesso.' })
     } catch (error) {

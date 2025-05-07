@@ -1,3 +1,5 @@
+// src/pages/api/clientes/create.ts
+
 import { prisma } from '@/lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
@@ -47,9 +49,17 @@ export default async function handler(
         },
       })
 
+      // ⬇️ LOG DE CRIAÇÃO DE CLIENTE
+      await prisma.log.create({
+        data: {
+          userId: responsavelId,
+          acao: 'CADASTRO DE CLIENTE',
+          detalhes: `Cadastrou o cliente "${nome}" com CPF/CNPJ ${cpfCnpj} no valor de R$${valor}`,
+        },
+      })
+
       const documentos = []
 
-      // Função para salvar o arquivo no servidor
       const salvarDocumento = async (
         file: any,
         tipo: string,
@@ -57,7 +67,6 @@ export default async function handler(
       ) => {
         const filename = `${Date.now()}-${file.originalFilename}`
         const uploadPath = path.join(process.cwd(), 'public/uploads', filename)
-
         const data = await readFile(file.filepath)
         await writeFile(uploadPath, data)
 
@@ -68,7 +77,6 @@ export default async function handler(
         }
       }
 
-      // Verificar e salvar documentos, se existirem
       if (files.rg) {
         const documentoRG = await salvarDocumento(
           files.rg[0] || files.rg,
@@ -96,7 +104,6 @@ export default async function handler(
         documentos.push(documentoContrato)
       }
 
-      // Se houver documentos, salvar no banco
       if (documentos.length > 0) {
         await prisma.documentoCliente.createMany({
           data: documentos,
