@@ -19,16 +19,17 @@ model User {
   email     String     @unique
   cpf       String     @unique
   password  String
-  role      String     @default("consultor") // master, admin, white-label, consultor
-  status    String     @default("aguardando") // aguardando | aprovado
+  role      String     @default("consultor")
+  status    String     @default("aguardando")
   createdAt DateTime   @default(now())
   documents Document[]
-  image String?
+  image     String?
 
   resetToken       String?   @unique
   resetTokenExpiry DateTime?
-  
+
   Cliente Cliente[]
+  logs    Log[] // 👈 ADICIONE ESTA LINHA
 }
 
 model Document {
@@ -48,11 +49,10 @@ model DocumentoCliente {
   id        String   @id @default(uuid())
   clienteId String
   cliente   Cliente  @relation(fields: [clienteId], references: [id])
-  tipo      String   // RG, CNH, Contrato...
+  tipo      String // RG, CNH, Contrato...
   fileUrl   String
   createdAt DateTime @default(now())
 }
-
 
 enum Orgao {
   CENPROT
@@ -67,15 +67,23 @@ enum DocumentoStatus {
   FINALIZADO
 }
 
-
 model Cliente {
+  id         String             @id @default(uuid())
+  nome       String
+  cpfCnpj    String             @unique
+  valor      Float
+  userId     String
+  user       User               @relation(fields: [userId], references: [id])
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  documentos DocumentoCliente[]
+}
+
+model Log {
   id        String   @id @default(uuid())
-  nome      String
-  cpfCnpj   String   @unique
-  valor     Float
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  acao      String
+  detalhes  String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  documentos DocumentoCliente[]
 }

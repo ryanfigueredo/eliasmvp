@@ -69,18 +69,6 @@ export default async function MasterDashboardPage() {
           <h2 className="text-xl font-semibold">{whiteLabels}</h2>
         </div>
       </div>
-
-      <div className="flex gap-4 mt-4">
-        <Button asChild variant="outline">
-          <a href="/dashboard/master/clientes">Clientes</a>
-        </Button>
-        <Button asChild variant="outline">
-          <a href="/dashboard/master/documentos">Documentos</a>
-        </Button>
-        <Button asChild variant="outline">
-          <a href="/dashboard/master/usuarios">Usuários</a>
-        </Button>
-      </div>
     </div>
   )
 }

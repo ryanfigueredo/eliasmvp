@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { ReactNode } from 'react'
 import Link from 'next/link'
-import { Home, Users, UserCheck, LogOut, FileText } from 'lucide-react'
+import { Home, Users, UserCheck, LogOut, FileText, Logs } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ConfigUsuarioModal from '@/components/ConfigUsuarioModal'
 
@@ -65,6 +65,13 @@ export default async function MasterLayout({
               icon={<Users className="w-4 h-4" />}
             >
               Usuários
+            </SidebarLink>
+
+            <SidebarLink
+              href="/dashboard/master/logs"
+              icon={<Logs className="w-4 h-4" />}
+            >
+              Histórico de Ações
             </SidebarLink>
           </nav>
         </div>

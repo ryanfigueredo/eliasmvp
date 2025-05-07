@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { registrarLog } from '@/lib/log'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
@@ -63,6 +64,12 @@ export default async function handler(
           fileUrl,
         },
       })
+
+      await registrarLog(
+        userId,
+        'Upload de Documento',
+        `Arquivo ${filename} enviado para ${orgao} com status ${status}`,
+      )
 
       return res.status(201).json({ message: 'Documento criado com sucesso.' })
     } catch (error) {
