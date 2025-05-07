@@ -1,5 +1,3 @@
-// src/pages/api/document/[id].ts
-
 import { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getToken } from 'next-auth/jwt'
@@ -26,13 +24,14 @@ export default async function handler(
   try {
     const doc = await prisma.document.findUnique({
       where: { id },
+      include: { user: true },
     })
 
     if (!doc) {
       return res.status(404).json({ message: 'Documento não encontrado.' })
     }
 
-    // Deletar o arquivo físico
+    // Deletar arquivo físico
     const filePath = path.join(process.cwd(), 'public', doc.fileUrl)
     await fs.unlink(filePath).catch((err) => {
       console.warn(
@@ -42,8 +41,15 @@ export default async function handler(
     })
 
     // Deletar do banco
-    await prisma.document.delete({
-      where: { id },
+    await prisma.document.delete({ where: { id } })
+
+    // Criar log
+    await prisma.log.create({
+      data: {
+        userId: token.id as string,
+        acao: 'EXCLUSÃO DE DOCUMENTO',
+        detalhes: `Documento ${doc.fileUrl} (${doc.orgao}) foi excluído pelo usuário ${token.name || token.email}.`,
+      },
     })
 
     return res.status(200).json({ message: 'Documento excluído com sucesso.' })

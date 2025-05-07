@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { getToken } from 'next-auth/jwt'
 import { NextApiRequest, NextApiResponse } from 'next'
 
 export default async function handler(
@@ -7,20 +8,36 @@ export default async function handler(
 ) {
   if (req.method !== 'POST') return res.status(405).end()
 
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+
+  if (!token?.id) {
+    return res.status(401).json({ message: 'Não autorizado.' })
+  }
+
   const { id, status } = req.body
 
-  if (!id || !status)
-    return res.status(400).json({ message: 'Dados incompletos.' })
+  if (!id || !status) {
+    return res.status(400).json({ message: 'Dados inválidos.' })
+  }
 
   try {
-    await prisma.document.update({
+    const documento = await prisma.document.update({
       where: { id },
       data: { status },
+    })
+
+    // Criar log da ação
+    await prisma.log.create({
+      data: {
+        userId: String(token.id),
+        acao: 'ALTERAÇÃO DE STATUS',
+        detalhes: `Alterou status do documento ${documento.id} para ${status}`,
+      },
     })
 
     return res.status(200).json({ message: 'Status atualizado.' })
   } catch (error) {
     console.error('Erro ao atualizar status:', error)
-    return res.status(500).json({ message: 'Erro no servidor.' })
+    return res.status(500).json({ message: 'Erro interno.' })
   }
 }
