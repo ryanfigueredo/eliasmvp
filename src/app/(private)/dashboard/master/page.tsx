@@ -3,7 +3,7 @@ import { DefaultSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { Button } from '@/components/ui/button'
+
 declare module 'next-auth' {
   interface Session {
     user?: {

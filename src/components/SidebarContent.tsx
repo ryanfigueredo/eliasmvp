@@ -24,34 +24,22 @@ export function SidebarContent({
         Dashboard
       </SidebarLink>
 
-      <SidebarLink
-        href={`${base}/clientes`}
-        icon={<UserCheck className="w-4 h-4" />}
-      >
+      <SidebarLink href="/clientes" icon={<UserCheck className="w-4 h-4" />}>
         Clientes
       </SidebarLink>
 
-      <SidebarLink
-        href={`${base}/documentos`}
-        icon={<FileText className="w-4 h-4" />}
-      >
+      <SidebarLink href="/documentos" icon={<FileText className="w-4 h-4" />}>
         Documentos
       </SidebarLink>
 
       {(role === 'master' || role === 'admin') && (
-        <SidebarLink
-          href={`${base}/usuarios`}
-          icon={<Users className="w-4 h-4" />}
-        >
+        <SidebarLink href="/usuarios" icon={<Users className="w-4 h-4" />}>
           Usuários
         </SidebarLink>
       )}
 
       {role === 'master' && (
-        <SidebarLink
-          href={`${base}/logs`}
-          icon={<ListChecks className="w-4 h-4" />}
-        >
+        <SidebarLink href="/logs" icon={<ListChecks className="w-4 h-4" />}>
           Histórico de Ações
         </SidebarLink>
       )}
