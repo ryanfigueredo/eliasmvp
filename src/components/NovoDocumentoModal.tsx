@@ -16,7 +16,7 @@ import { User } from '@prisma/client'
 import { useCpfCnpjMask } from '@/hooks/useCpfCnpjMask'
 import { formatCurrency } from '@/hooks/useCurrencyMask'
 
-export default function NovoClienteModal() {
+export default function NovoClienteModal({ userId }: { userId: string }) {
   const formatCpfCnpj = useCpfCnpjMask()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()

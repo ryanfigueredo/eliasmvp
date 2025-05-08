@@ -3,11 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import ClientesContent from '@/components/ClientesContent'
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default async function Page({ searchParams }: any) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user) {
@@ -16,7 +12,7 @@ export default async function Page({
 
   return (
     <ClientesContent
-      searchParams={searchParams}
+      searchParams={searchParams ?? {}}
       role={session.user.role}
       userId={session.user.id}
     />

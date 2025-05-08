@@ -4,14 +4,13 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import UsuariosContent from '@/components/UsuariosContent'
 
-export default async function UsuariosPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>
-}) {
+type PageProps = {
+  searchParams?: Record<string, string | string[]>
+}
+
+export default async function UsuariosPage({ searchParams = {} }: PageProps) {
   const session = await getServerSession(authOptions)
 
-  // Permitir apenas MASTER e ADMIN
   if (
     !session ||
     !session.user ||

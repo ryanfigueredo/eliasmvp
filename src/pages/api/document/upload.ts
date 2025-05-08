@@ -5,6 +5,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { v4 as uuid } from 'uuid'
 import busboy from 'busboy'
+import { Orgao, DocumentoStatus } from '@prisma/client'
 
 export const config = {
   api: {
@@ -62,8 +63,8 @@ export default async function handler(
       const documento = await prisma.document.create({
         data: {
           userId,
-          orgao,
-          status,
+          orgao: orgao as Orgao,
+          status: status as DocumentoStatus,
           fileUrl,
         },
       })

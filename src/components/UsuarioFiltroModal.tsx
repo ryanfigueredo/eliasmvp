@@ -13,7 +13,7 @@ import { Filter, X } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
 export default function UsuarioFiltroModal() {
-  const params = useSearchParams()
+  const params = useSearchParams() ?? new URLSearchParams()
 
   return (
     <Dialog>
