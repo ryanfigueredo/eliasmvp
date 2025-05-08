@@ -78,14 +78,14 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="bg-[#9C66FF] hover:bg-[#8450e6] text-white">
-          + Novo Cliente
+          + Novo Documento
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-md bg-white border rounded-xl shadow-xl px-6 py-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
-            Novo Cliente
+            Novo Documento
           </DialogTitle>
         </DialogHeader>
 
@@ -111,23 +111,9 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
           />
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Responsável</label>
-            <select
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={responsavelId}
-              onChange={(e) => setResponsavelId(e.target.value)}
-            >
-              <option value="">Selecione</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.role})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">RG</label>
+            <label className="text-sm font-medium">
+              Documente do cliente: RG/CNH
+            </label>
             <Input
               type="file"
               onChange={(e) => setRg(e.target.files?.[0] || null)}
@@ -135,7 +121,7 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">CNH</label>
+            <label className="text-sm font-medium">Consulta</label>
             <Input
               type="file"
               onChange={(e) => setCnh(e.target.files?.[0] || null)}
@@ -144,6 +130,16 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
 
           <div className="space-y-1">
             <label className="text-sm font-medium">Contrato</label>
+            <Input
+              type="file"
+              onChange={(e) => setContrato(e.target.files?.[0] || null)}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">
+              Documento Adicional (opcional)
+            </label>
             <Input
               type="file"
               onChange={(e) => setContrato(e.target.files?.[0] || null)}
