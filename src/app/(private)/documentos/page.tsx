@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import DocumentosContent from '@/components/DocumentosContent'
 
 type Props = {
-  params: any // caso use rotas dinâmicas
+  params: any
   searchParams?: Record<string, string | string[]>
 }
 

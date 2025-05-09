@@ -47,7 +47,9 @@ export default function NovoClienteModal() {
     const formData = new FormData()
     formData.append('nome', nome)
     formData.append('cpfCnpj', cpfCnpj.replace(/\D/g, ''))
-    formData.append('valor', valor)
+    const rawValor = valor.replace(/\D/g, '') // remove tudo que não for número
+    const parsedValor = parseFloat(rawValor) / 100
+    formData.append('valor', String(parsedValor))
     formData.append('responsavelId', responsavelId)
     if (rg) formData.append('rg', rg)
     if (cnh) formData.append('cnh', cnh)

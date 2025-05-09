@@ -32,11 +32,13 @@ export default async function handler(
   let status = ''
   let fileUrl = ''
   let filename = ''
+  let loteId = ''
 
   bb.on('field', (name, val) => {
     if (name === 'userId') userId = val
     if (name === 'orgao') orgao = val
     if (name === 'status') status = val
+    if (name === 'loteId') loteId = val
   })
 
   bb.on('file', async (name, file, info) => {
@@ -55,7 +57,7 @@ export default async function handler(
   })
 
   bb.on('close', async () => {
-    if (!userId || !orgao || !status || !fileUrl) {
+    if (!userId || !orgao || !status || !fileUrl || !loteId) {
       return res.status(400).json({ message: 'Campos obrigatórios ausentes.' })
     }
 
@@ -66,6 +68,7 @@ export default async function handler(
           orgao: orgao as Orgao,
           status: status as DocumentoStatus,
           fileUrl,
+          loteId,
         },
       })
 

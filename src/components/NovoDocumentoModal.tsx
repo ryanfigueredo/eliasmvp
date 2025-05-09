@@ -12,11 +12,11 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useEffect, useState, useTransition } from 'react'
-import { User } from '@prisma/client'
+import { User, Lote } from '@prisma/client'
 import { useCpfCnpjMask } from '@/hooks/useCpfCnpjMask'
 import { formatCurrency } from '@/hooks/useCurrencyMask'
 
-export default function NovoClienteModal({ userId }: { userId: string }) {
+export default function NovoDocumentoModal({ userId }: { userId: string }) {
   const formatCpfCnpj = useCpfCnpjMask()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -24,23 +24,23 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
   const [nome, setNome] = useState('')
   const [cpfCnpj, setCpfCnpj] = useState('')
   const [valor, setValor] = useState('')
-  const [responsavelId, setResponsavelId] = useState('')
-  const [usuarios, setUsuarios] = useState<User[]>([])
-
   const [rg, setRg] = useState<File | null>(null)
-  const [cnh, setCnh] = useState<File | null>(null)
+  const [consulta, setConsulta] = useState<File | null>(null)
   const [contrato, setContrato] = useState<File | null>(null)
+  const [adicional, setAdicional] = useState<File | null>(null)
+  const [loteId, setLoteId] = useState('')
+  const [lotes, setLotes] = useState<Lote[]>([])
 
   useEffect(() => {
-    fetch('/api/users/consultores')
+    fetch('/api/lotes')
       .then((res) => res.json())
-      .then((data) => setUsuarios(data))
+      .then((data) => setLotes(data))
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!nome || !cpfCnpj || !valor || !responsavelId) {
+    if (!nome || !cpfCnpj || !valor || !loteId) {
       return toast.error('Preencha todos os campos obrigatórios.')
     }
 
@@ -48,10 +48,12 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
     formData.append('nome', nome)
     formData.append('cpfCnpj', cpfCnpj.replace(/\D/g, ''))
     formData.append('valor', valor)
-    formData.append('responsavelId', responsavelId)
+    formData.append('responsavelId', userId)
+    formData.append('loteId', loteId)
     if (rg) formData.append('rg', rg)
-    if (cnh) formData.append('cnh', cnh)
+    if (consulta) formData.append('consulta', consulta)
     if (contrato) formData.append('contrato', contrato)
+    if (adicional) formData.append('adicional', adicional)
 
     startTransition(async () => {
       try {
@@ -61,15 +63,15 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
         })
 
         if (res.ok) {
-          toast.success('Cliente criado com sucesso!')
+          toast.success('Documento enviado com sucesso!')
           setOpen(false)
           window.location.reload()
         } else {
-          toast.error('Erro ao criar cliente.')
+          toast.error('Erro ao enviar documento.')
         }
       } catch (error) {
         console.error(error)
-        toast.error('Erro inesperado ao enviar os dados.')
+        toast.error('Erro inesperado.')
       }
     })
   }
@@ -104,15 +106,29 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
             type="text"
             placeholder="Valor"
             value={valor}
-            onChange={(e) => {
-              const formatted = formatCurrency(e.target.value)
-              setValor(formatted)
-            }}
+            onChange={(e) => setValor(formatCurrency(e.target.value))}
           />
 
           <div className="space-y-1">
+            <label className="text-sm font-medium">Lote</label>
+            <select
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={loteId}
+              onChange={(e) => setLoteId(e.target.value)}
+            >
+              <option value="">Selecione um lote</option>
+              {lotes.map((lote) => (
+                <option key={lote.id} value={lote.id}>
+                  {lote.nome} ({new Date(lote.inicio).toLocaleDateString()} até{' '}
+                  {new Date(lote.fim).toLocaleDateString()})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
             <label className="text-sm font-medium">
-              Documente do cliente: RG/CNH
+              Documento do cliente: RG/CNH
             </label>
             <Input
               type="file"
@@ -124,7 +140,7 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
             <label className="text-sm font-medium">Consulta</label>
             <Input
               type="file"
-              onChange={(e) => setCnh(e.target.files?.[0] || null)}
+              onChange={(e) => setConsulta(e.target.files?.[0] || null)}
             />
           </div>
 
@@ -142,7 +158,7 @@ export default function NovoClienteModal({ userId }: { userId: string }) {
             </label>
             <Input
               type="file"
-              onChange={(e) => setContrato(e.target.files?.[0] || null)}
+              onChange={(e) => setAdicional(e.target.files?.[0] || null)}
             />
           </div>
 

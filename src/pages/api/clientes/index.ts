@@ -54,7 +54,15 @@ export default async function handler(
 
       const nome = fields.nome?.toString()
       const cpfCnpj = fields.cpfCnpj?.toString()
-      const valor = parseFloat(fields.valor?.toString() || '0')
+      const rawValor = fields.valor
+        ?.toString()
+        ?.replace(/[^\d,.-]/g, '')
+        .replace(',', '.')
+      const valor = parseFloat(rawValor || '0')
+
+      if (isNaN(valor)) {
+        return res.status(400).json({ message: 'Valor inválido.' })
+      }
       const responsavelId = fields.responsavelId?.toString()
 
       if (!nome || !cpfCnpj || !responsavelId) {

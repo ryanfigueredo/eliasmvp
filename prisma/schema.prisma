@@ -29,13 +29,24 @@ model User {
   resetTokenExpiry DateTime?
 
   Cliente Cliente[]
-  logs    Log[] // 👈 ADICIONE ESTA LINHA
+  logs    Log[] 
 }
+
+model Lote {
+  id         String     @id @default(uuid())
+  nome       String     @unique
+  inicio     DateTime
+  fim        DateTime
+  createdAt  DateTime   @default(now())
+  documentos Document[]
+}
+
 
 model Document {
   id        String          @id @default(uuid())
   userId    String
   clienteId String?
+  loteId    String?         // <--- ESTE
   orgao     Orgao
   status    DocumentoStatus @default(INICIADO)
   fileUrl   String
@@ -43,7 +54,9 @@ model Document {
   updatedAt DateTime        @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+  lote Lote? @relation(fields: [loteId], references: [id]) // <---
 }
+
 
 model DocumentoCliente {
   id        String   @id @default(uuid())
