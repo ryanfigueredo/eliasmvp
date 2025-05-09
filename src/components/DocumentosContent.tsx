@@ -7,6 +7,7 @@ import ExcluirDocumentoButton from './ExcluirDocumentoButton'
 import NovoDocumentoModal from './NovoDocumentoModal'
 import SelectStatusDocumento from './SelectStatusDocumento'
 import FiltroDocumentoModal from './FiltroDocumentoModal'
+import { DocumentoStatus } from '@prisma/client'
 
 interface Props {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -14,59 +15,65 @@ interface Props {
   userId: string
 }
 
+type DocumentoComLote = {
+  id: string
+  orgao: string
+  status: DocumentoStatus
+  fileUrl: string
+  updatedAt: string
+  user?: { name: string }
+  lote?: {
+    id: string
+    nome: string
+    inicio: string
+    fim: string
+  } | null
+}
+
 export default function DocumentosContent({
   searchParams,
   role,
   userId,
 }: Props) {
-  const [documentos, setDocumentos] = useState<any[]>([])
+  const [documentos, setDocumentos] = useState<DocumentoComLote[]>([])
+  const [lotesComStatus, setLotesComStatus] = useState<
+    { id: string; nome: string; inicio: string; fim: string; status: string }[]
+  >([])
+  const [loteSelecionado, setLoteSelecionado] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const file = typeof searchParams.file === 'string' ? searchParams.file : ''
-  const orgao = typeof searchParams.orgao === 'string' ? searchParams.orgao : ''
-  const status =
-    typeof searchParams.status === 'string' ? searchParams.status : ''
-  const loteId =
-    typeof searchParams.loteId === 'string' ? searchParams.loteId : ''
+  useEffect(() => {
+    async function fetchLotes() {
+      try {
+        const res = await fetch('/api/lotes/with-status')
+        const data = await res.json()
+        setLotesComStatus(data)
+      } catch {
+        toast.error('Erro ao buscar lotes')
+      }
+    }
+
+    fetchLotes()
+  }, [])
 
   useEffect(() => {
+    if (!loteSelecionado) return
+
     startTransition(() => {
       async function fetchDocs() {
         try {
-          const query = new URLSearchParams()
-          if (file) query.append('file', file)
-          if (orgao) query.append('orgao', orgao)
-          if (status) query.append('status', status)
-          if (loteId) query.append('loteId', loteId)
-
           const res = await fetch(
-            `/api/documentos?role=${role}&userId=${userId}&${query.toString()}`,
+            `/api/document?role=${role}&userId=${userId}&loteId=${loteSelecionado}`,
           )
           const data = await res.json()
           setDocumentos(data)
-        } catch (err) {
+        } catch {
           toast.error('Erro ao carregar documentos')
         }
       }
       fetchDocs()
     })
-  }, [file, orgao, status, loteId])
-
-  // Agrupa documentos por lote
-  type DocumentoComLote = {
-    id: string
-    orgao: string
-    status: string
-    fileUrl: string
-    updatedAt: string
-    user?: { name: string }
-    lote?: {
-      id: string
-      nome: string
-      inicio: string
-      fim: string
-    } | null
-  }
+  }, [loteSelecionado])
 
   const documentosPorLote = documentos.reduce<
     Record<string, { lote: DocumentoComLote['lote']; docs: DocumentoComLote[] }>
@@ -85,78 +92,107 @@ export default function DocumentosContent({
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
         {role !== 'white-label' && <NovoDocumentoModal userId={userId} />}
-        <FiltroDocumentoModal
-          defaultFile={file}
-          defaultOrgao={orgao}
-          defaultStatus={status}
-        />
+        <FiltroDocumentoModal defaultFile="" defaultOrgao="" defaultStatus="" />
       </div>
 
-      <div className="space-y-8">
-        {Object.entries(documentosPorLote).map(
-          ([loteId, grupo]: [string, { lote: any; docs: any[] }]) => (
-            <div key={loteId}>
-              {/* Cabeçalho do Lote */}
-              <div className="mb-2">
-                <h2 className="text-lg font-semibold text-zinc-700">
-                  {grupo.lote?.nome || 'Documentos sem lote'}
-                </h2>
-                {grupo.lote && (
-                  <p className="text-sm text-zinc-500">
-                    {new Date(grupo.lote.inicio).toLocaleDateString('pt-BR')}{' '}
-                    até {new Date(grupo.lote.fim).toLocaleDateString('pt-BR')}
-                  </p>
-                )}
+      {!loteSelecionado && role === 'master' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {lotesComStatus.map((lote) => (
+            <div
+              key={lote.id}
+              className="border rounded-xl p-4 bg-white shadow hover:bg-zinc-50 transition"
+            >
+              <div className="font-semibold">{lote.nome}</div>
+              <div className="text-sm text-zinc-500">
+                {new Date(lote.inicio).toLocaleDateString('pt-BR')} até{' '}
+                {new Date(lote.fim).toLocaleDateString('pt-BR')}
               </div>
+              <div className="text-xs mt-1">
+                Status: <strong>{lote.status}</strong>
+              </div>
+              <button
+                className="mt-2 text-sm text-[#9C66FF] hover:underline"
+                onClick={() => setLoteSelecionado(lote.id)}
+              >
+                Ver documentos
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
-              {/* Tabela */}
-              <table className="w-full bg-white border text-sm rounded-xl overflow-hidden shadow">
-                <thead className="bg-zinc-100 text-left">
-                  <tr>
-                    <th className="p-4">Arquivo</th>
-                    <th className="p-4">Órgão</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Usuário</th>
-                    <th className="p-4">Última atualização</th>
-                    {role === 'master' || role === 'admin' ? (
-                      <th className="p-4 text-right">Ações</th>
-                    ) : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {grupo.docs.map((doc) => (
-                    <tr key={doc.id} className="border-t">
-                      <td className="p-4">
-                        <PreviewDocumentoModal fileUrl={doc.fileUrl} />
-                      </td>
-                      <td className="p-4">{doc.orgao}</td>
-                      <td className="p-4">
-                        {role === 'master' || role === 'admin' ? (
-                          <SelectStatusDocumento
-                            id={doc.id}
-                            status={doc.status}
-                          />
-                        ) : (
-                          <span>{doc.status}</span>
-                        )}
-                      </td>
-                      <td className="p-4">{doc.user?.name ?? '—'}</td>
-                      <td className="p-4">
-                        {new Date(doc.updatedAt).toLocaleDateString('pt-BR')}
-                      </td>
+      {loteSelecionado && (
+        <>
+          <button
+            className="text-sm text-[#9C66FF] hover:underline mb-2"
+            onClick={() => setLoteSelecionado(null)}
+          >
+            ← Voltar para lista de lotes
+          </button>
+
+          <div className="space-y-8">
+            {Object.entries(documentosPorLote).map(([loteId, grupo]) => (
+              <div key={loteId}>
+                <div className="mb-2">
+                  <h2 className="text-lg font-semibold text-zinc-700">
+                    {grupo.lote?.nome || 'Documentos sem lote'}
+                  </h2>
+                  {grupo.lote && (
+                    <p className="text-sm text-zinc-500">
+                      {new Date(grupo.lote.inicio).toLocaleDateString('pt-BR')}{' '}
+                      até {new Date(grupo.lote.fim).toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
+                </div>
+
+                <table className="w-full bg-white border text-sm rounded-xl overflow-hidden shadow">
+                  <thead className="bg-zinc-100 text-left">
+                    <tr>
+                      <th className="p-4">Arquivo</th>
+                      <th className="p-4">Órgão</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Usuário</th>
+                      <th className="p-4">Última atualização</th>
                       {role === 'master' || role === 'admin' ? (
-                        <td className="p-4 text-right">
-                          <ExcluirDocumentoButton id={doc.id} />
-                        </td>
+                        <th className="p-4 text-right">Ações</th>
                       ) : null}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ),
-        )}
-      </div>
+                  </thead>
+                  <tbody>
+                    {grupo.docs.map((doc) => (
+                      <tr key={doc.id} className="border-t">
+                        <td className="p-4">
+                          <PreviewDocumentoModal fileUrl={doc.fileUrl} />
+                        </td>
+                        <td className="p-4">{doc.orgao}</td>
+                        <td className="p-4">
+                          {role === 'master' || role === 'admin' ? (
+                            <SelectStatusDocumento
+                              id={doc.id}
+                              status={doc.status}
+                            />
+                          ) : (
+                            <span>{doc.status}</span>
+                          )}
+                        </td>
+                        <td className="p-4">{doc.user?.name ?? '—'}</td>
+                        <td className="p-4">
+                          {new Date(doc.updatedAt).toLocaleDateString('pt-BR')}
+                        </td>
+                        {role === 'master' || role === 'admin' ? (
+                          <td className="p-4 text-right">
+                            <ExcluirDocumentoButton id={doc.id} />
+                          </td>
+                        ) : null}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

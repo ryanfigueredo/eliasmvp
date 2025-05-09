@@ -37,7 +37,7 @@ export default function DocumentosClienteModal({
   }, [open, clienteId])
 
   const fetchDocumentos = async () => {
-    const res = await fetch(`/api/cliente/${clienteId}/documentos`)
+    const res = await fetch(`/api/cliente/${clienteId}/document`)
     if (res.ok) {
       const data = await res.json()
       setDocumentos(data)
@@ -69,7 +69,7 @@ export default function DocumentosClienteModal({
     formData.append('file', arquivo)
 
     startTransition(async () => {
-      const res = await fetch(`/api/cliente/${clienteId}/documentos`, {
+      const res = await fetch(`/api/cliente/${clienteId}/document`, {
         method: 'POST',
         body: formData,
       })

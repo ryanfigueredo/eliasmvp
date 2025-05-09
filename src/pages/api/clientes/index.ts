@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
 import { readFile, writeFile } from 'fs/promises'
 import { IncomingForm } from 'formidable'
+import { DocumentoStatus, Orgao } from '@prisma/client'
 
 export const config = {
   api: { bodyParser: false },
@@ -59,13 +60,10 @@ export default async function handler(
         ?.replace(/[^\d,.-]/g, '')
         .replace(',', '.')
       const valor = parseFloat(rawValor || '0')
-
-      if (isNaN(valor)) {
-        return res.status(400).json({ message: 'Valor inválido.' })
-      }
       const responsavelId = fields.responsavelId?.toString()
+      const loteId = fields.loteId?.toString()
 
-      if (!nome || !cpfCnpj || !responsavelId) {
+      if (!nome || !cpfCnpj || !responsavelId || !loteId) {
         return res
           .status(400)
           .json({ message: 'Campos obrigatórios ausentes.' })
@@ -102,16 +100,44 @@ export default async function handler(
 
         const docs = []
 
+        let consultaFileUrl = ''
+
         if (files.rg) docs.push(await salvarDoc(files.rg[0] || files.rg, 'RG'))
         if (files.cnh)
           docs.push(await salvarDoc(files.cnh[0] || files.cnh, 'CNH'))
-        if (files.contrato)
+
+        if (files.consulta) {
+          const consulta = await salvarDoc(
+            files.consulta[0] || files.consulta,
+            'CONSULTA',
+          )
+          docs.push(consulta)
+          consultaFileUrl = consulta.fileUrl
+        }
+
+        if (files.contrato) {
           docs.push(
             await salvarDoc(files.contrato[0] || files.contrato, 'CONTRATO'),
           )
+        }
 
-        if (docs.length > 0)
+        if (docs.length > 0) {
           await prisma.documentoCliente.createMany({ data: docs })
+
+          // Cria também os registros na tabela Document para exibir no painel
+          for (const doc of docs) {
+            await prisma.document.create({
+              data: {
+                userId: responsavelId,
+                clienteId: doc.clienteId,
+                fileUrl: doc.fileUrl,
+                loteId,
+                status: DocumentoStatus.INICIADO,
+                orgao: Orgao.SERASA,
+              },
+            })
+          }
+        }
 
         return res.status(201).json({ message: 'Cliente criado com sucesso.' })
       } catch (error) {
