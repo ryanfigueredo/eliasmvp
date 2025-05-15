@@ -7,6 +7,7 @@ import ExcluirDocumentoButton from './ExcluirDocumentoButton'
 import NovoDocumentoModal from './NovoDocumentoModal'
 import SelectStatusDocumento from './SelectStatusDocumento'
 import FiltroDocumentoModal from './FiltroDocumentoModal'
+import StatusFarol from './StatusFarol'
 import { DocumentoStatus } from '@prisma/client'
 
 interface Props {
@@ -73,12 +74,6 @@ export default function DocumentosContent({
     })
   }, [loteSelecionado])
 
-  const statusClass = {
-    INICIADO: 'bg-yellow-100 text-yellow-800',
-    EM_ANDAMENTO: 'bg-blue-100 text-blue-800',
-    FINALIZADO: 'bg-green-100 text-green-800',
-  }
-
   const documentosPorLote = documentos.reduce<
     Record<string, { lote: DocumentoComLote['lote']; docs: DocumentoComLote[] }>
   >((acc, doc) => {
@@ -118,16 +113,7 @@ export default function DocumentosContent({
                   {new Date(lote.fim).toLocaleDateString('pt-BR')}
                 </td>
                 <td className="p-4">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      statusClass[lote.status as keyof typeof statusClass] ||
-                      'text-zinc-500'
-                    }`}
-                  >
-                    {lote.status === 'SEM_DOCUMENTOS'
-                      ? 'Sem documentos'
-                      : lote.status.replace('_', ' ').toLowerCase()}
-                  </span>
+                  <StatusFarol status={lote.status as any} />
                 </td>
                 <td className="p-4">
                   <button
@@ -194,13 +180,7 @@ export default function DocumentosContent({
                               status={doc.status}
                             />
                           ) : (
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                statusClass[doc.status]
-                              }`}
-                            >
-                              {doc.status.replace('_', ' ').toLowerCase()}
-                            </span>
+                            <StatusFarol status={doc.status} />
                           )}
                         </td>
                         <td className="p-4">{doc.user?.name ?? '—'}</td>

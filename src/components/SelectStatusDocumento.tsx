@@ -35,7 +35,7 @@ export default function SelectStatusDocumento({
       defaultValue={status}
       onChange={handleChange}
       disabled={isPending}
-      className="border rounded px-2 py-1 text-sm bg-white"
+      className="border border-gray-300 bg-white text-xs font-semibold text-gray-800 px-2 py-1 rounded-full shadow-sm focus:ring-2 focus:ring-[#9C66FF] focus:outline-none"
     >
       <option value="INICIADO">Iniciado</option>
       <option value="EM_ANDAMENTO">Em andamento</option>
