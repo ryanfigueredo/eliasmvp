@@ -8,6 +8,7 @@ import { SidebarContent } from '@/components/SidebarContent'
 import { Button } from '@/components/ui/button'
 import ConfigUsuarioModal from '@/components/ConfigUsuarioModal'
 import { LogOut } from 'lucide-react'
+import Image from 'next/image'
 
 export default async function PrivateLayout({
   children,
@@ -32,7 +33,13 @@ export default async function PrivateLayout({
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r flex flex-col justify-between py-6 px-4">
         <div>
-          <h2 className="text-xl font-bold text-[#9C66FF] mb-6 px-2">Painel</h2>
+          <Image
+            src={'/logo.jpeg'}
+            alt="Logo"
+            width={150}
+            height={100}
+            className="mb-6"
+          />
           {session.user && <SidebarContent role={session.user.role as any} />}
         </div>
 

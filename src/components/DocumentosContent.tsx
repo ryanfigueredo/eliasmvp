@@ -10,6 +10,7 @@ import FiltroDocumentoModal from './FiltroDocumentoModal'
 import StatusFarol from './StatusFarol'
 import { DocumentoStatus } from '@prisma/client'
 import NovoLoteModal from './NovoLoteModal'
+import { Button } from './ui/button'
 
 interface Props {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -122,12 +123,12 @@ export default function DocumentosContent({
                   <StatusFarol status={lote.status as any} />
                 </td>
                 <td className="p-4">
-                  <button
-                    className="text-[#9C66FF] hover:underline text-sm"
+                  <Button
+                    className="bg-[#9C66FF] hover:bg-[#8450e6] text-white text-sm"
                     onClick={() => setLoteSelecionado(lote.id)}
                   >
                     Ver documentos
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -137,12 +138,12 @@ export default function DocumentosContent({
 
       {loteSelecionado && (
         <>
-          <button
-            className="text-sm text-[#9C66FF] hover:underline mb-2"
+          <Button
+            className="bg-[#9C66FF] hover:bg-[#8450e6] text-white text-sm"
             onClick={() => setLoteSelecionado(null)}
           >
             ← Voltar para lista de lotes
-          </button>
+          </Button>
 
           <div className="space-y-8">
             {Object.entries(documentosPorLote).map(([loteId, grupo]) => (

@@ -1,3 +1,4 @@
+// components/NovoLoteModal.tsx
 'use client'
 
 import {
@@ -15,17 +16,16 @@ import { useState, useTransition } from 'react'
 
 export default function NovoLoteModal() {
   const [open, setOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
-
   const [nome, setNome] = useState('')
   const [inicio, setInicio] = useState('')
   const [fim, setFim] = useState('')
+  const [isPending, startTransition] = useTransition()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
     if (!nome || !inicio || !fim) {
-      return toast.error('Preencha todos os campos.')
+      return toast.error('Preencha todos os campos obrigatórios.')
     }
 
     startTransition(async () => {
@@ -60,7 +60,9 @@ export default function NovoLoteModal() {
 
       <DialogContent className="max-w-md bg-white border rounded-xl shadow-xl px-6 py-6">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold">Novo Lote</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">
+            Criar Novo Lote
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -69,24 +71,16 @@ export default function NovoLoteModal() {
             value={nome}
             onChange={(e) => setNome(e.target.value)}
           />
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Data de Início</label>
-            <Input
-              type="date"
-              value={inicio}
-              onChange={(e) => setInicio(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Data de Fim</label>
-            <Input
-              type="date"
-              value={fim}
-              onChange={(e) => setFim(e.target.value)}
-            />
-          </div>
+          <Input
+            type="date"
+            value={inicio}
+            onChange={(e) => setInicio(e.target.value)}
+          />
+          <Input
+            type="date"
+            value={fim}
+            onChange={(e) => setFim(e.target.value)}
+          />
 
           <div className="flex justify-end gap-2 pt-2">
             <DialogClose asChild>
@@ -95,7 +89,7 @@ export default function NovoLoteModal() {
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Criando...' : 'Criar'}
+              {isPending ? 'Criando...' : 'Criar Lote'}
             </Button>
           </div>
         </form>

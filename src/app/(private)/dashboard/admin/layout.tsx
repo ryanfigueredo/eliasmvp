@@ -29,7 +29,7 @@ export default async function MasterLayout({
       <aside className="w-64 bg-white border-r flex flex-col justify-between py-6 px-4">
         <div>
           <h2 className="text-xl font-bold text-[#9C66FF] mb-6 px-2">
-            Painel Master
+            Acesso Master
           </h2>
           <SidebarContent role="admin" />
         </div>
