@@ -1,4 +1,3 @@
-// components/DocumentosContent.tsx
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
@@ -10,6 +9,7 @@ import SelectStatusDocumento from './SelectStatusDocumento'
 import FiltroDocumentoModal from './FiltroDocumentoModal'
 import StatusFarol from './StatusFarol'
 import { DocumentoStatus } from '@prisma/client'
+import NovoLoteModal from './NovoLoteModal'
 
 interface Props {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -91,7 +91,12 @@ export default function DocumentosContent({
       <h1 className="text-2xl font-bold">Documentos</h1>
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
-        {role !== 'white-label' && <NovoDocumentoModal userId={userId} />}
+        {role !== 'white-label' && (
+          <>
+            <NovoDocumentoModal userId={userId} />
+            <NovoLoteModal />
+          </>
+        )}
         <FiltroDocumentoModal defaultFile="" defaultOrgao="" defaultStatus="" />
       </div>
 
