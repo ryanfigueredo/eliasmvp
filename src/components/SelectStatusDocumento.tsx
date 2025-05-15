@@ -1,7 +1,14 @@
+// components/SelectStatusDocumento.tsx
 'use client'
 
 import { useTransition } from 'react'
 import { toast } from 'sonner'
+
+const statusOptions = [
+  { value: 'INICIADO', label: 'Iniciado', color: 'bg-yellow-400' },
+  { value: 'EM_ANDAMENTO', label: 'Em andamento', color: 'bg-blue-400' },
+  { value: 'FINALIZADO', label: 'Finalizado', color: 'bg-green-400' },
+]
 
 export default function SelectStatusDocumento({
   id,
@@ -31,15 +38,26 @@ export default function SelectStatusDocumento({
   }
 
   return (
-    <select
-      defaultValue={status}
-      onChange={handleChange}
-      disabled={isPending}
-      className="border border-gray-300 bg-white text-xs font-semibold text-gray-800 px-2 py-1 rounded-full shadow-sm focus:ring-2 focus:ring-[#9C66FF] focus:outline-none"
-    >
-      <option value="INICIADO">Iniciado</option>
-      <option value="EM_ANDAMENTO">Em andamento</option>
-      <option value="FINALIZADO">Finalizado</option>
-    </select>
+    <div className="relative">
+      <select
+        defaultValue={status}
+        onChange={handleChange}
+        disabled={isPending}
+        className="border rounded px-8 py-1 text-sm bg-white appearance-none"
+        style={{ backgroundPosition: 'right 0.5rem center' }}
+      >
+        {statusOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {/* Farol de cor ao lado do select */}
+      <span
+        className={`absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full ${
+          statusOptions.find((s) => s.value === status)?.color ?? 'bg-gray-400'
+        }`}
+      />
+    </div>
   )
 }
