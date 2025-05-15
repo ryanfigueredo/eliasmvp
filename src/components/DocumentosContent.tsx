@@ -98,7 +98,12 @@ export default function DocumentosContent({
             <NovoLoteModal />
           </>
         )}
-        <FiltroDocumentoModal defaultFile="" defaultOrgao="" defaultStatus="" />
+        <FiltroDocumentoModal
+          role={role}
+          defaultFile=""
+          defaultOrgao=""
+          defaultStatus=""
+        />
       </div>
 
       {!loteSelecionado && role === 'master' && (

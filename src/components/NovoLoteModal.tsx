@@ -28,6 +28,10 @@ export default function NovoLoteModal() {
       return toast.error('Preencha todos os campos obrigatórios.')
     }
 
+    if (new Date(inicio) > new Date(fim)) {
+      return toast.error('A data final não pode ser anterior à inicial.')
+    }
+
     startTransition(async () => {
       try {
         const res = await fetch('/api/lotes', {
@@ -39,6 +43,9 @@ export default function NovoLoteModal() {
         if (res.ok) {
           toast.success('Lote criado com sucesso!')
           setOpen(false)
+          setNome('')
+          setInicio('')
+          setFim('')
           window.location.reload()
         } else {
           toast.error('Erro ao criar lote.')
@@ -70,19 +77,28 @@ export default function NovoLoteModal() {
             placeholder="Nome do lote"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
+            required
           />
-          <Input
-            type="date"
-            value={inicio}
-            onChange={(e) => setInicio(e.target.value)}
-          />
-          <Input
-            type="date"
-            value={fim}
-            onChange={(e) => setFim(e.target.value)}
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Data de início</label>
+            <Input
+              type="date"
+              value={inicio}
+              onChange={(e) => setInicio(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Data de término</label>
+            <Input
+              type="date"
+              value={fim}
+              onChange={(e) => setFim(e.target.value)}
+              required
+            />
+          </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-4">
             <DialogClose asChild>
               <Button type="button" variant="outline">
                 Cancelar

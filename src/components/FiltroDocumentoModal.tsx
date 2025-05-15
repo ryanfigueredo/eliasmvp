@@ -1,3 +1,4 @@
+// components/FiltroDocumentoModal.tsx
 'use client'
 
 import {
@@ -13,19 +14,25 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Filter } from 'lucide-react'
 
-export default function FiltroDocumentoModal({
-  defaultOrgao = '',
-  defaultStatus = '',
-  defaultFile = '',
-}: {
+interface FiltroDocumentoModalProps {
+  role: string
   defaultOrgao?: string
   defaultStatus?: string
   defaultFile?: string
-}) {
+}
+
+export default function FiltroDocumentoModal({
+  role,
+  defaultOrgao = '',
+  defaultStatus = '',
+  defaultFile = '',
+}: FiltroDocumentoModalProps) {
   const [orgao, setOrgao] = useState(defaultOrgao)
   const [status, setStatus] = useState(defaultStatus)
   const [file, setFile] = useState(defaultFile)
   const router = useRouter()
+
+  if (role !== 'master' && role !== 'admin') return null
 
   const handleSubmit = () => {
     const params = new URLSearchParams()

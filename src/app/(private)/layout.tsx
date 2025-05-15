@@ -36,7 +36,7 @@ export default async function PrivateLayout({
           <Image
             src={'/logo.jpeg'}
             alt="Logo"
-            width={150}
+            width={80}
             height={100}
             className="mb-6"
           />
