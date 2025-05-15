@@ -11,6 +11,7 @@ import StatusFarol from './StatusFarol'
 import { DocumentoStatus } from '@prisma/client'
 import NovoLoteModal from './NovoLoteModal'
 import { Button } from './ui/button'
+import EditarLoteModal from './EditarLoteModal'
 
 interface Props {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -114,6 +115,7 @@ export default function DocumentosContent({
               <th className="p-4 text-left">Período</th>
               <th className="p-4 text-left">Status</th>
               <th className="p-4 text-left">Ação</th>
+              <th className="p-4 text-left"></th>
             </tr>
           </thead>
           <tbody>
@@ -134,6 +136,14 @@ export default function DocumentosContent({
                   >
                     Ver documentos
                   </Button>
+                </td>
+                <td>
+                  <EditarLoteModal
+                    loteId={lote.id}
+                    nomeAtual={lote.nome}
+                    inicioAtual={lote.inicio}
+                    fimAtual={lote.fim}
+                  />
                 </td>
               </tr>
             ))}
