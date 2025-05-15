@@ -18,9 +18,9 @@ export default function PreviewDocumentoModal({
 }) {
   const [open, setOpen] = useState(false)
   const [signedUrl, setSignedUrl] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
 
   const supportedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.webp']
-
   const fileExtension = fileUrl.split('.').pop()?.toLowerCase() || ''
   const isSupported = supportedExtensions.some((ext) =>
     fileUrl.toLowerCase().endsWith(ext),
@@ -30,6 +30,7 @@ export default function PreviewDocumentoModal({
     if (open) {
       const fetchUrl = async () => {
         try {
+          setLoading(true)
           const key = fileUrl.startsWith('http')
             ? fileUrl.replace(/^https?:\/\/[^\/]+\/+/i, '')
             : fileUrl
@@ -41,6 +42,8 @@ export default function PreviewDocumentoModal({
           setSignedUrl(data.url)
         } catch (error) {
           console.error(error)
+        } finally {
+          setLoading(false)
         }
       }
 
@@ -67,7 +70,12 @@ export default function PreviewDocumentoModal({
         </DialogHeader>
 
         <div className="flex-1 w-full h-full overflow-hidden">
-          {signedUrl ? (
+          {loading ? (
+            // ⭐️ Loader bonito
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-pulse rounded-xl bg-zinc-200 w-32 h-32" />
+            </div>
+          ) : signedUrl ? (
             isSupported ? (
               <iframe
                 src={signedUrl}
@@ -90,7 +98,7 @@ export default function PreviewDocumentoModal({
             )
           ) : (
             <div className="flex items-center justify-center h-full text-sm text-zinc-500">
-              Carregando...
+              Nenhum documento disponível.
             </div>
           )}
         </div>

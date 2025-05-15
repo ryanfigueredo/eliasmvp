@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Elias Document Manager - README
 
-## Getting Started
+## Visão Geral
 
-First, run the development server:
+Elias Document Manager é um sistema de gestão de documentos em lote para empresas que precisam armazenar, consultar e auditar documentos com segurança. O sistema utiliza autenticação com NextAuth, banco de dados PostgreSQL via Prisma, e armazenamento seguro de arquivos na AWS S3.
+
+## Tecnologias Utilizadas
+
+- Next.js 14 + App Router
+- TypeScript
+- Tailwind CSS + Shadcn UI
+- Prisma ORM
+- PostgreSQL (Supabase / Neon ou local)
+- AWS S3 para armazenamento seguro de arquivos
+- NextAuth para autenticação e gestão de sessões
+
+## Recursos do Sistema
+
+- Cadastro de usuários com roles: `master`, `admin`, `consultor`, `white-label`
+- Cadastro de lotes de documentos
+- Upload de documentos com envio direto para AWS S3
+- Visualização segura com Signed URLs temporários (não expõe URLs públicas)
+- Consulta de documentos por lote
+- Gerenciamento de documentos por orgão e status (`INICIADO`, `EM_ANDAMENTO`, `FINALIZADO`)
+- Log de ações importantes (uploads, exclusões, alterações)
+- Sistema responsivo, otimizado para desktop e mobile
+
+## Instalação Local
+
+1. Clone o repositório:
+
+```bash
+git clone https://github.com/seu-usuario/elias-document-manager.git
+cd elias-document-manager
+```
+
+2. Crie o arquivo `.env` baseado em `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+3. Preencha variáveis de ambiente:
+
+- NEXTAUTH_SECRET
+- NEXTAUTH_URL
+- DATABASE_URL
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_REGION
+- AWS_S3_BUCKET
+
+4. Instale dependências:
+
+```bash
+npm install
+```
+
+5. Rode as migrações do Prisma:
+
+```bash
+npx prisma migrate dev
+```
+
+6. Inicie o projeto:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Comandos úteis
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx prisma studio         # Interface visual do banco de dados
+npx prisma migrate dev    # Executa migrações
+npm run build             # Build para produção
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy
 
-## Learn More
+- Recomendado para Vercel (integração nativa com Next.js)
+- Configurar variáveis de ambiente no painel da Vercel
+- Garantir que o bucket da AWS S3 tenha políticas corretas (sem público)
 
-To learn more about Next.js, take a look at the following resources:
+## Considerações de Segurança
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Todos arquivos são privados no S3
+- Visualização só através de URLs temporárias geradas pelo backend
+- Autenticação JWT para proteger APIs privadas
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Roadmap Futuro (Versão 2.0)
 
-## Deploy on Vercel
+- Dashboard analítico para `master`
+- Exportação em CSV / PDF
+- Sistema de Notificações
+- Opção de escolha de orgão dinâmico no cadastro
+- Melhorias no design e UX geral
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Contato
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Desenvolvido por Ryan Figueredo - DMTN Sistemas
+
+LinkedIn: [https://www.linkedin.com/in/ryanfig/](https://www.linkedin.com/in/ryanfig/)
+GitHub: [https://github.com/ryanfigueredo](https://github.com/ryanfigueredo)
