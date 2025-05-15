@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
-import path from 'path'
-import { readFile, writeFile } from 'fs/promises'
 import { IncomingForm } from 'formidable'
 import { DocumentoStatus, Orgao } from '@prisma/client'
+import { uploadToS3 } from '@/lib/s3'
+import { readFile } from 'fs/promises'
 
 export const config = {
   api: { bodyParser: false },
@@ -41,7 +41,7 @@ export default async function handler(
   if (req.method === 'POST') {
     const form = new IncomingForm({
       multiples: true,
-      uploadDir: '/tmp',
+      maxFileSize: 20 * 1024 * 1024,
       keepExtensions: true,
     })
 
@@ -70,42 +70,47 @@ export default async function handler(
       }
 
       try {
-        const cliente = await prisma.cliente.create({
-          data: { nome, cpfCnpj, valor, userId: responsavelId },
+        // 👇 Verifica se já existe cliente com mesmo CPF
+        let cliente = await prisma.cliente.findUnique({
+          where: { cpfCnpj },
         })
 
-        await prisma.log.create({
-          data: {
-            userId: responsavelId,
-            acao: 'CADASTRO DE CLIENTE',
-            detalhes: `Cadastrou o cliente "${nome}" com CPF/CNPJ ${cpfCnpj} no valor de R$${valor}`,
-          },
-        })
+        if (!cliente) {
+          cliente = await prisma.cliente.create({
+            data: { nome, cpfCnpj, valor, userId: responsavelId },
+          })
+
+          await prisma.log.create({
+            data: {
+              userId: responsavelId,
+              acao: 'CADASTRO DE CLIENTE',
+              detalhes: `Cadastrou o cliente "${nome}" com CPF/CNPJ ${cpfCnpj} no valor de R$${valor}`,
+            },
+          })
+        }
 
         const salvarDoc = async (file: any, tipo: string) => {
-          const filename = `${Date.now()}-${file.originalFilename}`
-          const uploadPath = path.join(
-            process.cwd(),
-            'public/uploads',
-            filename,
-          )
-          const data = await readFile(file.filepath)
-          await writeFile(uploadPath, data)
+          const fileBuffer = await readFile(file.filepath)
+          const fileName = `documentos/${Date.now()}-${file.originalFilename}`
+          const fileUrl = await uploadToS3({
+            fileBuffer,
+            fileName,
+            contentType: file.mimetype ?? 'application/octet-stream',
+          })
+
           return {
-            clienteId: cliente.id,
+            clienteId: cliente!.id,
             tipo,
-            fileUrl: `/uploads/${filename}`,
+            fileUrl,
           }
         }
 
         const docs = []
-
         let consultaFileUrl = ''
 
         if (files.rg) docs.push(await salvarDoc(files.rg[0] || files.rg, 'RG'))
         if (files.cnh)
           docs.push(await salvarDoc(files.cnh[0] || files.cnh, 'CNH'))
-
         if (files.consulta) {
           const consulta = await salvarDoc(
             files.consulta[0] || files.consulta,
@@ -114,17 +119,15 @@ export default async function handler(
           docs.push(consulta)
           consultaFileUrl = consulta.fileUrl
         }
-
-        if (files.contrato) {
+        if (files.contrato)
           docs.push(
             await salvarDoc(files.contrato[0] || files.contrato, 'CONTRATO'),
           )
-        }
 
         if (docs.length > 0) {
           await prisma.documentoCliente.createMany({ data: docs })
 
-          // Cria também os registros na tabela Document para exibir no painel
+          // também criar na tabela Document para exibir no painel
           for (const doc of docs) {
             await prisma.document.create({
               data: {

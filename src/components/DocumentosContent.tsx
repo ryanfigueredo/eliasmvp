@@ -52,13 +52,11 @@ export default function DocumentosContent({
         toast.error('Erro ao buscar lotes')
       }
     }
-
     fetchLotes()
   }, [])
 
   useEffect(() => {
     if (!loteSelecionado) return
-
     startTransition(() => {
       async function fetchDocs() {
         try {
@@ -74,6 +72,12 @@ export default function DocumentosContent({
       fetchDocs()
     })
   }, [loteSelecionado])
+
+  const statusClass = {
+    INICIADO: 'bg-yellow-100 text-yellow-800',
+    EM_ANDAMENTO: 'bg-blue-100 text-blue-800',
+    FINALIZADO: 'bg-green-100 text-green-800',
+  }
 
   const documentosPorLote = documentos.reduce<
     Record<string, { lote: DocumentoComLote['lote']; docs: DocumentoComLote[] }>
@@ -96,29 +100,47 @@ export default function DocumentosContent({
       </div>
 
       {!loteSelecionado && role === 'master' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {lotesComStatus.map((lote) => (
-            <div
-              key={lote.id}
-              className="border rounded-xl p-4 bg-white shadow hover:bg-zinc-50 transition"
-            >
-              <div className="font-semibold">{lote.nome}</div>
-              <div className="text-sm text-zinc-500">
-                {new Date(lote.inicio).toLocaleDateString('pt-BR')} até{' '}
-                {new Date(lote.fim).toLocaleDateString('pt-BR')}
-              </div>
-              <div className="text-xs mt-1">
-                Status: <strong>{lote.status}</strong>
-              </div>
-              <button
-                className="mt-2 text-sm text-[#9C66FF] hover:underline"
-                onClick={() => setLoteSelecionado(lote.id)}
-              >
-                Ver documentos
-              </button>
-            </div>
-          ))}
-        </div>
+        <table className="w-full text-sm mt-4 bg-white border rounded-xl overflow-hidden shadow">
+          <thead className="bg-zinc-100">
+            <tr>
+              <th className="p-4 text-left">Lote</th>
+              <th className="p-4 text-left">Período</th>
+              <th className="p-4 text-left">Status</th>
+              <th className="p-4 text-left">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lotesComStatus.map((lote) => (
+              <tr key={lote.id} className="border-t">
+                <td className="p-4 font-semibold">{lote.nome}</td>
+                <td className="p-4">
+                  {new Date(lote.inicio).toLocaleDateString('pt-BR')} até{' '}
+                  {new Date(lote.fim).toLocaleDateString('pt-BR')}
+                </td>
+                <td className="p-4">
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      statusClass[lote.status as keyof typeof statusClass] ||
+                      'text-zinc-500'
+                    }`}
+                  >
+                    {lote.status === 'SEM_DOCUMENTOS'
+                      ? 'Sem documentos'
+                      : lote.status.replace('_', ' ').toLowerCase()}
+                  </span>
+                </td>
+                <td className="p-4">
+                  <button
+                    className="text-[#9C66FF] hover:underline text-sm"
+                    onClick={() => setLoteSelecionado(lote.id)}
+                  >
+                    Ver documentos
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
       {loteSelecionado && (
@@ -172,7 +194,13 @@ export default function DocumentosContent({
                               status={doc.status}
                             />
                           ) : (
-                            <span>{doc.status}</span>
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${
+                                statusClass[doc.status]
+                              }`}
+                            >
+                              {doc.status.replace('_', ' ').toLowerCase()}
+                            </span>
                           )}
                         </td>
                         <td className="p-4">{doc.user?.name ?? '—'}</td>

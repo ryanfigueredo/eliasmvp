@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useEffect, useState, useTransition } from 'react'
-import { User, Lote } from '@prisma/client'
+import { Lote } from '@prisma/client'
 import { useCpfCnpjMask } from '@/hooks/useCpfCnpjMask'
 import { formatCurrency } from '@/hooks/useCurrencyMask'
 
@@ -27,7 +27,6 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
   const [rg, setRg] = useState<File | null>(null)
   const [consulta, setConsulta] = useState<File | null>(null)
   const [contrato, setContrato] = useState<File | null>(null)
-  const [adicional, setAdicional] = useState<File | null>(null)
   const [loteId, setLoteId] = useState('')
   const [lotes, setLotes] = useState<Lote[]>([])
 
@@ -47,13 +46,12 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
     const formData = new FormData()
     formData.append('nome', nome)
     formData.append('cpfCnpj', cpfCnpj.replace(/\D/g, ''))
-    formData.append('valor', valor)
+    formData.append('valor', valor.replace(/[^\d,.-]/g, '').replace(',', '.'))
     formData.append('responsavelId', userId)
     formData.append('loteId', loteId)
     if (rg) formData.append('rg', rg)
     if (consulta) formData.append('consulta', consulta)
     if (contrato) formData.append('contrato', contrato)
-    if (adicional) formData.append('adicional', adicional)
 
     startTransition(async () => {
       try {
@@ -63,11 +61,12 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
         })
 
         if (res.ok) {
-          toast.success('Documento enviado com sucesso!')
+          toast.success('Cliente/documento criado com sucesso!')
           setOpen(false)
           window.location.reload()
         } else {
-          toast.error('Erro ao enviar documento.')
+          const data = await res.json()
+          toast.error(data.message ?? 'Erro ao enviar documento.')
         }
       } catch (error) {
         console.error(error)
@@ -106,7 +105,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
             type="text"
             placeholder="Valor"
             value={valor}
-            onChange={(e) => setValor(formatCurrency(e.target.value))}
+            onChange={(e) => setValor(e.target.value)}
           />
 
           <div className="space-y-1">
@@ -127,38 +126,26 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Documento do cliente: RG/CNH
-            </label>
+            <label className="text-sm font-medium">Documento: RG</label>
             <Input
               type="file"
-              onChange={(e) => setRg(e.target.files?.[0] || null)}
+              onChange={(e) => setRg(e.target.files?.[0] ?? null)}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Consulta</label>
+            <label className="text-sm font-medium">Documento: Consulta</label>
             <Input
               type="file"
-              onChange={(e) => setConsulta(e.target.files?.[0] || null)}
+              onChange={(e) => setConsulta(e.target.files?.[0] ?? null)}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Contrato</label>
+            <label className="text-sm font-medium">Documento: Contrato</label>
             <Input
               type="file"
-              onChange={(e) => setContrato(e.target.files?.[0] || null)}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Documento Adicional (opcional)
-            </label>
-            <Input
-              type="file"
-              onChange={(e) => setAdicional(e.target.files?.[0] || null)}
+              onChange={(e) => setContrato(e.target.files?.[0] ?? null)}
             />
           </div>
 
@@ -169,7 +156,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Criando...' : 'Criar'}
+              {isPending ? 'Enviando...' : 'Criar'}
             </Button>
           </div>
         </form>
