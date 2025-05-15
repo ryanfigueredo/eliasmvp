@@ -3,6 +3,7 @@ import { DefaultSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import DashboardStats from '@/components/DashboardStats'
 
 declare module 'next-auth' {
   interface Session {
@@ -68,6 +69,8 @@ export default async function MasterDashboardPage() {
           <p className="text-sm text-gray-500">White Labels</p>
           <h2 className="text-xl font-semibold">{whiteLabels}</h2>
         </div>
+
+        <DashboardStats role={session.user.role} userId={session.user.id} />
       </div>
     </div>
   )
