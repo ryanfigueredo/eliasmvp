@@ -18,32 +18,39 @@ type Cliente = {
 
 interface ClientesContentProps {
   searchParams: { [key: string]: string | string[] | undefined }
-  role: 'master' | 'admin' | 'consultor' | string
+  role: 'master' | 'admin' | 'consultor'
   userId: string
 }
 
 export default function ClientesContent({
   searchParams,
+  role,
+  userId,
 }: ClientesContentProps) {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [isPending, startTransition] = useTransition()
 
   const busca =
     typeof searchParams?.busca === 'string' ? searchParams.busca : ''
-  const responsavel =
-    typeof searchParams?.responsavel === 'string'
-      ? searchParams.responsavel
-      : ''
 
   useEffect(() => {
     async function fetchClientes() {
       startTransition(async () => {
         try {
           const query = new URLSearchParams()
-          if (busca) query.append('busca', busca)
-          if (responsavel) query.append('responsavel', responsavel)
+          if (busca) query.set('busca', busca)
 
-          const res = await fetch(`/api/clientes?${query.toString()}`)
+          // 🔒 Consultor só busca seus próprios clientes
+          if (role === 'consultor') {
+            query.set('responsavel', userId)
+          }
+
+          const res = await fetch(`/api/clientes?${query.toString()}`, {
+            headers: {
+              'x-user-role': role,
+              'x-user-id': userId,
+            },
+          })
           const data = await res.json()
           setClientes(data)
         } catch (error) {
@@ -53,7 +60,7 @@ export default function ClientesContent({
     }
 
     fetchClientes()
-  }, [busca, responsavel])
+  }, [busca, role, userId])
 
   return (
     <div className="space-y-6">
@@ -63,7 +70,7 @@ export default function ClientesContent({
         <NovoClienteModal />
         <FiltroClienteModal
           defaultNomeCpf={busca}
-          defaultResponsavel={responsavel}
+          defaultResponsavel={role === 'consultor' ? userId : ''}
         />
       </div>
 

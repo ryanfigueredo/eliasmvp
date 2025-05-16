@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { DocumentoStatus } from '@prisma/client'
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,14 +21,24 @@ export default async function handler(
     })
 
     const lotesComStatus = lotes.map((lote) => {
-      const statusSet = new Set(lote.documentos.map((doc) => doc.status))
-      let status: string
+      const statusList = lote.documentos.map((doc) => doc.status)
 
-      if (statusSet.has('EM_ANDAMENTO')) status = 'Em andamento'
-      else if (statusSet.has('INICIADO')) status = 'Iniciado'
-      else if (statusSet.has('FINALIZADO') && statusSet.size === 1)
-        status = 'Finalizado'
-      else status = 'Sem documentos'
+      let status: string = 'Sem documentos'
+      const total = statusList.length
+
+      const finalizados = statusList.filter((s) => s === 'FINALIZADO').length
+      const emAndamento = statusList.includes('EM_ANDAMENTO')
+      const iniciados = statusList.includes('INICIADO')
+
+      if (total > 0) {
+        if (finalizados === total) {
+          status = 'Finalizado'
+        } else if (emAndamento) {
+          status = 'Em andamento'
+        } else if (iniciados) {
+          status = 'Iniciado'
+        }
+      }
 
       return {
         id: lote.id,

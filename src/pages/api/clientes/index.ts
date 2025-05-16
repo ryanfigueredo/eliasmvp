@@ -17,6 +17,11 @@ export default async function handler(
     const busca = req.query.busca?.toString() || ''
     const responsavel = req.query.responsavel?.toString() || ''
 
+    const role = req.headers['x-user-role']?.toString()
+    const userId = req.headers['x-user-id']?.toString()
+
+    const isConsultor = role === 'consultor'
+
     const clientes = await prisma.cliente.findMany({
       where: {
         AND: [
@@ -28,7 +33,7 @@ export default async function handler(
                 ],
               }
             : {},
-          responsavel ? { userId: responsavel } : {},
+          isConsultor ? { userId } : responsavel ? { userId: responsavel } : {},
         ],
       },
       include: { user: { select: { name: true } } },

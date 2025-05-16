@@ -10,8 +10,8 @@ import FiltroDocumentoModal from './FiltroDocumentoModal'
 import StatusFarol from './StatusFarol'
 import { DocumentoStatus } from '@prisma/client'
 import NovoLoteModal from './NovoLoteModal'
-import { Button } from './ui/button'
 import EditarLoteModal from './EditarLoteModal'
+import { Button } from './ui/button'
 
 interface Props {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -46,10 +46,17 @@ export default function DocumentosContent({
   const [loteSelecionado, setLoteSelecionado] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  const isConsultor = role === 'consultor'
+  const isGestor = role === 'master' || role === 'admin'
+
   useEffect(() => {
     async function fetchLotes() {
       try {
-        const res = await fetch('/api/lotes/with-status')
+        const url = isConsultor
+          ? `/api/lotes/por-consultor?userId=${userId}`
+          : '/api/lotes/with-status'
+
+        const res = await fetch(url)
         const data = await res.json()
         setLotesComStatus(data)
       } catch {
@@ -57,7 +64,7 @@ export default function DocumentosContent({
       }
     }
     fetchLotes()
-  }, [])
+  }, [role, userId])
 
   useEffect(() => {
     if (!loteSelecionado) return
@@ -93,10 +100,10 @@ export default function DocumentosContent({
       <h1 className="text-2xl font-bold">Documentos</h1>
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
-        {role !== 'white-label' && (
+        {!['white-label'].includes(role) && (
           <>
             <NovoDocumentoModal userId={userId} />
-            <NovoLoteModal />
+            {!isConsultor && <NovoLoteModal />}
           </>
         )}
         <FiltroDocumentoModal
@@ -107,7 +114,7 @@ export default function DocumentosContent({
         />
       </div>
 
-      {!loteSelecionado && role === 'master' && (
+      {!loteSelecionado && (
         <table className="w-full text-sm mt-4 bg-white border rounded-xl overflow-hidden shadow">
           <thead className="bg-zinc-100">
             <tr>
@@ -115,7 +122,7 @@ export default function DocumentosContent({
               <th className="p-4 text-left">Período</th>
               <th className="p-4 text-left">Status</th>
               <th className="p-4 text-left">Ação</th>
-              <th className="p-4 text-left"></th>
+              {isGestor && <th className="p-4 text-left"></th>}
             </tr>
           </thead>
           <tbody>
@@ -137,14 +144,16 @@ export default function DocumentosContent({
                     Ver documentos
                   </Button>
                 </td>
-                <td>
-                  <EditarLoteModal
-                    loteId={lote.id}
-                    nomeAtual={lote.nome}
-                    inicioAtual={lote.inicio}
-                    fimAtual={lote.fim}
-                  />
-                </td>
+                {isGestor && (
+                  <td className="p-4">
+                    <EditarLoteModal
+                      loteId={lote.id}
+                      nomeAtual={lote.nome}
+                      inicioAtual={lote.inicio}
+                      fimAtual={lote.fim}
+                    />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -183,9 +192,7 @@ export default function DocumentosContent({
                       <th className="p-4">Status</th>
                       <th className="p-4">Usuário</th>
                       <th className="p-4">Última atualização</th>
-                      {role === 'master' || role === 'admin' ? (
-                        <th className="p-4 text-right">Ações</th>
-                      ) : null}
+                      {isGestor && <th className="p-4 text-right">Ações</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -196,7 +203,7 @@ export default function DocumentosContent({
                         </td>
                         <td className="p-4">{doc.orgao}</td>
                         <td className="p-4">
-                          {role === 'master' || role === 'admin' ? (
+                          {isGestor ? (
                             <SelectStatusDocumento
                               id={doc.id}
                               status={doc.status}
@@ -209,11 +216,11 @@ export default function DocumentosContent({
                         <td className="p-4">
                           {new Date(doc.updatedAt).toLocaleDateString('pt-BR')}
                         </td>
-                        {role === 'master' || role === 'admin' ? (
+                        {isGestor && (
                           <td className="p-4 text-right">
                             <ExcluirDocumentoButton id={doc.id} />
                           </td>
-                        ) : null}
+                        )}
                       </tr>
                     ))}
                   </tbody>

@@ -1,12 +1,14 @@
-// components/StatusFarol.tsx
 'use client'
 
 interface StatusFarolProps {
-  status: 'INICIADO' | 'EM_ANDAMENTO' | 'FINALIZADO'
+  status: 'INICIADO' | 'EM_ANDAMENTO' | 'FINALIZADO' | 'Sem documentos' | string
 }
 
 export default function StatusFarol({ status }: StatusFarolProps) {
-  const statusMap = {
+  const statusMap: Record<
+    'INICIADO' | 'EM_ANDAMENTO' | 'FINALIZADO' | 'Sem documentos',
+    { label: string; color: string }
+  > = {
     INICIADO: {
       label: 'Iniciado',
       color: 'bg-yellow-400',
@@ -19,12 +21,19 @@ export default function StatusFarol({ status }: StatusFarolProps) {
       label: 'Finalizado',
       color: 'bg-green-500',
     },
+    'Sem documentos': {
+      label: 'Sem documentos',
+      color: 'bg-gray-400',
+    },
   }
 
-  const { label, color } = statusMap[status] ?? {
-    label: 'Desconhecido',
-    color: 'bg-gray-400',
-  }
+  const { label, color } =
+    status in statusMap
+      ? statusMap[status as keyof typeof statusMap]
+      : {
+          label: 'Desconhecido',
+          color: 'bg-gray-400',
+        }
 
   return (
     <div className="flex items-center gap-2">

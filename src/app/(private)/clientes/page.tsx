@@ -13,7 +13,7 @@ export default async function Page({ searchParams }: any) {
   return (
     <ClientesContent
       searchParams={searchParams ?? {}}
-      role={session.user.role}
+      role={session.user.role as 'master' | 'admin' | 'consultor'}
       userId={session.user.id}
     />
   )

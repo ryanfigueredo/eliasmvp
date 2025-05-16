@@ -22,9 +22,5 @@ export default async function ConsultorLayout({
 
   if (!user) return redirect('/login')
 
-  return (
-    <SidebarLayout role="consultor" user={user}>
-      {children}
-    </SidebarLayout>
-  )
+  return <>{children}</>
 }

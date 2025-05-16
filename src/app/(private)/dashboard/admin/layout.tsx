@@ -20,9 +20,5 @@ export default async function AdminLayout({
 
   if (!user) return redirect('/login')
 
-  return (
-    <SidebarLayout role="admin" user={user}>
-      {children}
-    </SidebarLayout>
-  )
+  return <>{children}</>
 }
