@@ -22,7 +22,7 @@ export default function StatusFarol({ status }: StatusFarolProps) {
       color: 'bg-green-500',
     },
     'Sem documentos': {
-      label: 'Sem documentos',
+      label: 'Nenhum documento enviado',
       color: 'bg-gray-400',
     },
   }

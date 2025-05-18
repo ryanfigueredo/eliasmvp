@@ -14,9 +14,8 @@ import { toast } from 'sonner'
 import { useEffect, useState, useTransition } from 'react'
 import { useCpfCnpjMask } from '@/hooks/useCpfCnpjMask'
 import { formatCurrency } from '@/hooks/useCurrencyMask'
-import { User } from '@prisma/client'
 
-export default function NovoClienteModal() {
+export default function NovoClienteModal({ userId }: { userId: string }) {
   const formatCpfCnpj = useCpfCnpjMask()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -26,19 +25,10 @@ export default function NovoClienteModal() {
   const [valor, setValor] = useState('')
   const [clienteExistente, setClienteExistente] = useState(false)
 
-  const [responsavelId, setResponsavelId] = useState('')
-  const [usuarios, setUsuarios] = useState<User[]>([])
-
   const [rg, setRg] = useState<File | null>(null)
   const [cnh, setCnh] = useState<File | null>(null)
   const [contrato, setContrato] = useState<File | null>(null)
   const [docExtra, setDocExtra] = useState<File | null>(null)
-
-  useEffect(() => {
-    fetch('/api/users/consultores')
-      .then((res) => res.json())
-      .then((data) => setUsuarios(data))
-  }, [])
 
   useEffect(() => {
     const buscarCliente = async () => {
@@ -62,7 +52,7 @@ export default function NovoClienteModal() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!nome || !cpfCnpj || !valor || !responsavelId) {
+    if (!nome || !cpfCnpj || !valor) {
       return toast.error('Preencha todos os campos obrigatórios.')
     }
 
@@ -72,14 +62,14 @@ export default function NovoClienteModal() {
     const rawValor = valor.replace(/\D/g, '')
     const parsedValor = parseFloat(rawValor) / 100
     formData.append('valor', String(parsedValor))
-    formData.append('responsavelId', responsavelId)
+    formData.append('responsavelId', userId)
     if (rg) formData.append('rg', rg)
     if (cnh) formData.append('cnh', cnh)
     if (contrato) formData.append('contrato', contrato)
     if (docExtra) formData.append('documentoExtra', docExtra)
 
     startTransition(async () => {
-      const res = await fetch('/api/cliente/create', {
+      const res = await fetch('/api/clientes/create', {
         method: 'POST',
         body: formData,
       })
@@ -163,23 +153,6 @@ export default function NovoClienteModal() {
               type="file"
               onChange={(e) => setDocExtra(e.target.files?.[0] || null)}
             />
-          </div>
-
-          <div className="space-y-1 hidden">
-            <label className="text-sm font-medium">Responsável</label>
-            <select
-              value={responsavelId}
-              onChange={(e) => setResponsavelId(e.target.value)}
-              className="w-full border px-3 py-2 rounded text-sm"
-              required
-            >
-              <option value="">Selecione</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

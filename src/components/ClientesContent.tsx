@@ -67,7 +67,7 @@ export default function ClientesContent({
       <h1 className="text-2xl font-bold">Clientes</h1>
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
-        <NovoClienteModal />
+        <NovoClienteModal userId={userId} />
         <FiltroClienteModal
           defaultNomeCpf={busca}
           defaultResponsavel={role === 'consultor' ? userId : ''}
