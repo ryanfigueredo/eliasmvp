@@ -1,4 +1,3 @@
-// src/pages/api/stats/document-status.ts
 import { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 
@@ -10,15 +9,29 @@ export default async function handler(
 
   const { role, userId } = req.query
 
-  if (!role || !userId) {
-    return res.status(400).json({ message: 'Parâmetros ausentes.' })
+  if (
+    !role ||
+    !userId ||
+    typeof role !== 'string' ||
+    typeof userId !== 'string'
+  ) {
+    return res
+      .status(400)
+      .json({ message: 'Parâmetros ausentes ou inválidos.' })
   }
 
   try {
-    const whereClause =
-      role === 'master'
-        ? {} // master vê tudo
-        : { userId: userId as string } // admin/consultor só vê o que criou
+    let whereClause = {}
+
+    if (role === 'consultor') {
+      whereClause = { userId }
+    } else if (role === 'admin') {
+      whereClause = {
+        user: {
+          OR: [{ id: userId }, { adminId: userId }],
+        },
+      }
+    }
 
     const [iniciado, andamento, finalizado] = await Promise.all([
       prisma.document.count({ where: { ...whereClause, status: 'INICIADO' } }),
@@ -36,7 +49,7 @@ export default async function handler(
       finalizado,
     })
   } catch (error) {
-    console.error(error)
+    console.error('Erro ao buscar status dos documentos:', error)
     return res.status(500).json({ message: 'Erro interno.' })
   }
 }

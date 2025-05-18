@@ -1,4 +1,3 @@
-// components/DashboardStats.tsx
 'use client'
 
 import {
@@ -79,12 +78,11 @@ export default function DashboardStats({
                 cx="50%"
                 cy="50%"
                 outerRadius={120}
-                innerRadius={60} // Donut chart → mais elegante
+                innerRadius={60}
                 label={({ name, percent }) =>
                   `${name} ${(percent * 100).toFixed(0)}%`
                 }
                 dataKey="value"
-                isAnimationActive
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index]} />

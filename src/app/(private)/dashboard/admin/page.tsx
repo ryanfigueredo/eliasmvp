@@ -3,8 +3,8 @@ import { DefaultSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { Button } from '@/components/ui/button'
 import DashboardStats from '@/components/DashboardStats'
+
 declare module 'next-auth' {
   interface Session {
     user?: {
@@ -14,22 +14,40 @@ declare module 'next-auth' {
   }
 }
 
-export default async function MasterDashboardPage() {
+export default async function AdminDashboardPage() {
   const session = await getServerSession(authOptions)
 
-  if (!session || !session.user || session.user.role !== 'master') {
+  if (!session || !session.user || session.user.role !== 'admin') {
     return redirect('/login')
   }
 
-  const [total, aprovados, aguardando, consultores, admins, whiteLabels] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { status: 'aprovado' } }),
-      prisma.user.count({ where: { status: 'aguardando' } }),
-      prisma.user.count({ where: { role: 'consultor' } }),
-      prisma.user.count({ where: { role: 'admin' } }),
-      prisma.user.count({ where: { role: 'white-label' } }),
-    ])
+  const adminId = session.user.id
+
+  const [total, aprovados, aguardando, consultores] = await Promise.all([
+    prisma.user.count({
+      where: {
+        OR: [{ id: adminId }, { adminId }],
+      },
+    }),
+    prisma.user.count({
+      where: {
+        status: 'aprovado',
+        OR: [{ id: adminId }, { adminId }],
+      },
+    }),
+    prisma.user.count({
+      where: {
+        status: 'aguardando',
+        adminId,
+      },
+    }),
+    prisma.user.count({
+      where: {
+        role: 'consultor',
+        adminId,
+      },
+    }),
+  ])
 
   const cardClass = 'bg-white rounded-xl p-6 shadow-sm border'
 
@@ -60,17 +78,8 @@ export default async function MasterDashboardPage() {
           <h2 className="text-xl font-semibold">{consultores}</h2>
         </div>
 
-        <div className={cardClass}>
-          <p className="text-sm text-gray-500">Admins</p>
-          <h2 className="text-xl font-semibold">{admins}</h2>
-        </div>
-
-        <div className={cardClass}>
-          <p className="text-sm text-gray-500">White Labels</p>
-          <h2 className="text-xl font-semibold">{whiteLabels}</h2>
-        </div>
-
-        <DashboardStats role={session.user.role} userId={session.user.id} />
+        {/* Admin não visualiza outros admins ou white labels */}
+        <DashboardStats role="admin" userId={adminId} />
       </div>
     </div>
   )
