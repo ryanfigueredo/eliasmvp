@@ -75,7 +75,7 @@ export default function SidebarLayout({
             </div>
           </div>
 
-          <ConfigUsuarioModal user={{ name: user.name, email: user.email }} />
+          {/* <ConfigUsuarioModal user={{ name: user.name, email: user.email }} /> */}
 
           <form action="/api/auth/signout" method="POST">
             <Button
