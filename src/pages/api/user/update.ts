@@ -1,15 +1,13 @@
 import { prisma } from '@/lib/prisma'
+import { uploadToS3 } from '@/lib/s3'
 import { getToken } from 'next-auth/jwt'
 import { NextApiRequest, NextApiResponse } from 'next'
 import bcrypt from 'bcrypt'
 import formidable from 'formidable'
 import fs from 'fs/promises'
-import path from 'path'
 
 export const config = {
-  api: {
-    bodyParser: false,
-  },
+  api: { bodyParser: false },
 }
 
 export default async function handler(
@@ -49,12 +47,17 @@ export default async function handler(
     if (senha) updateData.password = await bcrypt.hash(senha, 10)
 
     if (foto && foto.filepath) {
-      const fileName = `${Date.now()}-${foto.originalFilename}`
-      const newPath = path.join(process.cwd(), 'public/uploads', fileName)
+      const fileBuffer = await fs.readFile(foto.filepath)
+      const fileName = `avatars/${Date.now()}-${foto.originalFilename}`
+      const contentType = foto.mimetype || 'image/jpeg'
 
-      const data = await fs.readFile(foto.filepath)
-      await fs.writeFile(newPath, data)
-      updateData.image = `/uploads/${fileName}`
+      const fileUrl = await uploadToS3({
+        fileBuffer,
+        fileName,
+        contentType,
+      })
+
+      updateData.image = fileUrl
     }
 
     await prisma.user.update({

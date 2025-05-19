@@ -23,8 +23,10 @@ type Usuario = {
 
 export default function UsuariosContent({
   users: initialUsers,
+  isMaster,
 }: {
   users: Usuario[]
+  isMaster: boolean
 }) {
   const [users, setUsers] = useState<Usuario[]>(initialUsers)
 
@@ -71,7 +73,11 @@ export default function UsuariosContent({
                 <SelectStatus id={user.id} status={user.status} />
               </td>
               <td className="p-4">
-                <SelectRole id={user.id} role={user.role} />
+                {isMaster ? (
+                  <SelectRole id={user.id} role={user.role} />
+                ) : (
+                  <span className="text-zinc-600 capitalize">{user.role}</span>
+                )}
               </td>
               <td className="p-4">
                 {new Date(user.createdAt).toLocaleDateString('pt-BR')}

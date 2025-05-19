@@ -15,12 +15,29 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     const busca = req.query.busca?.toString() || ''
-    const responsavel = req.query.responsavel?.toString() || ''
-
     const role = req.headers['x-user-role']?.toString()
     const userId = req.headers['x-user-id']?.toString()
 
-    const isConsultor = role === 'consultor'
+    let userIds: string[] = []
+
+    if (role === 'master') {
+      // Master vê tudo (não filtra por userId)
+      userIds = []
+    } else if (role === 'admin') {
+      // Admin vê ele mesmo + consultores sob sua responsabilidade
+      const consultores = await prisma.user.findMany({
+        where: {
+          role: 'consultor',
+          adminId: userId,
+        },
+        select: {
+          id: true,
+        },
+      })
+      userIds = [userId!, ...consultores.map((c) => c.id)]
+    } else if (role === 'consultor') {
+      userIds = [userId!]
+    }
 
     const clientes = await prisma.cliente.findMany({
       where: {
@@ -33,7 +50,7 @@ export default async function handler(
                 ],
               }
             : {},
-          isConsultor ? { userId } : responsavel ? { userId: responsavel } : {},
+          userIds.length > 0 ? { userId: { in: userIds } } : {}, // master vê todos
         ],
       },
       include: { user: { select: { name: true } } },

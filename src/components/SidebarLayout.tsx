@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { SidebarContent } from './SidebarContent'
 import ConfigUsuarioModal from './ConfigUsuarioModal'
 import { LogOut } from 'lucide-react'
@@ -21,12 +21,30 @@ export default function SidebarLayout({
   role,
   user,
 }: SidebarLayoutProps) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchImage() {
+      if (user.image) {
+        try {
+          const res = await fetch(`/api/document/get-url?key=${user.image}`)
+          const data = await res.json()
+          setSignedUrl(data.url)
+        } catch (error) {
+          console.error('Erro ao buscar imagem de perfil:', error)
+        }
+      }
+    }
+
+    fetchImage()
+  }, [user.image])
+
   return (
-    <div className="min-h-screen flex bg-zinc-100">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r flex flex-col justify-between py-6 px-4">
+    <div className="min-h-screen flex bg-black">
+      {/* Sidebar fixa */}
+      <aside className="w-64 bg-black text-white border-r border-zinc-800 flex flex-col justify-between py-6 px-4">
         <div>
-          <h2 className="text-xl font-bold text-[#9C66FF] mb-6 px-2">
+          <h2 className="text-xl font-bold mb-6 px-2">
             {role === 'master'
               ? 'Painel Master'
               : role === 'admin'
@@ -37,38 +55,33 @@ export default function SidebarLayout({
           <SidebarContent role={role} />
         </div>
 
-        {/* Footer */}
+        {/* Rodapé do Sidebar */}
         <div className="px-2 mt-6 space-y-1">
           <div className="flex items-center gap-3">
-            {user.image ? (
+            {signedUrl ? (
               <img
-                src={user.image}
+                src={signedUrl}
                 alt="Avatar"
                 className="w-10 h-10 rounded-full object-cover border"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-semibold text-zinc-600">
+              <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-semibold text-white">
                 {user.name?.charAt(0).toUpperCase() ?? 'U'}
               </div>
             )}
-            <div className="flex flex-col text-sm text-zinc-700">
+            <div className="flex flex-col text-sm">
               <span className="font-medium">{user.name}</span>
-              <span className="text-xs text-zinc-500">{user.email}</span>
+              <span className="text-xs text-zinc-400">{user.email}</span>
             </div>
           </div>
 
-          <ConfigUsuarioModal
-            user={{
-              name: user.name,
-              email: user.email,
-            }}
-          />
+          <ConfigUsuarioModal user={{ name: user.name, email: user.email }} />
 
           <form action="/api/auth/signout" method="POST">
             <Button
               type="submit"
               variant="ghost"
-              className="text-red-600 text-xs px-0 justify-start hover:underline flex items-center gap-1"
+              className="text-red-500 text-xs px-0 justify-start hover:underline flex items-center gap-1"
             >
               <LogOut className="w-4 h-4" />
               Sair
@@ -77,7 +90,8 @@ export default function SidebarLayout({
         </div>
       </aside>
 
-      <main className="flex-1 p-8">{children}</main>
+      {/* Conteúdo principal */}
+      <main className="flex-1 p-8 bg-white">{children}</main>
     </div>
   )
 }

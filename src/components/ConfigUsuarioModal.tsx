@@ -9,11 +9,14 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { Settings } from 'lucide-react'
 import { toast } from 'sonner'
 import { getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+
+const THEMES = ['light', 'dark'] as const
+const COLORS = ['roxo', 'azul', 'verde', 'vermelho'] as const
 
 type Props = {
   user: {
@@ -25,7 +28,6 @@ type Props = {
 
 export default function ConfigUsuarioModal({ user }: Props) {
   const router = useRouter()
-
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -33,6 +35,37 @@ export default function ConfigUsuarioModal({ user }: Props) {
   const [email, setEmail] = useState(user.email || '')
   const [senha, setSenha] = useState('')
   const [foto, setFoto] = useState<File | null>(null)
+
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [color, setColor] = useState<string>('roxo')
+
+  // Aplicar tema e cor primária ao abrir
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark'
+    const savedColor = localStorage.getItem('color') || 'roxo'
+    if (savedTheme) {
+      setTheme(savedTheme)
+      document.documentElement.classList.remove('light', 'dark')
+      document.documentElement.classList.add(savedTheme)
+    }
+    if (savedColor) {
+      setColor(savedColor)
+      document.documentElement.setAttribute('data-theme-color', savedColor)
+    }
+  }, [])
+
+  const handleThemeChange = (newTheme: 'light' | 'dark') => {
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    document.documentElement.classList.remove('light', 'dark')
+    document.documentElement.classList.add(newTheme)
+  }
+
+  const handleColorChange = (newColor: string) => {
+    setColor(newColor)
+    localStorage.setItem('color', newColor)
+    document.documentElement.setAttribute('data-theme-color', newColor)
+  }
 
   const handleSubmit = () => {
     const formData = new FormData()
@@ -48,10 +81,10 @@ export default function ConfigUsuarioModal({ user }: Props) {
       })
 
       if (res.ok) {
-        await getSession() // 🆕 Atualiza a session do NextAuth automaticamente
+        await getSession()
         toast.success('Informações atualizadas!')
         setOpen(false)
-        router.refresh() // Atualiza a tela pra carregar novos dados visuais
+        window.location.reload()
       } else {
         toast.error('Erro ao atualizar dados.')
       }
@@ -97,15 +130,59 @@ export default function ConfigUsuarioModal({ user }: Props) {
           />
           <Input
             type="file"
+            accept="image/*"
             onChange={(e) => setFoto(e.target.files?.[0] || null)}
           />
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Tema</label>
+            <div className="flex gap-2">
+              {THEMES.map((t) => (
+                <Button
+                  key={t}
+                  variant={theme === t ? 'default' : 'outline'}
+                  onClick={() => handleThemeChange(t)}
+                >
+                  {t === 'light' ? 'Claro' : 'Escuro'}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Cor principal</label>
+            <div className="flex gap-2 flex-wrap">
+              {COLORS.map((c) => (
+                <Button
+                  key={c}
+                  variant={color === c ? 'default' : 'outline'}
+                  onClick={() => handleColorChange(c)}
+                  className={`capitalize ${
+                    c === 'roxo'
+                      ? 'bg-[#9C66FF]'
+                      : c === 'azul'
+                        ? 'bg-blue-500'
+                        : c === 'verde'
+                          ? 'bg-green-500'
+                          : 'bg-red-500'
+                  } text-white`}
+                >
+                  {c}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={isPending}>
+          <Button
+            className="bg-primary hover:bg-primary/90 text-white"
+            onClick={handleSubmit}
+            disabled={isPending}
+          >
             {isPending ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>

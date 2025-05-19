@@ -1,11 +1,14 @@
-
+/* The following directives require Tailwind CSS and PostCSS processing.
+   If you see an error like "Unknown at rule @tailwind", make sure your build process includes Tailwind CSS.
+   Otherwise, remove these lines if not using Tailwind. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Fontes */
-html, body {
-  @apply bg-gray-50 text-gray-900 font-sans;
+/* Fontes e layout base */
+html,
+body {
+  @apply font-sans bg-gray-50 text-gray-900;
 }
 
 /* Links */
@@ -13,8 +16,10 @@ a {
   @apply text-[#9C66FF] hover:underline;
 }
 
-/* Inputs e botÃµes */
-input, select, textarea {
+/* Inputs e botões */
+input,
+select,
+textarea {
   @apply border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#9C66FF];
 }
 
@@ -27,8 +32,11 @@ button {
   @apply bg-white p-6 rounded-xl shadow-sm;
 }
 
-/* Headers */
-h1, h2, h3, h4 {
+/* Tipografia */
+h1,
+h2,
+h3,
+h4 {
   @apply font-semibold text-[#333];
 }
 

@@ -24,6 +24,9 @@ export default async function UsuariosPage({ searchParams = {} }: PageProps) {
   const status =
     typeof searchParams.status === 'string' ? searchParams.status : ''
 
+  const isMaster = session.user.role === 'master'
+  const userId = session.user.id
+
   const users = await prisma.user.findMany({
     where: {
       AND: [
@@ -37,6 +40,14 @@ export default async function UsuariosPage({ searchParams = {} }: PageProps) {
           : {},
         role ? { role } : {},
         status ? { status } : {},
+        !isMaster
+          ? {
+              OR: [
+                { id: userId }, // o próprio admin
+                { adminId: userId, role: 'consultor' }, // consultores que ele gerencia
+              ],
+            }
+          : {},
       ],
     },
     orderBy: { createdAt: 'desc' },
@@ -57,6 +68,7 @@ export default async function UsuariosPage({ searchParams = {} }: PageProps) {
         ...user,
         createdAt: user.createdAt.toISOString(),
       }))}
+      isMaster={isMaster}
     />
   )
 }

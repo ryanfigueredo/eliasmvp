@@ -8,15 +8,29 @@ export default async function handler(
 ) {
   if (req.method !== 'GET') return res.status(405).end()
 
-  const { role, userId, file, orgao, status, loteId } = req.query
+  const { file, orgao, status, loteId } = req.query
+  const role = req.headers['x-user-role']?.toString()
+  const userId = req.headers['x-user-id']?.toString()
+
+  let userIds: string[] = []
+
+  if (role === 'master') {
+    userIds = []
+  } else if (role === 'admin') {
+    const consultores = await prisma.user.findMany({
+      where: { role: 'consultor', adminId: userId },
+      select: { id: true },
+    })
+    userIds = [userId!, ...consultores.map((c) => c.id)]
+  } else if (role === 'consultor') {
+    userIds = [userId!]
+  }
 
   try {
     const documentos = await prisma.document.findMany({
       where: {
         AND: [
-          role !== 'master' && role !== 'admin'
-            ? { userId: userId?.toString() }
-            : {},
+          userIds.length > 0 ? { userId: { in: userIds } } : {},
           file
             ? {
                 fileUrl: {

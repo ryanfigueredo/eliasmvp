@@ -1,6 +1,6 @@
-import '../styles/globals.css'
+import '../styles/styles.css'
 import { Inter } from 'next/font/google'
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from '@/components/ui/sonner'
 
 import { ReactNode } from 'react'
 

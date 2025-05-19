@@ -6,9 +6,38 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   if (req.method === 'GET') {
+    const role = req.headers['x-user-role']?.toString()
+    const userId = req.headers['x-user-id']?.toString()
+
+    let userIds: string[] = []
+
+    if (role === 'master') {
+      // master vê tudo
+      userIds = []
+    } else if (role === 'admin') {
+      const consultores = await prisma.user.findMany({
+        where: { role: 'consultor', adminId: userId },
+        select: { id: true },
+      })
+      userIds = [userId!, ...consultores.map((c) => c.id)]
+    } else if (role === 'consultor') {
+      userIds = [userId!]
+    }
+
     const lotes = await prisma.lote.findMany({
+      where:
+        userIds.length > 0
+          ? {
+              documentos: {
+                some: {
+                  userId: { in: userIds },
+                },
+              },
+            }
+          : {},
       orderBy: { inicio: 'desc' },
     })
+
     return res.status(200).json(lotes)
   }
 
