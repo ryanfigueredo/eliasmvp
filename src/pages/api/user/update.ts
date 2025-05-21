@@ -35,10 +35,13 @@ export default async function handler(
       })
     })
 
+    console.log('[update.ts] FIELDS:', fields)
+    console.log('[update.ts] FILES:', files)
+
     const nome = fields.nome?.toString()
     const email = fields.email?.toString()
     const senha = fields.senha?.toString()
-    const foto = files.foto as formidable.File | undefined
+    const foto = Array.isArray(files.foto) ? files.foto[0] : files.foto
 
     const updateData: any = {}
 
@@ -51,14 +54,18 @@ export default async function handler(
       const fileName = `avatars/${Date.now()}-${foto.originalFilename}`
       const contentType = foto.mimetype || 'image/jpeg'
 
-      const fileUrl = await uploadToS3({
+      await uploadToS3({
         fileBuffer,
         fileName,
         contentType,
       })
 
-      updateData.image = fileUrl
+      console.log('[upload] saved file as:', fileName)
+
+      updateData.image = fileName // ← aqui salvamos só a key no banco
     }
+
+    console.log('[update.ts] Final updateData to save in Prisma:', updateData)
 
     await prisma.user.update({
       where: { id: token.id as string },

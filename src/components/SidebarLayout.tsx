@@ -2,9 +2,9 @@
 
 import { ReactNode, useEffect, useState } from 'react'
 import { SidebarContent } from './SidebarContent'
-import ConfigUsuarioModal from './ConfigUsuarioModal'
 import { LogOut } from 'lucide-react'
 import { Button } from './ui/button'
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 
 interface SidebarLayoutProps {
   children: ReactNode
@@ -29,6 +29,7 @@ export default function SidebarLayout({
         try {
           const res = await fetch(`/api/document/get-url?key=${user.image}`)
           const data = await res.json()
+          console.log('[sidebar] signedUrl recebido:', data.url)
           setSignedUrl(data.url)
         } catch (error) {
           console.error('Erro ao buscar imagem de perfil:', error)
@@ -58,24 +59,24 @@ export default function SidebarLayout({
         {/* Rodapé do Sidebar */}
         <div className="px-2 mt-6 space-y-1">
           <div className="flex items-center gap-3">
-            {signedUrl ? (
-              <img
-                src={signedUrl}
+            <Avatar className="w-10 h-10">
+              <AvatarImage
+                src={signedUrl || ''}
                 alt="Avatar"
-                className="w-10 h-10 rounded-full object-cover border"
+                onError={() =>
+                  console.warn('Erro ao carregar imagem de perfil')
+                }
               />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-semibold text-white">
+              <AvatarFallback>
                 {user.name?.charAt(0).toUpperCase() ?? 'U'}
-              </div>
-            )}
+              </AvatarFallback>
+            </Avatar>
+
             <div className="flex flex-col text-sm">
               <span className="font-medium">{user.name}</span>
               <span className="text-xs text-zinc-400">{user.email}</span>
             </div>
           </div>
-
-          {/* <ConfigUsuarioModal user={{ name: user.name, email: user.email }} /> */}
 
           <form action="/api/auth/signout" method="POST">
             <Button

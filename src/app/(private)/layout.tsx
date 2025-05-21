@@ -13,6 +13,7 @@ export default async function PrivateLayout({
 
   if (!session || !session.user) return redirect('/login')
 
+  // Busca dados atualizados direto do banco
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { name: true, email: true, image: true, role: true },
@@ -20,23 +21,17 @@ export default async function PrivateLayout({
 
   if (!user) return redirect('/login')
 
-  // Ensure session.user is always defined and matches the expected type
-  const sessionUser =
-    session?.user && session.user.email
-      ? {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.name ?? null,
-          image: session.user.image ?? null,
-          role: session.user.role ?? null,
-        }
-      : {
-          id: '',
-          email: '',
-          name: null,
-          image: null,
-          role: null,
-        }
+  // ✅ Debug: mostra se a imagem está vindo corretamente
+  console.log('[layout.tsx] USER IMAGE:', user.image)
+
+  // Força o uso dos dados mais atualizados (inclusive imagem)
+  const sessionUser = {
+    id: session.user.id,
+    email: user.email,
+    name: user.name,
+    image: user.image, // 🔥 Aqui está o segredo
+    role: user.role,
+  }
 
   return (
     <ClientLayout sessionUser={sessionUser} user={user}>
