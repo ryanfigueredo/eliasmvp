@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import DashboardStats from '@/components/DashboardStats'
+import DashboardValores from '@/components/DashboardValores'
 
 declare module 'next-auth' {
   interface Session {
@@ -70,7 +71,29 @@ export default async function MasterDashboardPage() {
           <h2 className="text-xl font-semibold">{whiteLabels}</h2>
         </div>
 
-        <DashboardStats role={session.user.role} userId={session.user.id} />
+        <div className={cardClass + ' col-span-1 md:col-span-2'}>
+          <DashboardStats role={session.user.role} userId={session.user.id} />
+        </div>
+
+        <div className="flex-row gap-2 space-y-4">
+          <div className={cardClass}>
+            <p className="text-sm text-gray-500">Valor movimentado - Mensal</p>
+            <DashboardValores
+              type="mensal"
+              role={session.user.role}
+              userId={session.user.id}
+            />
+          </div>
+
+          <div className={cardClass}>
+            <p className="text-sm text-gray-500">Valor movimentado - Semanal</p>
+            <DashboardValores
+              type="semanal"
+              role={session.user.role}
+              userId={session.user.id}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
