@@ -14,20 +14,20 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   name      String?
-  email     String   @unique
-  cpf       String   @unique
+  email     String     @unique
+  cpf       String     @unique
   password  String
-  role      String   @default("consultor")
-  status    String   @default("aguardando")
-  createdAt DateTime @default(now())
+  role      String     @default("consultor")
+  status    String     @default("aguardando")
+  createdAt DateTime   @default(now())
   documents Document[]
   image     String?
 
-  adminId   String? 
-  admin     User?    @relation("AdminToConsultores", fields: [adminId], references: [id])
-  consultores User[] @relation("AdminToConsultores")
+  adminId     String?
+  admin       User?   @relation("AdminToConsultores", fields: [adminId], references: [id])
+  consultores User[]  @relation("AdminToConsultores")
 
   resetToken       String?   @unique
   resetTokenExpiry DateTime?
@@ -35,7 +35,6 @@ model User {
   Cliente Cliente[]
   logs    Log[]
 }
-
 
 model Lote {
   id         String     @id @default(uuid())
@@ -46,22 +45,20 @@ model Lote {
   documentos Document[]
 }
 
-
 model Document {
   id        String          @id @default(uuid())
   userId    String
   clienteId String?
-  loteId    String?         // <--- ESTE
+  loteId    String? // <--- ESTE
   orgao     Orgao
   status    DocumentoStatus @default(INICIADO)
   fileUrl   String
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  user User  @relation(fields: [userId], references: [id])
   lote Lote? @relation(fields: [loteId], references: [id]) // <---
 }
-
 
 model DocumentoCliente {
   id        String   @id @default(uuid())
