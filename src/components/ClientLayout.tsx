@@ -77,7 +77,7 @@ export function ClientLayout({
           <Button
             variant="ghost"
             size="icon"
-            className="text-white self-end mb-2"
+            className="text-white ml-auto  mb-2"
             onClick={() => setIsCollapsed(!isCollapsed)}
           >
             {isCollapsed ? (
@@ -129,24 +129,26 @@ export function ClientLayout({
             )}
           </div>
 
-          <Link
-            href="/perfil"
-            className="text-sm px-0 justify-start flex items-center gap-1 text-zinc-300 hover:text-[#9C66FF]"
-          >
-            <Settings className="w-4 h-4" />
-            {!isCollapsed && 'Configurações'}
-          </Link>
-
-          <form action="/api/auth/signout" method="POST" className="mt-2">
-            <Button
-              type="submit"
-              variant="ghost"
-              className="text-red-500 text-xs px-0 justify-start hover:underline flex items-center gap-1"
+          <div className="flex flex-col gap-1">
+            <Link
+              href="/perfil"
+              className="text-sm px-0 py-1 justify-start flex items-center gap-1 text-zinc-300 hover:text-[#9C66FF]"
             >
-              <LogOut className="w-4 h-4" />
-              {!isCollapsed && 'Sair'}
-            </Button>
-          </form>
+              <Settings className="w-4 h-4" />
+              {!isCollapsed && 'Configurações'}
+            </Link>
+
+            <form action="/api/auth/signout" method="POST">
+              <Button
+                type="submit"
+                variant="ghost"
+                className="text-red-500 text-xs px-0 py-1 justify-start flex items-center gap-1 hover:underline"
+              >
+                <LogOut className="w-4 h-4" />
+                {!isCollapsed && 'Sair'}
+              </Button>
+            </form>
+          </div>
         </div>
       </aside>
 

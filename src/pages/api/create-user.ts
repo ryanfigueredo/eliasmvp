@@ -8,7 +8,7 @@ export default async function handler(
 ) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { name, cpf, email, password, role, status } = req.body
+  const { name, cpf, email, password, role, status, adminId } = req.body
 
   if (!email || !password || !cpf)
     return res.status(400).json({ message: 'Campos obrigatórios.' })
@@ -25,11 +25,12 @@ export default async function handler(
     await prisma.user.create({
       data: {
         name,
-        cpf,
         email,
+        cpf,
         password: hashed,
         role,
         status,
+        adminId: role === 'consultor' ? adminId : null,
       },
     })
 

@@ -15,6 +15,7 @@ import { useTransition, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { getSession } from 'next-auth/react'
 
 const schema = z.object({
   name: z.string().min(2, 'Nome obrigatório'),
@@ -48,12 +49,22 @@ export default function NovoUsuarioModal() {
     },
   })
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
+    const session = await getSession()
+
+    const payload = {
+      ...data,
+      adminId:
+        session?.user?.role === 'admin' && data.role === 'consultor'
+          ? session.user.id
+          : null,
+    }
+
     startTransition(async () => {
       const res = await fetch('/api/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       })
 
       if (res.ok) {

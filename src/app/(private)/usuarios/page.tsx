@@ -5,10 +5,10 @@ import { prisma } from '@/lib/prisma'
 import UsuariosContent from '@/components/UsuariosContent'
 
 type PageProps = {
-  searchParams?: Record<string, string | string[]>
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
-export default async function UsuariosPage({ searchParams = {} }: PageProps) {
+export default async function UsuariosPage({ searchParams }: PageProps) {
   const session = await getServerSession(authOptions)
 
   if (
@@ -19,10 +19,18 @@ export default async function UsuariosPage({ searchParams = {} }: PageProps) {
     return redirect('/login')
   }
 
-  const busca = typeof searchParams.busca === 'string' ? searchParams.busca : ''
-  const role = typeof searchParams.role === 'string' ? searchParams.role : ''
-  const status =
-    typeof searchParams.status === 'string' ? searchParams.status : ''
+  // CONVERSÃO CORRETA
+  const busca = Array.isArray(searchParams['busca'])
+    ? searchParams['busca'][0]
+    : searchParams['busca'] || ''
+
+  const role = Array.isArray(searchParams['role'])
+    ? searchParams['role'][0]
+    : searchParams['role'] || ''
+
+  const status = Array.isArray(searchParams['status'])
+    ? searchParams['status'][0]
+    : searchParams['status'] || ''
 
   const isMaster = session.user.role === 'master'
   const userId = session.user.id
@@ -42,10 +50,7 @@ export default async function UsuariosPage({ searchParams = {} }: PageProps) {
         status ? { status } : {},
         !isMaster
           ? {
-              OR: [
-                { id: userId }, // o próprio admin
-                { adminId: userId, role: 'consultor' }, // consultores que ele gerencia
-              ],
+              OR: [{ id: userId }, { adminId: userId, role: 'consultor' }],
             }
           : {},
       ],

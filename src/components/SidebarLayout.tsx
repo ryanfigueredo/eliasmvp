@@ -2,9 +2,10 @@
 
 import { ReactNode, useEffect, useState } from 'react'
 import { SidebarContent } from './SidebarContent'
-import { LogOut } from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 import { Button } from './ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
+import Link from 'next/link'
 
 interface SidebarLayoutProps {
   children: ReactNode
@@ -57,7 +58,8 @@ export default function SidebarLayout({
         </div>
 
         {/* Rodapé do Sidebar */}
-        <div className="px-2 mt-6 space-y-1">
+        <div className="px-2 mt-6 space-y-4">
+          {/* Avatar + Nome/Email */}
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
               <AvatarImage
@@ -78,20 +80,29 @@ export default function SidebarLayout({
             </div>
           </div>
 
-          <form action="/api/auth/signout" method="POST">
-            <Button
-              type="submit"
-              variant="ghost"
-              className="text-red-500 text-xs px-0 justify-start hover:underline flex items-center gap-1"
+          {/* Configurações + Sair */}
+          <div className="flex flex-col gap-2 pt-2">
+            <Link
+              href="/perfil"
+              className="text-sm flex items-center gap-2 text-zinc-300 hover:text-[#9C66FF]"
             >
-              <LogOut className="w-4 h-4" />
-              Sair
-            </Button>
-          </form>
+              <Settings className="w-4 h-4" />
+              Configurações
+            </Link>
+
+            <form action="/api/auth/signout" method="POST" className="pt-1">
+              <button
+                type="submit"
+                className="text-red-500 text-sm flex items-center gap-2 pl-2 hover:underline"
+              >
+                <LogOut className="w-4 h-4" />
+                Sair
+              </button>
+            </form>
+          </div>
         </div>
       </aside>
 
-      {/* Conteúdo principal */}
       <main className="flex-1 p-8 bg-white">{children}</main>
     </div>
   )
