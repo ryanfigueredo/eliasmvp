@@ -84,6 +84,7 @@ export default async function handler(
       const valor = parseFloat(rawValor || '0')
       const responsavelId = fields.responsavelId?.toString()
       const loteId = fields.loteId?.toString()
+      const orgao = fields.orgao?.toString()?.toUpperCase()
 
       if (!nome || !cpfCnpj || !responsavelId || !loteId) {
         return res
@@ -149,7 +150,6 @@ export default async function handler(
         if (docs.length > 0) {
           await prisma.documentoCliente.createMany({ data: docs })
 
-          // também criar na tabela Document para exibir no painel
           for (const doc of docs) {
             await prisma.document.create({
               data: {
@@ -158,7 +158,10 @@ export default async function handler(
                 fileUrl: doc.fileUrl,
                 loteId,
                 status: DocumentoStatus.INICIADO,
-                orgao: Orgao.SERASA,
+                orgao:
+                  orgao && Object.values(Orgao).includes(orgao as Orgao)
+                    ? (orgao as Orgao)
+                    : Orgao.SERASA, // fallback se inválido
               },
             })
           }

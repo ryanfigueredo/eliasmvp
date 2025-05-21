@@ -37,6 +37,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
   const [lotes, setLotes] = useState<Lote[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [orgao, setOrgao] = useState('') // valor padrão opcional
 
   useEffect(() => {
     fetch('/api/lotes')
@@ -80,6 +81,8 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
     formData.append('valor', valor.replace(/[^\d,.-]/g, '').replace(',', '.'))
     formData.append('responsavelId', userId)
     formData.append('loteId', loteId)
+    formData.append('orgao', orgao)
+
     if (rg) formData.append('rg', rg)
     if (consulta) formData.append('consulta', consulta)
     if (contrato) formData.append('contrato', contrato)
@@ -180,6 +183,22 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
                   {new Date(lote.fim).toLocaleDateString()})
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Órgão</label>
+            <select
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={orgao}
+              onChange={(e) => setOrgao(e.target.value)}
+              required
+            >
+              <option value="">Selecione um órgão</option>
+              <option value="SERASA">SERASA</option>
+              <option value="SPC">SPC</option>
+              <option value="CENPROT">CENPROT</option>
+              <option value="BOA_VISTA">BOA VISTA</option>
             </select>
           </div>
 
