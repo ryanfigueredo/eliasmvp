@@ -68,11 +68,26 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
     setShowSuggestions(false)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!nome || !cpfCnpj || !valor || !loteId) {
       return toast.error('Preencha todos os campos obrigatórios.')
+    }
+
+    // 🔒 Verificar se o lote ainda permite envio
+    const loteSelecionadoInfo = lotes.find((lote) => lote.id === loteId)
+
+    if (loteSelecionadoInfo) {
+      const agora = new Date()
+      const fimLote = new Date(loteSelecionadoInfo.fim)
+      fimLote.setHours(17, 0, 0, 0) // 17h (horário local)
+
+      if (agora > fimLote) {
+        return toast.error(
+          'Este lote já encerrou. Você não pode mais enviar documentos.',
+        )
+      }
     }
 
     const formData = new FormData()
@@ -81,8 +96,6 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
     formData.append('valor', valor.replace(/[^\d,.-]/g, '').replace(',', '.'))
     formData.append('responsavelId', userId)
     formData.append('loteId', loteId)
-    formData.append('orgao', orgao)
-
     if (rg) formData.append('rg', rg)
     if (consulta) formData.append('consulta', consulta)
     if (contrato) formData.append('contrato', contrato)
