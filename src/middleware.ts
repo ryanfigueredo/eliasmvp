@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
+const protectedRoutes: Record<string, string[]> = {
+  '/dashboard/master': ['master'],
+  '/dashboard/admin': ['admin', 'master'],
+  '/dashboard/consultor': ['consultor', 'admin', 'master'],
+  '/usuarios': ['admin', 'master'],
+  '/logs': ['master'],
+  '/clientes': ['consultor', 'admin', 'master'],
+  '/documentos': ['consultor', 'admin', 'master'],
+}
+
 export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
@@ -24,18 +34,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Proteção por cargo
-  const role = token.role
+  const role = token.role as string
+
   const rolePaths: Record<string, string> = {
     master: '/dashboard/master',
     admin: '/dashboard/admin',
-    'white-label': '/dashboard/white-label',
     consultor: '/dashboard/consultor',
+    'white-label': '/dashboard/white-label',
   }
 
-  for (const [key, path] of Object.entries(rolePaths)) {
-    if (pathname.startsWith(path) && role !== key) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Verificar permissões de rota
+  for (const [path, roles] of Object.entries(protectedRoutes)) {
+    if (
+      pathname.startsWith(path) &&
+      !(typeof role === 'string' && roles.includes(role))
+    ) {
+      const redirectPath = rolePaths[role] || '/dashboard'
+      return NextResponse.redirect(new URL(redirectPath, request.url))
     }
   }
 
@@ -43,5 +58,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: [
+    '/dashboard/:path*',
+    '/usuarios',
+    '/logs',
+    '/clientes',
+    '/documentos',
+    '/white-label',
+  ],
 }
