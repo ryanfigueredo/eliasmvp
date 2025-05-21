@@ -10,7 +10,7 @@ export default async function handler(
 
   try {
     const lotes = await prisma.lote.findMany({
-      orderBy: { inicio: 'desc' },
+      orderBy: { createdAt: 'desc' },
       include: {
         documentos: {
           select: { status: true },

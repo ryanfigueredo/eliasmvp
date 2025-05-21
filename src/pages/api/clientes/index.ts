@@ -21,18 +21,11 @@ export default async function handler(
     let userIds: string[] = []
 
     if (role === 'master') {
-      // Master vê tudo (não filtra por userId)
       userIds = []
     } else if (role === 'admin') {
-      // Admin vê ele mesmo + consultores sob sua responsabilidade
       const consultores = await prisma.user.findMany({
-        where: {
-          role: 'consultor',
-          adminId: userId,
-        },
-        select: {
-          id: true,
-        },
+        where: { role: 'consultor', adminId: userId },
+        select: { id: true },
       })
       userIds = [userId!, ...consultores.map((c) => c.id)]
     } else if (role === 'consultor') {
@@ -50,7 +43,7 @@ export default async function handler(
                 ],
               }
             : {},
-          userIds.length > 0 ? { userId: { in: userIds } } : {}, // master vê todos
+          userIds.length > 0 ? { userId: { in: userIds } } : {},
         ],
       },
       include: { user: { select: { name: true } } },
@@ -93,10 +86,25 @@ export default async function handler(
       }
 
       try {
-        // 👇 Verifica se já existe cliente com mesmo CPF
-        let cliente = await prisma.cliente.findUnique({
-          where: { cpfCnpj },
-        })
+        const lote = await prisma.lote.findUnique({ where: { id: loteId } })
+
+        if (!lote) {
+          return res.status(400).json({ message: 'Lote não encontrado.' })
+        }
+
+        // Verifica se já passou do prazo: fim do lote às 17h GMT-3
+        const agora = new Date()
+        const fimLote = new Date(lote.fim)
+        fimLote.setHours(17, 0, 0, 0)
+
+        if (agora > fimLote) {
+          return res.status(400).json({
+            message:
+              'Este lote já encerrou. Não é possível enviar documentos após o prazo.',
+          })
+        }
+
+        let cliente = await prisma.cliente.findUnique({ where: { cpfCnpj } })
 
         if (!cliente) {
           cliente = await prisma.cliente.create({
@@ -161,7 +169,7 @@ export default async function handler(
                 orgao:
                   orgao && Object.values(Orgao).includes(orgao as Orgao)
                     ? (orgao as Orgao)
-                    : Orgao.SERASA, // fallback se inválido
+                    : Orgao.SERASA,
               },
             })
           }
@@ -175,7 +183,7 @@ export default async function handler(
           .json({ message: 'Erro interno ao salvar cliente.' })
       }
     })
-  } else {
-    return res.status(405).end()
   }
+
+  return res.status(405).end()
 }
