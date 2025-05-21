@@ -56,7 +56,7 @@ export default function DocumentosContent({
           ? `/api/lotes/por-consultor?userId=${userId}`
           : '/api/lotes/with-status'
 
-        const res = await fetch(url)
+        const res = await fetch(url, { cache: 'no-store' })
         const data = await res.json()
         setLotesComStatus(data)
       } catch {

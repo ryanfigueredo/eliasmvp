@@ -13,30 +13,38 @@ export default async function handler(
       orderBy: { inicio: 'desc' },
       include: {
         documentos: {
-          select: {
-            status: true,
-          },
+          select: { status: true },
         },
       },
     })
 
     const lotesComStatus = lotes.map((lote) => {
       const statusList = lote.documentos.map((doc) => doc.status)
-
-      let status: string = 'Sem documentos'
       const total = statusList.length
 
-      const finalizados = statusList.filter((s) => s === 'FINALIZADO').length
-      const emAndamento = statusList.includes('EM_ANDAMENTO')
-      const iniciados = statusList.includes('INICIADO')
+      let status: string = 'Sem documentos'
 
       if (total > 0) {
-        if (finalizados === total) {
+        const count: Record<DocumentoStatus, number> = {
+          INICIADO: 0,
+          EM_ANDAMENTO: 0,
+          FINALIZADO: 0,
+        }
+
+        for (const s of statusList) {
+          if (s in count) {
+            count[s as DocumentoStatus] += 1
+          }
+        }
+
+        if (count.FINALIZADO === total) {
           status = 'Finalizado'
-        } else if (emAndamento) {
+        } else if (count.EM_ANDAMENTO > 0) {
           status = 'Em andamento'
-        } else if (iniciados) {
+        } else if (count.INICIADO > 0) {
           status = 'Iniciado'
+        } else {
+          status = 'Desconhecido'
         }
       }
 
@@ -51,7 +59,7 @@ export default async function handler(
 
     return res.status(200).json(lotesComStatus)
   } catch (error) {
-    console.error(error)
+    console.error('[lotes/with-status] erro:', error)
     return res.status(500).json({ message: 'Erro ao buscar lotes.' })
   }
 }
