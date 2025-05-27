@@ -86,19 +86,21 @@ export default function UsuariosContent({
                   {new Date(user.createdAt).toLocaleDateString('pt-BR')}
                 </td>
                 <td className="p-4 text-right">
-                  <EditarUsuarioModal
-                    user={{ ...user, name: user.name || '' }}
-                  />
-                  {isMaster && (
-                    <Button
-                      onClick={() => handleDeleteUser(user.id)}
-                      variant="ghost"
-                      className="text-red-600 text-xs px-0 justify-start hover:underline flex items-center gap-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Excluir
-                    </Button>
-                  )}
+                  <div className="flex items-center justify-end gap-2">
+                    <EditarUsuarioModal
+                      user={{ ...user, name: user.name || '' }}
+                    />
+                    {isMaster && (
+                      <Button
+                        onClick={() => handleDeleteUser(user.id)}
+                        variant="ghost"
+                        className="text-red-600 text-xs px-0 hover:underline flex items-center gap-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Excluir
+                      </Button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
