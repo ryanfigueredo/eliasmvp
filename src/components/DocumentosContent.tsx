@@ -254,7 +254,50 @@ export default function DocumentosContent({
                           </a>
                         </td>
 
-                        <td className="p-4">{doc.orgao}</td>
+                        <td className="p-4">
+                          {isGestor ? (
+                            <select
+                              className="border rounded px-2 py-1 text-sm"
+                              defaultValue={doc.orgao}
+                              onChange={async (e) => {
+                                const novoOrgao = e.target.value
+
+                                try {
+                                  const res = await fetch(
+                                    `/api/document/${doc.id}/orgao`,
+                                    {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                      },
+                                      body: JSON.stringify({
+                                        orgao: novoOrgao,
+                                      }),
+                                    },
+                                  )
+
+                                  if (res.ok) {
+                                    toast.success(
+                                      'Órgão atualizado com sucesso!',
+                                    )
+                                  } else {
+                                    toast.error('Erro ao atualizar órgão.')
+                                  }
+                                } catch (err) {
+                                  toast.error('Erro ao atualizar órgão.')
+                                }
+                              }}
+                            >
+                              <option value="SERASA">SERASA</option>
+                              <option value="SPC">SPC</option>
+                              <option value="BOA_VISTA">BOA VISTA</option>
+                              <option value="CENPROT">CENPROT</option>
+                            </select>
+                          ) : (
+                            doc.orgao
+                          )}
+                        </td>
+
                         <td className="p-4">
                           {isGestor ? (
                             <SelectStatusDocumento
