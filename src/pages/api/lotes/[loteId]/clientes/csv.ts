@@ -48,7 +48,10 @@ export default async function handler(
     .filter((id): id is string => !!id)
 
   const clientes = await prisma.cliente.findMany({
-    where: { id: { in: clienteIds } },
+    where: {
+      id: { in: clienteIds },
+      ...(userIds.length > 0 ? { userId: { in: userIds } } : {}),
+    },
   })
 
   const clientesMap = Object.fromEntries(clientes.map((c) => [c.id, c]))
