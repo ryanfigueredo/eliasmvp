@@ -21,20 +21,20 @@ export function SidebarContent({
         Dashboard
       </SidebarLink>
 
-      <SidebarLink
+      {/* <SidebarLink
         href="/clientes"
         icon={<UserCheck className="w-5 h-5" />}
         collapsed={collapsed}
       >
         Clientes
-      </SidebarLink>
+      </SidebarLink> */}
 
       <SidebarLink
         href="/documentos"
         icon={<FileText className="w-5 h-5" />}
         collapsed={collapsed}
       >
-        Documentos
+        Clientes
       </SidebarLink>
 
       {(role === 'master' || role === 'admin') && (

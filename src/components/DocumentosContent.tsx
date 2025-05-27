@@ -12,6 +12,7 @@ import { DocumentoStatus } from '@prisma/client'
 import NovoLoteModal from './NovoLoteModal'
 import EditarLoteModal from './EditarLoteModal'
 import { Button } from './ui/button'
+import ClientesPorLoteDialog from './ClientesPorLoteDialog'
 
 interface Props {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -100,12 +101,11 @@ export default function DocumentosContent({
       <h1 className="text-2xl font-bold">Documentos</h1>
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
-        {!['consultor', 'admin', 'master'].includes(role) && (
-          <>
-            <NovoDocumentoModal userId={userId} />
-            {!isConsultor && <NovoLoteModal />}
-          </>
-        )}
+        <>
+          <NovoDocumentoModal userId={userId} />
+          {role === 'master' && <NovoLoteModal />}
+        </>
+
         <FiltroDocumentoModal
           role={role}
           defaultFile=""
@@ -136,14 +136,23 @@ export default function DocumentosContent({
                 <td className="p-4">
                   <StatusFarol status={lote.status as any} />
                 </td>
-                <td className="p-4">
+                <td className="p-4 flex gap-2">
                   <Button
                     className="bg-[#9C66FF] hover:bg-[#8450e6] text-white text-sm"
                     onClick={() => setLoteSelecionado(lote.id)}
                   >
                     Ver documentos
                   </Button>
+
+                  {isGestor && (
+                    <ClientesPorLoteDialog
+                      loteId={lote.id}
+                      role={role}
+                      userId={userId}
+                    />
+                  )}
                 </td>
+
                 {isGestor && (
                   <td className="p-4">
                     <EditarLoteModal

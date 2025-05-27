@@ -68,6 +68,17 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
     setShowSuggestions(false)
   }
 
+  const isValidCpfCnpj = (input: string) => {
+    const raw = input.replace(/\D/g, '')
+    if (raw.length === 11) {
+      return !/^(\d)\1{10}$/.test(raw) // não pode ser todos iguais
+    }
+    if (raw.length === 14) {
+      return !/^(\d)\1{13}$/.test(raw)
+    }
+    return false
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -75,13 +86,22 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
       return toast.error('Preencha todos os campos obrigatórios.')
     }
 
-    // 🔒 Verificar se o lote ainda permite envio
+    if (!isValidCpfCnpj(cpfCnpj)) {
+      return toast.error(
+        'CPF ou CNPJ inválido. Verifique os números digitados.',
+      )
+    }
+
+    if (!rg || !contrato) {
+      return toast.error('Envie pelo menos RG e Contrato.')
+    }
+
     const loteSelecionadoInfo = lotes.find((lote) => lote.id === loteId)
 
     if (loteSelecionadoInfo) {
       const agora = new Date()
       const fimLote = new Date(loteSelecionadoInfo.fim)
-      fimLote.setHours(17, 0, 0, 0) // 17h (horário local)
+      fimLote.setHours(17, 0, 0, 0)
 
       if (agora > fimLote) {
         return toast.error(
@@ -199,7 +219,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
             </select>
           </div>
 
-          <div className="space-y-1">
+          {/* <div className="space-y-1">
             <label className="text-sm font-medium">Órgão</label>
             <select
               className="w-full border rounded px-3 py-2 text-sm"
@@ -213,7 +233,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
               <option value="CENPROT">CENPROT</option>
               <option value="BOA_VISTA">BOA VISTA</option>
             </select>
-          </div>
+          </div> */}
 
           <div className="space-y-1">
             <label className="text-sm font-medium">Documento: RG</label>
@@ -240,7 +260,9 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Adicional</label>
+            <label className="text-sm font-medium">
+              Comprovante de Pagamento
+            </label>
             <Input
               type="file"
               onChange={(e) => setContrato(e.target.files?.[0] ?? null)}

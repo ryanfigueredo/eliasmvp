@@ -60,13 +60,15 @@ export default async function handler(
       keepExtensions: true,
     })
 
-    form.parse(req, async (err, fields, files) => {
-      if (err) {
-        console.error('Erro parse:', err)
-        return res
-          .status(500)
-          .json({ message: 'Erro ao processar formulário.' })
-      }
+    try {
+      const { fields, files } = await new Promise<{ fields: any; files: any }>(
+        (resolve, reject) => {
+          form.parse(req, (err, fields, files) => {
+            if (err) return reject(err)
+            resolve({ fields, files })
+          })
+        },
+      )
 
       const nome = fields.nome?.toString()
       const cpfCnpj = fields.cpfCnpj?.toString()
@@ -85,104 +87,101 @@ export default async function handler(
           .json({ message: 'Campos obrigatórios ausentes.' })
       }
 
-      try {
-        const lote = await prisma.lote.findUnique({ where: { id: loteId } })
+      const lote = await prisma.lote.findUnique({ where: { id: loteId } })
 
-        if (!lote) {
-          return res.status(400).json({ message: 'Lote não encontrado.' })
+      if (!lote) {
+        return res.status(400).json({ message: 'Lote não encontrado.' })
+      }
+
+      const agora = new Date()
+      const fimLote = new Date(lote.fim)
+      fimLote.setHours(17, 0, 0, 0)
+
+      if (agora > fimLote) {
+        return res.status(400).json({
+          message:
+            'Este lote já encerrou. Não é possível enviar documentos após o prazo.',
+        })
+      }
+
+      let cliente = await prisma.cliente.findUnique({ where: { cpfCnpj } })
+
+      if (!cliente) {
+        cliente = await prisma.cliente.create({
+          data: { nome, cpfCnpj, valor, userId: responsavelId },
+        })
+
+        await prisma.log.create({
+          data: {
+            userId: responsavelId,
+            acao: 'CADASTRO DE CLIENTE',
+            detalhes: `Cadastrou o cliente "${nome}" com CPF/CNPJ ${cpfCnpj} no valor de R$${valor}`,
+          },
+        })
+      }
+
+      const salvarDoc = async (file: any, tipo: string) => {
+        const fileBuffer = await readFile(file.filepath)
+        const fileName = `documentos/${Date.now()}-${file.originalFilename}`
+        const fileUrl = await uploadToS3({
+          fileBuffer,
+          fileName,
+          contentType: file.mimetype ?? 'application/octet-stream',
+        })
+
+        return {
+          clienteId: cliente!.id,
+          tipo,
+          fileUrl,
         }
+      }
 
-        // Verifica se já passou do prazo: fim do lote às 17h GMT-3
-        const agora = new Date()
-        const fimLote = new Date(lote.fim)
-        fimLote.setHours(17, 0, 0, 0)
+      const docs = []
+      let consultaFileUrl = ''
 
-        if (agora > fimLote) {
-          return res.status(400).json({
-            message:
-              'Este lote já encerrou. Não é possível enviar documentos após o prazo.',
-          })
-        }
+      if (files.rg) docs.push(await salvarDoc(files.rg[0] || files.rg, 'RG'))
+      if (files.cnh)
+        docs.push(await salvarDoc(files.cnh[0] || files.cnh, 'CNH'))
+      if (files.consulta) {
+        const consulta = await salvarDoc(
+          files.consulta[0] || files.consulta,
+          'CONSULTA',
+        )
+        docs.push(consulta)
+        consultaFileUrl = consulta.fileUrl
+      }
+      if (files.contrato)
+        docs.push(
+          await salvarDoc(files.contrato[0] || files.contrato, 'CONTRATO'),
+        )
 
-        let cliente = await prisma.cliente.findUnique({ where: { cpfCnpj } })
+      if (docs.length > 0) {
+        await prisma.documentoCliente.createMany({ data: docs })
 
-        if (!cliente) {
-          cliente = await prisma.cliente.create({
-            data: { nome, cpfCnpj, valor, userId: responsavelId },
-          })
-
-          await prisma.log.create({
+        for (const doc of docs) {
+          await prisma.document.create({
             data: {
               userId: responsavelId,
-              acao: 'CADASTRO DE CLIENTE',
-              detalhes: `Cadastrou o cliente "${nome}" com CPF/CNPJ ${cpfCnpj} no valor de R$${valor}`,
+              clienteId: doc.clienteId,
+              fileUrl: doc.fileUrl,
+              loteId,
+              status: DocumentoStatus.INICIADO,
+              orgao:
+                orgao && Object.values(Orgao).includes(orgao as Orgao)
+                  ? (orgao as Orgao)
+                  : Orgao.SERASA,
             },
           })
         }
-
-        const salvarDoc = async (file: any, tipo: string) => {
-          const fileBuffer = await readFile(file.filepath)
-          const fileName = `documentos/${Date.now()}-${file.originalFilename}`
-          const fileUrl = await uploadToS3({
-            fileBuffer,
-            fileName,
-            contentType: file.mimetype ?? 'application/octet-stream',
-          })
-
-          return {
-            clienteId: cliente!.id,
-            tipo,
-            fileUrl,
-          }
-        }
-
-        const docs = []
-        let consultaFileUrl = ''
-
-        if (files.rg) docs.push(await salvarDoc(files.rg[0] || files.rg, 'RG'))
-        if (files.cnh)
-          docs.push(await salvarDoc(files.cnh[0] || files.cnh, 'CNH'))
-        if (files.consulta) {
-          const consulta = await salvarDoc(
-            files.consulta[0] || files.consulta,
-            'CONSULTA',
-          )
-          docs.push(consulta)
-          consultaFileUrl = consulta.fileUrl
-        }
-        if (files.contrato)
-          docs.push(
-            await salvarDoc(files.contrato[0] || files.contrato, 'CONTRATO'),
-          )
-
-        if (docs.length > 0) {
-          await prisma.documentoCliente.createMany({ data: docs })
-
-          for (const doc of docs) {
-            await prisma.document.create({
-              data: {
-                userId: responsavelId,
-                clienteId: doc.clienteId,
-                fileUrl: doc.fileUrl,
-                loteId,
-                status: DocumentoStatus.INICIADO,
-                orgao:
-                  orgao && Object.values(Orgao).includes(orgao as Orgao)
-                    ? (orgao as Orgao)
-                    : Orgao.SERASA,
-              },
-            })
-          }
-        }
-
-        return res.status(201).json({ message: 'Cliente criado com sucesso.' })
-      } catch (error) {
-        console.error(error)
-        return res
-          .status(500)
-          .json({ message: 'Erro interno ao salvar cliente.' })
       }
-    })
+
+      return res.status(201).json({ message: 'Cliente criado com sucesso.' })
+    } catch (error) {
+      console.error(error)
+      return res
+        .status(500)
+        .json({ message: 'Erro interno ao salvar cliente.' })
+    }
   }
 
   return res.status(405).end()
