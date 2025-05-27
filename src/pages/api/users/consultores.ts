@@ -11,7 +11,7 @@ export default async function handler(
     const users = await prisma.user.findMany({
       where: {
         role: {
-          in: ['admin', 'consultor', 'white-label'],
+          in: ['admin', 'consultor'],
         },
         status: 'aprovado',
       },

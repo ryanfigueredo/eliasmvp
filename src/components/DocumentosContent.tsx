@@ -100,7 +100,7 @@ export default function DocumentosContent({
       <h1 className="text-2xl font-bold">Documentos</h1>
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
-        {!['white-label'].includes(role) && (
+        {!['consultor', 'admin', 'master'].includes(role) && (
           <>
             <NovoDocumentoModal userId={userId} />
             {!isConsultor && <NovoLoteModal />}

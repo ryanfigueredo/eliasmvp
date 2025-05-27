@@ -16,8 +16,6 @@ export default async function DashboardPage() {
       return redirect('/dashboard/master')
     case 'admin':
       return redirect('/dashboard/admin')
-    case 'white-label':
-      return redirect('/dashboard/white-label')
     case 'consultor':
       return redirect('/dashboard/consultor')
     default:

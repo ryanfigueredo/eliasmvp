@@ -16,7 +16,7 @@ Elias Document Manager é um sistema de gestão de documentos em lote para empre
 
 ## Recursos do Sistema
 
-- Cadastro de usuários com roles: `master`, `admin`, `consultor`, `white-label`
+- Cadastro de usuários com roles: `master`, `admin`, `consultor`
 - Cadastro de lotes de documentos
 - Upload de documentos com envio direto para AWS S3
 - Visualização segura com Signed URLs temporários (não expõe URLs públicas)

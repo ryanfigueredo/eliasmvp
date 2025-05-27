@@ -39,7 +39,6 @@ export default function SelectRole({ id, role }: Props) {
     >
       <option value="consultor">Consultor</option>
       <option value="admin">Admin</option>
-      <option value="white-label">White-Label</option>
       <option value="master" disabled>
         master
       </option>

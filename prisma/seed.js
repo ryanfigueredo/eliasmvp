@@ -29,14 +29,6 @@ async function main() {
       role: 'consultor',
       status: 'aprovado',
     },
-    {
-      name: 'White Label Elias',
-      email: 'whitelabel@elias.com',
-      cpf: '33333333333',
-      password: 'White@123',
-      role: 'white-label',
-      status: 'aprovado',
-    },
   ]
 
   for (const user of users) {

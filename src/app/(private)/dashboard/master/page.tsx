@@ -22,15 +22,15 @@ export default async function MasterDashboardPage() {
     return redirect('/login')
   }
 
-  const [total, aprovados, aguardando, consultores, admins, whiteLabels] =
-    await Promise.all([
+  const [total, aprovados, aguardando, consultores, admins] = await Promise.all(
+    [
       prisma.user.count(),
       prisma.user.count({ where: { status: 'aprovado' } }),
       prisma.user.count({ where: { status: 'aguardando' } }),
       prisma.user.count({ where: { role: 'consultor' } }),
       prisma.user.count({ where: { role: 'admin' } }),
-      prisma.user.count({ where: { role: 'white-label' } }),
-    ])
+    ],
+  )
 
   const cardClass = 'bg-white rounded-xl p-6 shadow-sm border'
 
@@ -64,11 +64,6 @@ export default async function MasterDashboardPage() {
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Admins</p>
           <h2 className="text-xl font-semibold">{admins}</h2>
-        </div>
-
-        <div className={cardClass}>
-          <p className="text-sm text-gray-500">White Labels</p>
-          <h2 className="text-xl font-semibold">{whiteLabels}</h2>
         </div>
 
         <div className={cardClass + ' col-span-1 md:col-span-2'}>

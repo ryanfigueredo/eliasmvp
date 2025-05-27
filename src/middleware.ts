@@ -29,7 +29,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Redirecionar se não estiver autenticado
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
@@ -40,10 +39,8 @@ export async function middleware(request: NextRequest) {
     master: '/dashboard/master',
     admin: '/dashboard/admin',
     consultor: '/dashboard/consultor',
-    'white-label': '/dashboard/white-label',
   }
 
-  // Verificar permissões de rota
   for (const [path, roles] of Object.entries(protectedRoutes)) {
     if (
       pathname.startsWith(path) &&
@@ -64,6 +61,5 @@ export const config = {
     '/logs',
     '/clientes',
     '/documentos',
-    '/white-label',
   ],
 }

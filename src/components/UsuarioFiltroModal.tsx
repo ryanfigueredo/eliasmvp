@@ -51,7 +51,6 @@ export default function UsuarioFiltroModal() {
               <option value="">Todos os cargos</option>
               <option value="consultor">Consultor</option>
               <option value="admin">Admin</option>
-              <option value="white-label">White Label</option>
             </select>
           </div>
 

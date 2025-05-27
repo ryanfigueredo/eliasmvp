@@ -22,7 +22,7 @@ const schema = z.object({
   cpf: z.string().min(11, 'CPF inválido'),
   email: z.string().email('Email inválido'),
   password: z.string().optional(),
-  role: z.enum(['consultor', 'admin', 'white-label']),
+  role: z.enum(['consultor', 'admin']),
   status: z.enum(['aprovado', 'aguardando', 'inativo']),
 })
 
@@ -134,7 +134,6 @@ export default function EditarUsuarioModal({ user }: Props) {
             >
               <option value="consultor">Consultor</option>
               <option value="admin">Admin</option>
-              <option value="white-label">White Label</option>
             </select>
           </div>
 
