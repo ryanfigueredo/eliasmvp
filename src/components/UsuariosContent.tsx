@@ -53,50 +53,58 @@ export default function UsuariosContent({
         </div>
       </div>
 
-      <table className="w-full border-collapse bg-white rounded-xl shadow-sm text-sm overflow-hidden">
-        <thead>
-          <tr className="bg-gray-100 text-left">
-            <th className="p-4">Nome</th>
-            <th className="p-4">Email</th>
-            <th className="p-4">Situação</th>
-            <th className="p-4">Cargo</th>
-            <th className="p-4">Criado em</th>
-            <th className="p-4 text-right">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id} className="border-t">
-              <td className="p-4">{user.name || '-'}</td>
-              <td className="p-4">{user.email}</td>
-              <td className="p-4">
-                <SelectStatus id={user.id} status={user.status} />
-              </td>
-              <td className="p-4">
-                {isMaster ? (
-                  <SelectRole id={user.id} role={user.role} />
-                ) : (
-                  <span className="text-zinc-600 capitalize">{user.role}</span>
-                )}
-              </td>
-              <td className="p-4">
-                {new Date(user.createdAt).toLocaleDateString('pt-BR')}
-              </td>
-              <td className="p-4 text-right">
-                <EditarUsuarioModal user={{ ...user, name: user.name || '' }} />
-                <Button
-                  onClick={() => handleDeleteUser(user.id)}
-                  variant="ghost"
-                  className="text-red-600 text-xs px-0 justify-start hover:underline flex items-center gap-1"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Excluir
-                </Button>
-              </td>
+      <div className="max-h-[600px] overflow-y-auto border rounded-xl">
+        <table className="w-full border-collapse bg-white text-sm">
+          <thead className="sticky top-0 bg-gray-100 shadow z-10">
+            <tr className="text-left">
+              <th className="p-4">Nome</th>
+              <th className="p-4">Email</th>
+              <th className="p-4">Situação</th>
+              <th className="p-4">Cargo</th>
+              <th className="p-4">Criado em</th>
+              <th className="p-4 text-right">Ações</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id} className="border-t">
+                <td className="p-4">{user.name || '-'}</td>
+                <td className="p-4">{user.email}</td>
+                <td className="p-4">
+                  <SelectStatus id={user.id} status={user.status} />
+                </td>
+                <td className="p-4">
+                  {isMaster ? (
+                    <SelectRole id={user.id} role={user.role} />
+                  ) : (
+                    <span className="text-zinc-600 capitalize">
+                      {user.role}
+                    </span>
+                  )}
+                </td>
+                <td className="p-4">
+                  {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                </td>
+                <td className="p-4 text-right">
+                  <EditarUsuarioModal
+                    user={{ ...user, name: user.name || '' }}
+                  />
+                  {isMaster && (
+                    <Button
+                      onClick={() => handleDeleteUser(user.id)}
+                      variant="ghost"
+                      className="text-red-600 text-xs px-0 justify-start hover:underline flex items-center gap-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Excluir
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <ExportarUsuarios
         data={users.map((user) => ({

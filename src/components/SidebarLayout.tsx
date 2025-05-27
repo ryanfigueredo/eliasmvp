@@ -42,7 +42,7 @@ export default function SidebarLayout({
   }, [user.image])
 
   return (
-    <div className="min-h-screen flex bg-black">
+    <div className="h-screen flex bg-black">
       {/* Sidebar fixa */}
       <aside className="w-64 bg-black text-white border-r border-zinc-800 flex flex-col justify-between py-6 px-4">
         <div>

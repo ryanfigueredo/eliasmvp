@@ -15,6 +15,18 @@ export default async function handler(
   }
 
   if (method === 'DELETE') {
+    const session = await getServerSession(req, res, authOptions)
+
+    if (!session || !session.user) {
+      return res.status(401).json({ message: 'Não autenticado.' })
+    }
+
+    if (session.user.role !== 'master') {
+      return res
+        .status(403)
+        .json({ message: 'Apenas o master pode excluir usuários.' })
+    }
+
     try {
       const user = await prisma.user.delete({
         where: { id },

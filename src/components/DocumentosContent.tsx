@@ -49,7 +49,7 @@ export default function DocumentosContent({
   const [isPending, startTransition] = useTransition()
 
   const isConsultor = role === 'consultor'
-  const isGestor = role === 'master' || role === 'admin'
+  const isGestor = role === 'master'
 
   useEffect(() => {
     async function fetchLotes() {
@@ -312,7 +312,7 @@ export default function DocumentosContent({
                         <td className="p-4">
                           {new Date(doc.updatedAt).toLocaleDateString('pt-BR')}
                         </td>
-                        {isGestor && (
+                        {role === 'master' && (
                           <td className="p-4 text-right">
                             <ExcluirDocumentoButton id={doc.id} />
                           </td>

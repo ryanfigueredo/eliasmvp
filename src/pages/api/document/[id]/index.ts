@@ -11,8 +11,10 @@ export default async function handler(
   if (req.method !== 'DELETE') return res.status(405).end()
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
-  if (!token || (token.role !== 'master' && token.role !== 'admin')) {
-    return res.status(403).json({ message: 'Não autorizado.' })
+  if (!token || token.role !== 'master') {
+    return res
+      .status(403)
+      .json({ message: 'Apenas usuários Master podem excluir documentos.' })
   }
 
   const { id } = req.query

@@ -3,12 +3,13 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import UsuariosContent from '@/components/UsuariosContent'
+import { headers } from 'next/headers'
 
 type PageProps = {
   searchParams: { [key: string]: string | string[] | undefined }
 }
 
-export default async function UsuariosPage({ searchParams }: PageProps) {
+export default async function UsuariosPage() {
   const session = await getServerSession(authOptions)
 
   if (
@@ -19,18 +20,14 @@ export default async function UsuariosPage({ searchParams }: PageProps) {
     return redirect('/login')
   }
 
-  // CONVERSÃO CORRETA
-  const busca = Array.isArray(searchParams['busca'])
-    ? searchParams['busca'][0]
-    : searchParams['busca'] || ''
+  // Recupera a URL com os parâmetros da request
+  const headersList = headers()
+  const url = (await headersList).get('x-url') || ''
+  const searchParams = new URL(url, 'http://localhost:3000').searchParams
 
-  const role = Array.isArray(searchParams['role'])
-    ? searchParams['role'][0]
-    : searchParams['role'] || ''
-
-  const status = Array.isArray(searchParams['status'])
-    ? searchParams['status'][0]
-    : searchParams['status'] || ''
+  const busca = searchParams.get('busca') || ''
+  const role = searchParams.get('role') || ''
+  const status = searchParams.get('status') || ''
 
   const isMaster = session.user.role === 'master'
   const userId = session.user.id
