@@ -13,6 +13,7 @@ import NovoLoteModal from './NovoLoteModal'
 import EditarLoteModal from './EditarLoteModal'
 import { Button } from './ui/button'
 import ClientesPorLoteDialog from './ClientesPorLoteDialog'
+import { DownloadIcon } from 'lucide-react'
 
 interface Props {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -178,6 +179,41 @@ export default function DocumentosContent({
             ← Voltar para lista de lotes
           </Button>
 
+          <Button
+            variant="outline"
+            className="text-sm"
+            onClick={async () => {
+              try {
+                const res = await fetch(
+                  `/api/lotes/${loteSelecionado}/clientes/csv`,
+                  {
+                    headers: {
+                      'x-user-role': role,
+                      'x-user-id': userId,
+                    },
+                  },
+                )
+
+                if (!res.ok) {
+                  throw new Error('Erro ao gerar CSV')
+                }
+
+                const blob = await res.blob()
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `clientes_lote_${loteSelecionado}.csv`
+                a.click()
+                window.URL.revokeObjectURL(url)
+              } catch (err) {
+                toast.error('Erro ao gerar CSV dos clientes.')
+              }
+            }}
+          >
+            <DownloadIcon className="w-4 h-4 mr-2" />
+            Download da lista de clientes
+          </Button>
+
           <div className="space-y-8">
             {Object.entries(documentosPorLote).map(([loteId, grupo]) => (
               <div key={loteId}>
@@ -207,9 +243,17 @@ export default function DocumentosContent({
                   <tbody>
                     {grupo.docs.map((doc) => (
                       <tr key={doc.id} className="border-t">
-                        <td className="p-4">
+                        <td className="p-4 flex gap-2">
                           <PreviewDocumentoModal fileUrl={doc.fileUrl} />
+                          <a
+                            href={doc.fileUrl}
+                            download
+                            className="text-sm text-zinc-600 hover:text-zinc-900"
+                          >
+                            Baixar
+                          </a>
                         </td>
+
                         <td className="p-4">{doc.orgao}</td>
                         <td className="p-4">
                           {isGestor ? (

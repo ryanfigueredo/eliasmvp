@@ -5,9 +5,9 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  const { id } = req.query
+  const { loteId } = req.query
 
-  if (typeof id !== 'string') {
+  if (typeof loteId !== 'string') {
     return res.status(400).json({ message: 'ID inválido.' })
   }
 
@@ -16,7 +16,7 @@ export default async function handler(
 
     try {
       const loteAtualizado = await prisma.lote.update({
-        where: { id },
+        where: { id: loteId },
         data: {
           nome,
           inicio: new Date(inicio),
@@ -33,7 +33,7 @@ export default async function handler(
 
   if (req.method === 'DELETE') {
     try {
-      await prisma.lote.delete({ where: { id } })
+      await prisma.lote.delete({ where: { id: loteId } })
       return res.status(204).end()
     } catch (err) {
       console.error(err)
