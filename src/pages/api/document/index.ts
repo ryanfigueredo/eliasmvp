@@ -50,7 +50,25 @@ export default async function handler(
         ],
       },
       include: {
-        user: { select: { name: true } },
+        user: {
+          select: {
+            name: true,
+            admin: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        cliente: {
+          include: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
         lote: true,
       },
       orderBy: { createdAt: 'desc' },

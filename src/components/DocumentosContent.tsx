@@ -27,7 +27,16 @@ type DocumentoComLote = {
   status: DocumentoStatus
   fileUrl: string
   updatedAt: string
-  user?: { name: string }
+  user?: {
+    name: string
+    admin?: {
+      name: string // <-- responsável
+    }
+  }
+  cliente?: {
+    nome: string
+    user?: { name: string }
+  }
   lote?: {
     id: string
     nome: string
@@ -214,7 +223,7 @@ export default function DocumentosContent({
             Download da lista de clientes
           </Button>
 
-          <div className="space-y-8">
+          <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2 border rounded-xl">
             {Object.entries(documentosPorLote).map(([loteId, grupo]) => (
               <div key={loteId}>
                 <div className="mb-2">
@@ -236,6 +245,7 @@ export default function DocumentosContent({
                       <th className="p-4">Órgão</th>
                       <th className="p-4">Status</th>
                       <th className="p-4">Usuário</th>
+                      <th className="p-4">Responsável</th>
                       <th className="p-4">Última atualização</th>
                       {isGestor && <th className="p-4 text-right">Ações</th>}
                     </tr>
@@ -309,6 +319,8 @@ export default function DocumentosContent({
                           )}
                         </td>
                         <td className="p-4">{doc.user?.name ?? '—'}</td>
+                        <td className="p-4">{doc.user?.admin?.name ?? '—'}</td>
+
                         <td className="p-4">
                           {new Date(doc.updatedAt).toLocaleDateString('pt-BR')}
                         </td>

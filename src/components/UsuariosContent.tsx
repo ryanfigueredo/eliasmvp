@@ -19,6 +19,7 @@ type Usuario = {
   role: string
   status: string
   createdAt: string
+  admin?: { name: string | null } // <- aqui
 }
 
 export default function UsuariosContent({
@@ -62,6 +63,7 @@ export default function UsuariosContent({
               <th className="p-4">Situação</th>
               <th className="p-4">Cargo</th>
               <th className="p-4">Criado em</th>
+              <th className="p-4">Responsável</th>
               <th className="p-4 text-right">Ações</th>
             </tr>
           </thead>
@@ -85,6 +87,8 @@ export default function UsuariosContent({
                 <td className="p-4">
                   {new Date(user.createdAt).toLocaleDateString('pt-BR')}
                 </td>
+                <td className="p-4">{user.admin?.name || '—'}</td>
+
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <EditarUsuarioModal

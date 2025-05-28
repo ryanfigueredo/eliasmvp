@@ -61,6 +61,11 @@ export default async function UsuariosPage() {
       role: true,
       status: true,
       createdAt: true,
+      admin: {
+        select: {
+          name: true,
+        },
+      },
     },
   })
 
@@ -69,6 +74,7 @@ export default async function UsuariosPage() {
       users={users.map((user) => ({
         ...user,
         createdAt: user.createdAt.toISOString(),
+        admin: user.admin === null ? undefined : user.admin,
       }))}
       isMaster={isMaster}
     />
