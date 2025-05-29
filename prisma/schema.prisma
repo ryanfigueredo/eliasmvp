@@ -48,7 +48,8 @@ model Lote {
 model Document {
   id        String          @id @default(uuid())
   userId    String
-  clienteId String?         // <- já existe
+  agrupadorId  String?  
+  clienteId String?         
   loteId    String?
   orgao     Orgao
   status    DocumentoStatus @default(INICIADO)

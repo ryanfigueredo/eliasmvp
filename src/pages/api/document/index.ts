@@ -71,7 +71,7 @@ export default async function handler(
         },
         lote: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ clienteId: 'desc' }, { createdAt: 'desc' }],
     })
 
     return res.status(200).json(documentos)
