@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from 'react'
 import NovoClienteModal from '@/components/NovoClienteModal'
 import DocumentosClienteModal from '@/components/DocumentosClienteModal'
-import FiltroClienteModal from '@/components/FiltroClienteModal'
 
 type Cliente = {
   id: string
@@ -68,10 +67,6 @@ export default function ClientesContent({
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
         <NovoClienteModal userId={userId} />
-        <FiltroClienteModal
-          defaultNomeCpf={busca}
-          defaultResponsavel={role === 'consultor' ? userId : ''}
-        />
       </div>
 
       {isPending ? (
