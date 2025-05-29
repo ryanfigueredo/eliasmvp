@@ -35,6 +35,7 @@ export default function ClientesPorLoteDialog({
         },
       })
       const data = await res.json()
+      console.log('[CLIENTES FETCHED]', data)
       setClientes(data)
     }
 
@@ -58,8 +59,9 @@ export default function ClientesPorLoteDialog({
             <tr>
               <th className="p-3 text-left">Nome</th>
               <th className="p-3 text-left">CPF/CNPJ</th>
-              <th className="p-3 text-left">Valor</th>
               <th className="p-3 text-left">Responsável</th>
+              <th className="p-3 text-left">Usuário</th>
+              <th className="p-3 text-left">Valor</th>
             </tr>
           </thead>
           <tbody>
@@ -68,12 +70,19 @@ export default function ClientesPorLoteDialog({
                 <td className="p-3">{cliente.nome}</td>
                 <td className="p-3">{cliente.cpfCnpj}</td>
                 <td className="p-3">
-                  R$
+                  {/* 👇 mostra o admin se houver */}
+                  {cliente.user?.admin?.name ?? '—'}
+                </td>
+                <td className="p-3">
+                  {/* 👇 mostra quem subiu o cliente */}
+                  {cliente.user?.name ?? '—'}
+                </td>
+                <td className="p-3">
+                  R${' '}
                   {cliente.valor.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                   })}
                 </td>
-                <td className="p-3">{cliente.user?.name}</td>
               </tr>
             ))}
           </tbody>

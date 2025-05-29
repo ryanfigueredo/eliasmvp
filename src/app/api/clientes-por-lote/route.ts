@@ -55,6 +55,11 @@ export async function GET(req: NextRequest) {
       user: {
         select: {
           name: true,
+          admin: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },

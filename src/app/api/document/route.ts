@@ -52,9 +52,9 @@ export async function GET(req: NextRequest) {
         user: {
           select: {
             id: true,
-            name: true,
+            name: true, // <- quem inputou
             admin: {
-              select: { name: true },
+              select: { name: true }, // <- responsável
             },
           },
         },

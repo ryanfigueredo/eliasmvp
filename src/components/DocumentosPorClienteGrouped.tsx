@@ -83,7 +83,17 @@ export default function DocumentosPorClienteGrouped({
                       'pt-BR',
                     )}
                   </div>
+                  <div className="text-sm text-zinc-500 mt-1">
+                    <span className="font-medium">Responsável: </span>
+                    {docsOrdenados[0].user?.admin?.name ??
+                      (role === 'master' ? docsOrdenados[0].user?.name : '—')}
+                  </div>
+                  <div className="text-sm text-zinc-500">
+                    <span className="font-medium">Inputado por: </span>
+                    {docsOrdenados[0].user?.name ?? '—'}
+                  </div>
                 </div>
+
                 <div className="flex items-center gap-4">
                   {isGestor ? (
                     <SelectStatusDocumento
@@ -113,6 +123,8 @@ export default function DocumentosPorClienteGrouped({
                   <thead className="bg-zinc-50">
                     <tr>
                       <th className="p-4 text-left">Tipo</th>
+                      <th className="p-4 text-left">Responsável</th>{' '}
+                      <th className="p-4 text-left">Inputado por</th>{' '}
                       <th className="p-4 text-left">Download</th>
                     </tr>
                   </thead>
@@ -120,6 +132,12 @@ export default function DocumentosPorClienteGrouped({
                     {docsOrdenados.map((doc, i) => (
                       <tr key={doc.id} className="border-t">
                         <td className="p-4">Documento {i + 1}</td>
+                        <td className="p-4">
+                          {' '}
+                          {doc.user?.admin?.name ??
+                            (role === 'master' ? doc.user?.name : '—')}
+                        </td>
+                        <td className="p-4">{doc.user?.name ?? '—'}</td>
                         <td className="p-4 flex items-center gap-2">
                           <PreviewDocumentoModal fileUrl={doc.fileUrl} />
                           <a
