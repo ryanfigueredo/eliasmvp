@@ -1,3 +1,5 @@
+'use client'
+
 import { DocumentoStatus } from '@prisma/client'
 import { useState } from 'react'
 import { Download, Eye } from 'lucide-react'
@@ -19,6 +21,7 @@ interface Documento {
     }
   }
   cliente?: {
+    id: string
     nome: string
     user?: { name: string }
   }
@@ -38,35 +41,42 @@ export default function DocumentosPorClienteGrouped({
   const isGestor = role === 'master'
   const [openCliente, setOpenCliente] = useState<string | null>(null)
 
-  const documentosPorCliente = documentos.reduce(
-    (acc: Record<string, Documento[]>, doc) => {
-      const key = doc.cliente?.nome || 'Desconhecido'
-      if (!acc[key]) acc[key] = []
-      acc[key].push(doc)
-      return acc
-    },
-    {},
-  )
+  const documentosPorCliente = documentos.reduce<
+    Record<string, { nome: string; documentos: Documento[] }>
+  >((acc, doc) => {
+    const clienteId = doc.cliente?.id ?? `sem-cliente-${doc.id}`
+    const clienteNome = doc.cliente?.nome ?? 'Cliente desconhecido'
+
+    if (!acc[clienteId]) {
+      acc[clienteId] = {
+        nome: clienteNome,
+        documentos: [],
+      }
+    }
+
+    acc[clienteId].documentos.push(doc)
+    return acc
+  }, {})
 
   return (
     <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2 border rounded-xl">
       {Object.entries(documentosPorCliente)
-        .sort(
-          ([, docsA], [, docsB]) =>
-            new Date(docsB[0].updatedAt).getTime() -
-            new Date(docsA[0].updatedAt).getTime(),
-        )
-        .map(([cliente, docs]) => {
-          const docsOrdenados = docs.sort(
+        .sort(([, a], [, b]) => {
+          const aDate = new Date(a.documentos[0].updatedAt).getTime()
+          const bDate = new Date(b.documentos[0].updatedAt).getTime()
+          return bDate - aDate
+        })
+        .map(([clienteId, { nome, documentos }]) => {
+          const docsOrdenados = documentos.sort(
             (a, b) =>
               new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
           )
 
           return (
-            <div key={cliente} className="border rounded-xl shadow">
+            <div key={clienteId} className="border rounded-xl shadow">
               <div className="flex justify-between items-center p-4 bg-zinc-100">
                 <div>
-                  <p className="font-semibold text-zinc-700">{cliente}</p>
+                  <p className="font-semibold text-zinc-700">{nome}</p>
                   <div className="text-sm text-zinc-500">
                     Última atualização:{' '}
                     {new Date(docsOrdenados[0].updatedAt).toLocaleDateString(
@@ -87,7 +97,9 @@ export default function DocumentosPorClienteGrouped({
                     variant="outline"
                     size="sm"
                     onClick={() =>
-                      setOpenCliente(openCliente === cliente ? null : cliente)
+                      setOpenCliente(
+                        openCliente === clienteId ? null : clienteId,
+                      )
                     }
                   >
                     <Eye className="w-4 h-4 mr-2" />
@@ -96,7 +108,7 @@ export default function DocumentosPorClienteGrouped({
                 </div>
               </div>
 
-              {openCliente === cliente && (
+              {openCliente === clienteId && (
                 <table className="w-full bg-white text-sm">
                   <thead className="bg-zinc-50">
                     <tr>

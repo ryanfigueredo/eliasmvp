@@ -3,8 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import NovoDocumentoModal from './NovoDocumentoModal'
-import FiltroDocumentoModal from './FiltroDocumentoModal'
-import StatusFarol from './StatusFarol'
+
 import { DocumentoStatus } from '@prisma/client'
 import NovoLoteModal from './NovoLoteModal'
 import EditarLoteModal from './EditarLoteModal'
@@ -21,6 +20,7 @@ interface Props {
 
 type DocumentoComLote = {
   id: string
+  userId: string
   orgao: string
   status: DocumentoStatus
   fileUrl: string
@@ -32,6 +32,7 @@ type DocumentoComLote = {
     }
   }
   cliente?: {
+    id: string
     nome: string
     user?: { name: string }
   }
@@ -55,16 +56,51 @@ export default function DocumentosContent({ role, userId }: Props) {
   const isGestor = role === 'master'
 
   useEffect(() => {
+    if (loteSelecionado) return
+
+    async function fetchDocumentos() {
+      try {
+        const res = await fetch(`/api/document`, {
+          headers: {
+            'x-user-role': role,
+            'x-user-id': userId,
+          },
+        })
+
+        if (!res.ok) throw new Error('Erro na resposta da API')
+
+        const data = await res.json()
+        if (!Array.isArray(data)) throw new Error('Resposta inválida')
+        setDocumentos(data)
+      } catch (err) {
+        console.error('Erro no fetchDocumentos inicial:', err)
+        toast.error('Erro ao carregar documentos')
+      }
+    }
+
+    fetchDocumentos()
+  }, [loteSelecionado, role, userId])
+
+  useEffect(() => {
     async function fetchLotes() {
       try {
         const url = isConsultor
           ? `/api/lotes/por-consultor?userId=${userId}`
-          : '/api/lotes/with-status'
+          : `/api/lotes/with-status`
 
-        const res = await fetch(url, { cache: 'no-store' })
+        const res = await fetch(url, {
+          headers: {
+            'x-user-role': role,
+            'x-user-id': userId,
+          },
+        })
+
+        if (!res.ok) throw new Error('Erro na resposta da API')
+
         const data = await res.json()
         setLotesComStatus(data)
-      } catch {
+      } catch (err) {
+        console.error('Erro no fetchLotes:', err)
         toast.error('Erro ao buscar lotes')
       }
     }
@@ -78,44 +114,51 @@ export default function DocumentosContent({ role, userId }: Props) {
         try {
           const res = await fetch(
             `/api/document?role=${role}&userId=${userId}&loteId=${loteSelecionado}`,
+            {
+              headers: {
+                'x-user-role': role,
+                'x-user-id': userId,
+              },
+            },
           )
+
+          if (!res.ok) throw new Error('Erro na resposta da API')
+
           const data = await res.json()
+          if (!Array.isArray(data)) throw new Error('Resposta inválida')
           setDocumentos(data)
-        } catch {
+        } catch (err) {
+          console.error('Erro no fetchDocs por lote:', err)
           toast.error('Erro ao carregar documentos')
         }
       }
       fetchDocs()
     })
-  }, [loteSelecionado])
+  }, [loteSelecionado, role, userId])
 
-  const documentosPorLote = documentos.reduce<
-    Record<string, { lote: DocumentoComLote['lote']; docs: DocumentoComLote[] }>
-  >((acc, doc) => {
-    const loteKey = doc.lote?.id || 'sem-lote'
-    if (!acc[loteKey]) {
-      acc[loteKey] = { lote: doc.lote ?? null, docs: [] }
-    }
-    acc[loteKey].docs.push(doc)
-    return acc
-  }, {})
+  const documentosPorLote = Array.isArray(documentos)
+    ? documentos.reduce<
+        Record<
+          string,
+          { lote: DocumentoComLote['lote']; docs: DocumentoComLote[] }
+        >
+      >((acc, doc) => {
+        const loteKey = doc.lote?.id || 'sem-lote'
+        if (!acc[loteKey]) {
+          acc[loteKey] = { lote: doc.lote ?? null, docs: [] }
+        }
+        acc[loteKey].docs.push(doc)
+        return acc
+      }, {})
+    : {}
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Documentos</h1>
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
-        <>
-          <NovoDocumentoModal userId={userId} />
-          {role === 'master' && <NovoLoteModal />}
-        </>
-
-        <FiltroDocumentoModal
-          role={role}
-          defaultFile=""
-          defaultOrgao=""
-          defaultStatus=""
-        />
+        <NovoDocumentoModal userId={userId} />
+        {role === 'master' && <NovoLoteModal userId={userId} />}
       </div>
 
       {!loteSelecionado && (
@@ -141,7 +184,6 @@ export default function DocumentosContent({ role, userId }: Props) {
                     {new Date(lote.inicio).toLocaleDateString('pt-BR')} até{' '}
                     {new Date(lote.fim).toLocaleDateString('pt-BR')}
                   </td>
-
                   <td className="p-4 flex gap-2">
                     <Button
                       className="bg-[#9C66FF] hover:bg-[#8450e6] text-white text-sm"
@@ -149,7 +191,6 @@ export default function DocumentosContent({ role, userId }: Props) {
                     >
                       Ver documentos
                     </Button>
-
                     {isGestor && (
                       <ClientesPorLoteDialog
                         loteId={lote.id}
@@ -158,7 +199,6 @@ export default function DocumentosContent({ role, userId }: Props) {
                       />
                     )}
                   </td>
-
                   {isGestor && (
                     <td className="p-4">
                       <EditarLoteModal

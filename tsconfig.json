@@ -30,5 +30,5 @@
     "prisma/seed.ts",
     "prisma/reset.js"
   ],
-  "exclude": ["node_modules", ".next", "src/pages/api/document/[id].ts"]
+  "exclude": ["node_modules", ".next", "src/app/api/document/[id].ts"]
 }

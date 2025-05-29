@@ -4,13 +4,15 @@ import { redirect } from 'next/navigation'
 import DocumentosContent from '@/components/DocumentosContent'
 
 type Props = {
-  params: any
-  searchParams?: Record<string, string | string[]>
+  searchParams?: Record<string, string | string[] | undefined>
 }
 
-export default async function DocumentosPage({ searchParams }: any) {
+export default async function DocumentosPage({ searchParams }: Props) {
   const session = await getServerSession(authOptions)
-  if (!session?.user) return redirect('/login')
+
+  if (!session?.user) {
+    return redirect('/login')
+  }
 
   return (
     <DocumentosContent

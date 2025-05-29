@@ -1,4 +1,3 @@
-// components/NovoLoteModal.tsx
 'use client'
 
 import {
@@ -13,8 +12,13 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useState, useTransition } from 'react'
+import { useSession } from 'next-auth/react'
 
-export default function NovoLoteModal() {
+interface Props {
+  userId: string
+}
+
+export default function NovoLoteModal({ userId }: Props) {
   const [open, setOpen] = useState(false)
   const [nome, setNome] = useState('')
   const [inicio, setInicio] = useState('')
@@ -32,12 +36,16 @@ export default function NovoLoteModal() {
       return toast.error('A data final não pode ser anterior à inicial.')
     }
 
+    if (!userId) {
+      return toast.error('Usuário não autenticado.')
+    }
+
     startTransition(async () => {
       try {
         const res = await fetch('/api/lotes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome, inicio, fim }),
+          body: JSON.stringify({ nome, inicio, fim, userId }),
         })
 
         if (res.ok) {

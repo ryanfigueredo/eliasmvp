@@ -10,13 +10,17 @@ import {
 import { Button } from './ui/button'
 import { useEffect, useState } from 'react'
 
-interface Props {
+interface ClientesPorLoteDialogProps {
   loteId: string
   role: string
   userId: string
 }
 
-export default function ClientesPorLoteDialog({ loteId, role, userId }: Props) {
+export default function ClientesPorLoteDialog({
+  loteId,
+  role,
+  userId,
+}: ClientesPorLoteDialogProps) {
   const [clientes, setClientes] = useState<any[]>([])
   const [open, setOpen] = useState(false)
 
@@ -64,7 +68,7 @@ export default function ClientesPorLoteDialog({ loteId, role, userId }: Props) {
                 <td className="p-3">{cliente.nome}</td>
                 <td className="p-3">{cliente.cpfCnpj}</td>
                 <td className="p-3">
-                  R${' '}
+                  R$
                   {cliente.valor.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                   })}
