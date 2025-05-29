@@ -7,6 +7,7 @@ import { LogOut, Menu, Settings, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { signOut } from 'next-auth/react'
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -77,7 +78,7 @@ export function ClientLayout({
           <Button
             variant="ghost"
             size="icon"
-            className="text-white ml-auto  mb-2"
+            className="text-white   mb-2"
             onClick={() => setIsCollapsed(!isCollapsed)}
           >
             {isCollapsed ? (
@@ -100,13 +101,11 @@ export function ClientLayout({
           <SidebarContent role={user.role as any} collapsed={isCollapsed} />
         </div>
 
-        {/* Rodapé */}
         <div className="px-4 py-6">
           <div className="flex items-center gap-3 mb-3">
             {signedUrl === null ? (
-              // Skeleton enquanto carrega a imagem
               <div className="w-10 h-10">
-                <div className="rounded-full w-full h-full bg-zinc-700 animate-pulse" />
+                <div className="rounded-full  h-full bg-zinc-700 animate-pulse" />
               </div>
             ) : (
               <Avatar className="w-10 h-10">
@@ -129,25 +128,22 @@ export function ClientLayout({
             )}
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="space-y-1">
             <Link
               href="/perfil"
-              className="text-sm px-0 py-1 justify-start flex items-center gap-1 text-zinc-300 hover:text-[#9C66FF]"
+              className="text-sm px-0 py-1 justify-start flex items-center gap-2 text-zinc-300 hover:text-[#9C66FF]"
             >
               <Settings className="w-4 h-4" />
               {!isCollapsed && 'Configurações'}
             </Link>
 
-            <form action="/api/auth/signout" method="POST">
-              <Button
-                type="submit"
-                variant="ghost"
-                className="text-red-500 text-xs px-0 py-1 justify-start flex items-center gap-1 hover:underline"
-              >
-                <LogOut className="w-4 h-4" />
-                {!isCollapsed && 'Sair'}
-              </Button>
-            </form>
+            <button
+              onClick={() => signOut()}
+              className="text-sm px-0 py-1 justify-start flex items-center gap-2 text-red-500 hover:underline"
+            >
+              <LogOut className="w-4 h-4" />
+              {!isCollapsed && 'Sair'}
+            </button>
           </div>
         </div>
       </aside>

@@ -21,14 +21,6 @@ export function SidebarContent({
         Dashboard
       </SidebarLink>
 
-      {/* <SidebarLink
-        href="/clientes"
-        icon={<UserCheck className="w-5 h-5" />}
-        collapsed={collapsed}
-      >
-        Clientes
-      </SidebarLink> */}
-
       <SidebarLink
         href="/documentos"
         icon={<FileText className="w-5 h-5" />}
