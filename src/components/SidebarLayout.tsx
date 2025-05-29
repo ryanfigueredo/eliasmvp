@@ -2,10 +2,12 @@
 
 import { ReactNode, useEffect, useState } from 'react'
 import { SidebarContent } from './SidebarContent'
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut, Settings, Menu, X } from 'lucide-react'
 import { Button } from './ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar'
 import Link from 'next/link'
+import Image from 'next/image'
+import { signOut } from 'next-auth/react'
 
 interface SidebarLayoutProps {
   children: ReactNode
@@ -23,6 +25,7 @@ export default function SidebarLayout({
   user,
 }: SidebarLayoutProps) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   useEffect(() => {
     async function fetchImage() {
@@ -30,7 +33,6 @@ export default function SidebarLayout({
         try {
           const res = await fetch(`/api/document/get-url?key=${user.image}`)
           const data = await res.json()
-          console.log('[sidebar] signedUrl recebido:', data.url)
           setSignedUrl(data.url)
         } catch (error) {
           console.error('Erro ao buscar imagem de perfil:', error)
@@ -43,62 +45,96 @@ export default function SidebarLayout({
 
   return (
     <div className="h-screen flex bg-black">
-      {/* Sidebar fixa */}
-      <aside className="w-64 bg-black text-white border-r border-zinc-800 flex flex-col justify-between py-6 px-4">
-        <div>
-          <h2 className="text-xl font-bold mb-6 px-2">
-            {role === 'master'
-              ? 'Painel Master'
-              : role === 'admin'
-                ? 'Acesso Admin'
-                : 'Painel Consultor'}
-          </h2>
+      <aside
+        className={`bg-black text-white border-r border-zinc-800 flex flex-col justify-between py-6 transition-all duration-300 ${
+          isCollapsed ? 'w-20 items-center' : 'w-64 px-4 items-start'
+        }`}
+      >
+        <div className="w-full">
+          <div className="flex justify-between items-center w-full px-2 mb-6">
+            <Image
+              src="/logo.jpeg"
+              alt="Logo"
+              width={isCollapsed ? 36 : 100}
+              height={isCollapsed ? 36 : 100}
+              className="rounded"
+            />
 
-          <SidebarContent role={role} />
+            {!isCollapsed && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-white"
+                onClick={() => setIsCollapsed(true)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            )}
+
+            {isCollapsed && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-white"
+                onClick={() => setIsCollapsed(false)}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            )}
+          </div>
+
+          <SidebarContent role={role} collapsed={isCollapsed} />
         </div>
 
-        {/* Rodapé do Sidebar */}
-        <div className="px-2 mt-6 space-y-4">
-          {/* Avatar + Nome/Email */}
+        <div
+          className={`mt-6 w-full ${
+            isCollapsed ? 'items-center' : 'items-start px-2'
+          } flex flex-col gap-4`}
+        >
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
-              <AvatarImage
-                src={signedUrl || ''}
-                alt="Avatar"
-                onError={() =>
-                  console.warn('Erro ao carregar imagem de perfil')
-                }
-              />
+              <AvatarImage src={signedUrl || ''} alt="Avatar" />
               <AvatarFallback>
                 {user.name?.charAt(0).toUpperCase() ?? 'U'}
               </AvatarFallback>
             </Avatar>
 
-            <div className="flex flex-col text-sm">
-              <span className="font-medium">{user.name}</span>
-              <span className="text-xs text-zinc-400">{user.email}</span>
-            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col text-sm">
+                <span className="font-medium">{user.name}</span>
+                <span className="text-xs text-zinc-400">{user.email}</span>
+              </div>
+            )}
           </div>
 
-          {/* Configurações + Sair */}
-          <div className="flex flex-col gap-2 pt-2">
+          <div
+            className={`space-y-1 flex flex-col ${
+              isCollapsed ? 'items-center' : 'items-start w-full'
+            }`}
+          >
             <Link
               href="/perfil"
-              className="text-sm flex items-center gap-2 text-zinc-300 hover:text-[#9C66FF]"
+              className={`text-sm py-1 flex items-center gap-2 text-zinc-300 hover:text-[#9C66FF] ${
+                isCollapsed
+                  ? 'justify-center'
+                  : 'justify-start w-full text-left'
+              }`}
             >
               <Settings className="w-4 h-4" />
-              Configurações
+              {!isCollapsed && 'Configurações'}
             </Link>
 
-            <form action="/api/auth/signout" method="POST" className="pt-1">
-              <button
-                type="submit"
-                className="text-red-500 text-sm flex items-center gap-2 pl-2 hover:underline"
-              >
-                <LogOut className="w-4 h-4" />
-                Sair
-              </button>
-            </form>
+            <button
+              onClick={() => signOut()}
+              className={`text-sm py-1 flex items-center gap-2 text-red-500 hover:underline ${
+                isCollapsed
+                  ? 'justify-center'
+                  : 'justify-start w-full text-left'
+              }`}
+            >
+              <LogOut className="w-4 h-4" />
+              {!isCollapsed && 'Sair'}
+            </button>
           </div>
         </div>
       </aside>
