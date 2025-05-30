@@ -1,20 +1,32 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import useSWR from 'swr'
 import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from 'sonner'
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
-
-export default function DashboardStatsConsultor({
-  userId,
-}: {
+type Props = {
   userId: string
-}) {
-  const { data, isLoading } = useSWR(
-    `/api/stats/consultor?userId=${userId}`,
-    fetcher,
-  )
+  role: 'consultor' | 'admin' | 'master'
+}
+
+export default function DashboardStatsGeral({ userId, role }: Props) {
+  const [data, setData] = useState<null | {
+    totalClientes: number
+    totalDocumentos: number
+    finalizados: number
+    totalValor: number
+  }>(null)
+
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/stats/geral?userId=${userId}&role=${role}`)
+      .then((res) => res.json())
+      .then(setData)
+      .catch(() => toast.error('Erro ao buscar estatísticas'))
+      .finally(() => setIsLoading(false))
+  }, [userId, role])
 
   if (isLoading || !data) {
     return (

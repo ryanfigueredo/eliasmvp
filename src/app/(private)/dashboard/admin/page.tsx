@@ -3,7 +3,7 @@ import { DefaultSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import DashboardStats from '@/components/DashboardStats'
+import DashboardStatsGeral from '@/components/DashboardStatsGeral'
 
 declare module 'next-auth' {
   interface Session {
@@ -78,8 +78,7 @@ export default async function AdminDashboardPage() {
           <h2 className="text-xl font-semibold">{consultores}</h2>
         </div>
 
-        {/* Admin não visualiza outros admins ou white labels */}
-        <DashboardStats role="admin" userId={adminId} />
+        <DashboardStatsGeral userId={session.user.id} role={'admin'} />
       </div>
     </div>
   )
