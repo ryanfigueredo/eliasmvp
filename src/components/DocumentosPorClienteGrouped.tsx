@@ -9,8 +9,9 @@ import StatusFarol from './StatusFarol'
 import { Button } from './ui/button'
 import ExportarDocumentos from './ExportarDocumentos'
 
-interface Documento {
+type DocumentoComLote = {
   id: string
+  userId: string
   orgao: string
   status: DocumentoStatus
   fileUrl: string
@@ -28,11 +29,14 @@ interface Documento {
   }
   lote?: {
     id: string
-  }
+    nome: string
+    inicio: string
+    fim: string
+  } | null
 }
 
 interface Props {
-  documentos: Documento[]
+  documentos: DocumentoComLote[]
   loteSelecionado: string
   role: string
   userId: string
@@ -46,15 +50,16 @@ export default function DocumentosPorClienteGrouped({
   refreshDocumentos,
 }: Props) {
   const isGestor = role === 'master'
+  const isAdmin = role === 'admin'
   const [openCliente, setOpenCliente] = useState<string | null>(null)
 
-  // 🔎 Filtro pelos documentos do lote selecionado
+  // 🔎 Filtro apenas do lote selecionado
   const documentosFiltrados = documentos.filter(
     (doc) => doc.lote?.id === loteSelecionado,
   )
 
   const documentosPorCliente = documentosFiltrados.reduce<
-    Record<string, { nome: string; documentos: Documento[] }>
+    Record<string, { nome: string; documentos: DocumentoComLote[] }>
   >((acc, doc) => {
     const clienteId = doc.cliente?.id ?? `sem-cliente-${doc.id}`
     const clienteNome = doc.cliente?.nome ?? 'Cliente desconhecido'
@@ -72,9 +77,10 @@ export default function DocumentosPorClienteGrouped({
 
   return (
     <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2 border rounded-xl">
-      {(role === 'master' || role === 'admin') && (
+      {(isGestor || isAdmin) && (
         <ExportarDocumentos documentos={documentosFiltrados} />
       )}
+
       {Object.entries(documentosPorCliente)
         .sort(([, a], [, b]) => {
           const aDate = new Date(a.documentos[0].updatedAt).getTime()
@@ -91,7 +97,9 @@ export default function DocumentosPorClienteGrouped({
             <div key={clienteId} className="border rounded-xl shadow">
               <div className="flex justify-between items-center p-4 bg-zinc-100">
                 <div>
-                  <p className="font-semibold text-zinc-700">{nome}</p>
+                  <p className="font-semibold text-zinc-700">
+                    {nome} ({documentos.length} documentos)
+                  </p>
                   <div className="text-sm text-zinc-500">
                     Última atualização:{' '}
                     {new Date(docsOrdenados[0].updatedAt).toLocaleDateString(
@@ -101,7 +109,7 @@ export default function DocumentosPorClienteGrouped({
                   <div className="text-sm text-zinc-500 mt-1">
                     <span className="font-medium">Responsável: </span>
                     {docsOrdenados[0].user?.admin?.name ??
-                      (role === 'master' ? docsOrdenados[0].user?.name : '—')}
+                      (isGestor || isAdmin ? docsOrdenados[0].user?.name : '—')}
                   </div>
                   <div className="text-sm text-zinc-500">
                     <span className="font-medium">Inputado por: </span>
@@ -150,7 +158,7 @@ export default function DocumentosPorClienteGrouped({
                         <td className="p-4">Documento {i + 1}</td>
                         <td className="p-4">
                           {doc.user?.admin?.name ??
-                            (role === 'master' ? doc.user?.name : '—')}
+                            (isGestor || isAdmin ? doc.user?.name : '—')}
                         </td>
                         <td className="p-4">{doc.user?.name ?? '—'}</td>
                         <td className="p-4 flex items-center gap-2">
