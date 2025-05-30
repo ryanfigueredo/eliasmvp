@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition, useCallback } from 'react'
 import { toast } from 'sonner'
 import NovoDocumentoModal from './NovoDocumentoModal'
 
@@ -13,7 +13,6 @@ import { ArrowLeft } from 'lucide-react'
 import DocumentosPorClienteGrouped from './DocumentosPorClienteGrouped'
 
 interface Props {
-  searchParams: { [key: string]: string | string[] | undefined }
   role: string
   userId: string
 }
@@ -55,31 +54,34 @@ export default function DocumentosContent({ role, userId }: Props) {
   const isConsultor = role === 'consultor'
   const isGestor = role === 'master'
 
-  useEffect(() => {
-    if (loteSelecionado) return
+  const fetchDocumentos = useCallback(async () => {
+    const url = loteSelecionado
+      ? `/api/document?role=${role}&userId=${userId}&loteId=${loteSelecionado}`
+      : `/api/document`
 
-    async function fetchDocumentos() {
-      try {
-        const res = await fetch(`/api/document`, {
-          headers: {
-            'x-user-role': role,
-            'x-user-id': userId,
-          },
-        })
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userId,
+        },
+      })
 
-        if (!res.ok) throw new Error('Erro na resposta da API')
+      if (!res.ok) throw new Error('Erro na resposta da API')
 
-        const data = await res.json()
-        if (!Array.isArray(data)) throw new Error('Resposta inválida')
-        setDocumentos(data)
-      } catch (err) {
-        console.error('Erro no fetchDocumentos inicial:', err)
-        toast.error('Erro ao carregar documentos')
-      }
+      const data = await res.json()
+      if (!Array.isArray(data)) throw new Error('Resposta inválida')
+
+      setDocumentos(data)
+    } catch (err) {
+      console.error('Erro ao buscar documentos:', err)
+      toast.error('Erro ao carregar documentos')
     }
-
-    fetchDocumentos()
   }, [loteSelecionado, role, userId])
+
+  useEffect(() => {
+    fetchDocumentos()
+  }, [fetchDocumentos])
 
   useEffect(() => {
     async function fetchLotes() {
@@ -100,41 +102,12 @@ export default function DocumentosContent({ role, userId }: Props) {
         const data = await res.json()
         setLotesComStatus(data)
       } catch (err) {
-        console.error('Erro no fetchLotes:', err)
+        console.error('Erro ao buscar lotes:', err)
         toast.error('Erro ao buscar lotes')
       }
     }
     fetchLotes()
-  }, [role, userId])
-
-  useEffect(() => {
-    if (!loteSelecionado) return
-    startTransition(() => {
-      async function fetchDocs() {
-        try {
-          const res = await fetch(
-            `/api/document?role=${role}&userId=${userId}&loteId=${loteSelecionado}`,
-            {
-              headers: {
-                'x-user-role': role,
-                'x-user-id': userId,
-              },
-            },
-          )
-
-          if (!res.ok) throw new Error('Erro na resposta da API')
-
-          const data = await res.json()
-          if (!Array.isArray(data)) throw new Error('Resposta inválida')
-          setDocumentos(data)
-        } catch (err) {
-          console.error('Erro no fetchDocs por lote:', err)
-          toast.error('Erro ao carregar documentos')
-        }
-      }
-      fetchDocs()
-    })
-  }, [loteSelecionado, role, userId])
+  }, [role, userId, isConsultor])
 
   const documentosPorLote = Array.isArray(documentos)
     ? documentos.reduce<
@@ -227,10 +200,11 @@ export default function DocumentosContent({ role, userId }: Props) {
           </Button>
 
           <DocumentosPorClienteGrouped
-            documentos={documentos}
+            documentos={documentos as any}
             loteSelecionado={loteSelecionado}
             role={role}
             userId={userId}
+            refreshDocumentos={fetchDocumentos}
           />
         </>
       )}

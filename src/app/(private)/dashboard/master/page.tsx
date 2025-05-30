@@ -1,20 +1,10 @@
 import { getServerSession } from 'next-auth'
-import { DefaultSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import DashboardValores from '@/components/DashboardValores'
 import DashboardStatsGeral from '@/components/DashboardStatsGeral'
 import DocumentosPie from '@/components/DocumentosPie'
-
-declare module 'next-auth' {
-  interface Session {
-    user?: {
-      id: string
-      role: string
-    } & DefaultSession['user']
-  }
-}
 
 export default async function MasterDashboardPage() {
   const session = await getServerSession(authOptions)
@@ -39,57 +29,63 @@ export default async function MasterDashboardPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Visão geral</h1>
 
+      {/* Primeira linha: usuários */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Total de usuários</p>
           <h2 className="text-2xl font-semibold">{total}</h2>
         </div>
-
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Aprovados</p>
           <h2 className="text-2xl font-semibold text-green-600">{aprovados}</h2>
         </div>
-
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Aguardando aprovação</p>
           <h2 className="text-2xl font-semibold text-yellow-500">
             {aguardando}
           </h2>
         </div>
+      </div>
 
+      {/* Segunda linha: cargos */}
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Consultores</p>
           <h2 className="text-xl font-semibold">{consultores}</h2>
         </div>
-
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Admins</p>
           <h2 className="text-xl font-semibold">{admins}</h2>
         </div>
+      </div>
 
-        <div className={cardClass + ' col-span-1 md:col-span-2'}>
-          <DashboardStatsGeral role={'master'} userId={session.user.id} />
-          <DocumentosPie userId={session.user.id} role={session.user.role} />
+      {/* Terceira linha: estatísticas gerais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={cardClass}>
+          <DashboardStatsGeral userId={session.user.id} role="master" />
         </div>
+        <div className={cardClass}>
+          <DocumentosPie userId={session.user.id} role="master" />
+        </div>
+      </div>
 
-        <div className="flex-row gap-2 space-y-4">
-          <div className={cardClass}>
-            <p className="text-sm text-gray-500">Valor movimentado - Mensal</p>
-            <DashboardValores
-              type="mensal"
-              role={session.user.role}
-              userId={session.user.id}
-            />
-          </div>
-
-          <div className={cardClass}>
-            <p className="text-sm text-gray-500">Valor movimentado - Semanal</p>
-            <DashboardValores
-              type="semanal"
-              role={session.user.role}
-              userId={session.user.id}
-            />
-          </div>
+      {/* Quarta linha: valores mensais/semanais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={cardClass}>
+          <p className="text-sm text-gray-500">Valor movimentado - Mensal</p>
+          <DashboardValores
+            type="mensal"
+            role="master"
+            userId={session.user.id}
+          />
+        </div>
+        <div className={cardClass}>
+          <p className="text-sm text-gray-500">Valor movimentado - Semanal</p>
+          <DashboardValores
+            type="semanal"
+            role="master"
+            userId={session.user.id}
+          />
         </div>
       </div>
     </div>

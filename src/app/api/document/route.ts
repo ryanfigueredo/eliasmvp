@@ -1,4 +1,3 @@
-// src/app/api/document/route.ts
 import { prisma } from '@/lib/prisma'
 import { DocumentoStatus, Orgao } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
@@ -15,6 +14,27 @@ export async function GET(req: NextRequest) {
   const userId = req.headers.get('x-user-id')
 
   try {
+    let userIds: string[] = []
+
+    if (!userId) {
+      return NextResponse.json(
+        { message: 'ID do usuário ausente.' },
+        { status: 400 },
+      )
+    }
+
+    if (role === 'admin') {
+      const consultores = await prisma.user.findMany({
+        where: { role: 'consultor', adminId: userId },
+        select: { id: true },
+      })
+
+      // Inclui o próprio admin + consultores
+      userIds = [userId, ...consultores.map((c) => c.id)]
+    } else if (role === 'consultor') {
+      userIds = [userId]
+    }
+
     const where: any = {
       ...(file
         ? {
@@ -31,20 +51,9 @@ export async function GET(req: NextRequest) {
       Object.values(DocumentoStatus).includes(status as DocumentoStatus)
         ? { status: status as DocumentoStatus }
         : {}),
-      ...(loteId ? { loteId: loteId } : {}),
+      ...(loteId ? { loteId } : {}),
+      ...(userIds.length > 0 ? { userId: { in: userIds } } : {}),
     }
-
-    if (role === 'admin') {
-      const consultores = await prisma.user.findMany({
-        where: { role: 'consultor', adminId: userId ?? '' },
-        select: { id: true },
-      })
-      const userIds = [userId, ...consultores.map((c) => c.id)].filter(Boolean)
-      where.userId = { in: userIds }
-    } else if (role === 'consultor') {
-      where.userId = userId
-    }
-    // role master vê tudo (sem filtro de userId)
 
     const documentos = await prisma.document.findMany({
       where,
@@ -52,9 +61,9 @@ export async function GET(req: NextRequest) {
         user: {
           select: {
             id: true,
-            name: true, // <- quem inputou
+            name: true,
             admin: {
-              select: { name: true }, // <- responsável
+              select: { name: true },
             },
           },
         },
@@ -72,9 +81,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ clienteId: 'desc' }, { createdAt: 'desc' }],
     })
 
-    return NextResponse.json(Array.isArray(documentos) ? documentos : [], {
-      status: 200,
-    })
+    return NextResponse.json(documentos, { status: 200 })
   } catch (error) {
     console.error('Erro ao buscar documentos:', error)
     return NextResponse.json(

@@ -1,23 +1,19 @@
 import { prisma } from '@/lib/prisma'
 import { getToken } from 'next-auth/jwt'
-import { NextApiRequest, NextApiResponse } from 'next'
+import { NextRequest, NextResponse } from 'next/server'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  if (req.method !== 'POST') return res.status(405).end()
-
+export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   if (!token?.id) {
-    return res.status(401).json({ message: 'Não autorizado.' })
+    return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 })
   }
 
-  const { id, status } = req.body
+  const body = await req.json()
+  const { id, status } = body
   const statusPermitidos = ['INICIADO', 'EM_ANDAMENTO', 'FINALIZADO']
 
   if (!id || !status || !statusPermitidos.includes(status)) {
-    return res.status(400).json({ message: 'Dados inválidos.' })
+    return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 })
   }
 
   try {
@@ -34,9 +30,9 @@ export default async function handler(
       },
     })
 
-    return res.status(200).json({ message: 'Status atualizado.' })
+    return NextResponse.json({ message: 'Status atualizado.' }, { status: 200 })
   } catch (error) {
     console.error('Erro ao atualizar status:', error)
-    return res.status(500).json({ message: 'Erro interno.' })
+    return NextResponse.json({ message: 'Erro interno.' }, { status: 500 })
   }
 }

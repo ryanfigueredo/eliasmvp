@@ -1,7 +1,6 @@
-// components/SelectStatusDocumento.tsx
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 const statusOptions = [
@@ -13,14 +12,19 @@ const statusOptions = [
 export default function SelectStatusDocumento({
   id,
   status,
+  refreshDocumentos,
 }: {
   id: string
   status: 'INICIADO' | 'EM_ANDAMENTO' | 'FINALIZADO'
+  refreshDocumentos?: () => void
 }) {
+  const [currentStatus, setCurrentStatus] = useState(status)
   const [isPending, startTransition] = useTransition()
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const newStatus = e.target.value
+    const newStatus = e.target.value as typeof currentStatus
+
+    if (newStatus === currentStatus) return
 
     startTransition(async () => {
       const res = await fetch('/api/document/update-status', {
@@ -31,16 +35,20 @@ export default function SelectStatusDocumento({
 
       if (res.ok) {
         toast.success('Status atualizado!')
+        refreshDocumentos?.() // <- Aqui está o segredo!
       } else {
         toast.error('Erro ao atualizar status.')
       }
     })
   }
 
+  const currentColor =
+    statusOptions.find((s) => s.value === currentStatus)?.color ?? 'bg-gray-400'
+
   return (
     <div className="relative">
       <select
-        defaultValue={status}
+        value={currentStatus}
         onChange={handleChange}
         disabled={isPending}
         className="border rounded px-8 py-1 text-sm bg-white appearance-none"
@@ -52,11 +60,9 @@ export default function SelectStatusDocumento({
           </option>
         ))}
       </select>
-      {/* Farol de cor ao lado do select */}
+
       <span
-        className={`absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full ${
-          statusOptions.find((s) => s.value === status)?.color ?? 'bg-gray-400'
-        }`}
+        className={`absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full ${currentColor}`}
       />
     </div>
   )

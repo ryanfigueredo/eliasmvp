@@ -7,6 +7,7 @@ import PreviewDocumentoModal from './PreviewDocumentoModal'
 import SelectStatusDocumento from './SelectStatusDocumento'
 import StatusFarol from './StatusFarol'
 import { Button } from './ui/button'
+import ExportarDocumentos from './ExportarDocumentos'
 
 interface Documento {
   id: string
@@ -25,6 +26,9 @@ interface Documento {
     nome: string
     user?: { name: string }
   }
+  lote?: {
+    id: string
+  }
 }
 
 interface Props {
@@ -32,16 +36,24 @@ interface Props {
   loteSelecionado: string
   role: string
   userId: string
+  refreshDocumentos: () => Promise<void>
 }
 
 export default function DocumentosPorClienteGrouped({
   documentos,
+  loteSelecionado,
   role,
+  refreshDocumentos,
 }: Props) {
   const isGestor = role === 'master'
   const [openCliente, setOpenCliente] = useState<string | null>(null)
 
-  const documentosPorCliente = documentos.reduce<
+  // 🔎 Filtro pelos documentos do lote selecionado
+  const documentosFiltrados = documentos.filter(
+    (doc) => doc.lote?.id === loteSelecionado,
+  )
+
+  const documentosPorCliente = documentosFiltrados.reduce<
     Record<string, { nome: string; documentos: Documento[] }>
   >((acc, doc) => {
     const clienteId = doc.cliente?.id ?? `sem-cliente-${doc.id}`
@@ -60,6 +72,9 @@ export default function DocumentosPorClienteGrouped({
 
   return (
     <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2 border rounded-xl">
+      {(role === 'master' || role === 'admin') && (
+        <ExportarDocumentos documentos={documentosFiltrados} />
+      )}
       {Object.entries(documentosPorCliente)
         .sort(([, a], [, b]) => {
           const aDate = new Date(a.documentos[0].updatedAt).getTime()
@@ -99,6 +114,7 @@ export default function DocumentosPorClienteGrouped({
                     <SelectStatusDocumento
                       id={docsOrdenados[0].id}
                       status={docsOrdenados[0].status}
+                      refreshDocumentos={refreshDocumentos}
                     />
                   ) : (
                     <StatusFarol status={docsOrdenados[0].status} />
@@ -123,8 +139,8 @@ export default function DocumentosPorClienteGrouped({
                   <thead className="bg-zinc-50">
                     <tr>
                       <th className="p-4 text-left">Tipo</th>
-                      <th className="p-4 text-left">Responsável</th>{' '}
-                      <th className="p-4 text-left">Inputado por</th>{' '}
+                      <th className="p-4 text-left">Responsável</th>
+                      <th className="p-4 text-left">Inputado por</th>
                       <th className="p-4 text-left">Download</th>
                     </tr>
                   </thead>
@@ -133,7 +149,6 @@ export default function DocumentosPorClienteGrouped({
                       <tr key={doc.id} className="border-t">
                         <td className="p-4">Documento {i + 1}</td>
                         <td className="p-4">
-                          {' '}
                           {doc.user?.admin?.name ??
                             (role === 'master' ? doc.user?.name : '—')}
                         </td>
