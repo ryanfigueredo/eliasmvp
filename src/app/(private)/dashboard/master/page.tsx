@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import DashboardValores from '@/components/DashboardValores'
 import DashboardStatsGeral from '@/components/DashboardStatsGeral'
+import DocumentosPie from '@/components/DocumentosPie'
 
 declare module 'next-auth' {
   interface Session {
@@ -68,6 +69,7 @@ export default async function MasterDashboardPage() {
 
         <div className={cardClass + ' col-span-1 md:col-span-2'}>
           <DashboardStatsGeral role={'master'} userId={session.user.id} />
+          <DocumentosPie userId={session.user.id} role={session.user.role} />
         </div>
 
         <div className="flex-row gap-2 space-y-4">

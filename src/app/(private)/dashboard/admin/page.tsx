@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import DashboardStatsGeral from '@/components/DashboardStatsGeral'
+import DocumentosPie from '@/components/DocumentosPie'
 
 declare module 'next-auth' {
   interface Session {
@@ -79,6 +80,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         <DashboardStatsGeral userId={session.user.id} role={'admin'} />
+        <DocumentosPie userId={session.user.id} role={session.user.role} />
       </div>
     </div>
   )

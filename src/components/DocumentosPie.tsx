@@ -9,14 +9,19 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const COLORS = ['#facc15', '#60a5fa', '#22c55e'] // amarelo, azul, verde
 
 const STATUS_LABELS: Record<string, string> = {
-  INICIADO: 'Iniciado',
-  EM_ANDAMENTO: 'Em andamento',
-  FINALIZADO: 'Finalizado',
+  iniciado: 'Iniciado',
+  andamento: 'Em andamento',
+  finalizado: 'Finalizado',
 }
 
-export default function DocumentosPieConsultor({ userId }: { userId: string }) {
+type Props = {
+  userId: string
+  role: 'consultor' | 'admin' | 'master'
+}
+
+export default function DocumentosPie({ userId, role }: Props) {
   const { data, isLoading } = useSWR(
-    `/api/stats/consultor-status?userId=${userId}`,
+    `/api/stats/document-status?userId=${userId}&role=${role}`,
     fetcher,
   )
 
@@ -24,12 +29,10 @@ export default function DocumentosPieConsultor({ userId }: { userId: string }) {
     return <Skeleton className="w-full h-[300px] rounded-xl" />
   }
 
-  const chartData: { name: string; value: number }[] = Object.entries(data).map(
-    ([status, count]) => ({
-      name: STATUS_LABELS[status],
-      value: Number(count),
-    }),
-  )
+  const chartData = Object.entries(data).map(([key, value]) => ({
+    name: STATUS_LABELS[key] ?? key,
+    value: Number(value),
+  }))
 
   const total = chartData.reduce((acc, item) => acc + item.value, 0)
 
