@@ -69,6 +69,7 @@ export default async function handler(
           status: status as DocumentoStatus,
           fileUrl,
           loteId,
+          valor: 0,
         },
       })
 

@@ -1,3 +1,4 @@
+// NovoDocumentoModal.tsx (corrigido com transição e validação de tipos)
 'use client'
 
 import {
@@ -7,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -33,11 +35,15 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
   const [rg, setRg] = useState<File | null>(null)
   const [consulta, setConsulta] = useState<File | null>(null)
   const [contrato, setContrato] = useState<File | null>(null)
+  const [comprovante, setComprovante] = useState<File | null>(null)
+
   const [loteId, setLoteId] = useState('')
   const [lotes, setLotes] = useState<Lote[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [clienteSelecionadoId, setClienteSelecionadoId] = useState<
+    string | null
+  >(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [orgao, setOrgao] = useState('') // valor padrão opcional
 
   useEffect(() => {
     fetch('/api/lotes')
@@ -65,21 +71,18 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
   const handleClienteSelect = (cliente: Cliente) => {
     setNome(cliente.nome)
     setCpfCnpj(formatCpfCnpj(cliente.cpfCnpj))
+    setClienteSelecionadoId(cliente.id)
     setShowSuggestions(false)
   }
 
   const isValidCpfCnpj = (input: string) => {
     const raw = input.replace(/\D/g, '')
-    if (raw.length === 11) {
-      return !/^(\d)\1{10}$/.test(raw) // não pode ser todos iguais
-    }
-    if (raw.length === 14) {
-      return !/^(\d)\1{13}$/.test(raw)
-    }
+    if (raw.length === 11) return !/^(\d)\1{10}$/.test(raw)
+    if (raw.length === 14) return !/^(\d)\1{13}$/.test(raw)
     return false
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!nome || !cpfCnpj || !valor || !loteId) {
@@ -87,58 +90,70 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
     }
 
     if (!isValidCpfCnpj(cpfCnpj)) {
-      return toast.error(
-        'CPF ou CNPJ inválido. Verifique os números digitados.',
-      )
+      return toast.error('CPF ou CNPJ inválido.')
     }
 
     if (!rg || !contrato) {
       return toast.error('Envie pelo menos RG e Contrato.')
     }
 
-    const loteSelecionadoInfo = lotes.find((lote) => lote.id === loteId)
+    startTransition(() => {
+      ;(async () => {
+        try {
+          let finalClienteId = clienteSelecionadoId
 
-    if (loteSelecionadoInfo) {
-      const agora = new Date()
-      const fimLote = new Date(loteSelecionadoInfo.fim)
-      fimLote.setHours(17, 0, 0, 0)
+          if (!finalClienteId) {
+            const clienteRes = await fetch('/api/clientes', {
+              method: 'POST',
+              body: JSON.stringify({
+                nome,
+                cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+                responsavelId: userId,
+                valor,
+              }),
+              headers: { 'Content-Type': 'application/json' },
+            })
+            const clienteData = await clienteRes.json()
 
-      if (agora > fimLote) {
-        return toast.error(
-          'Este lote já encerrou. Você não pode mais enviar documentos.',
-        )
-      }
-    }
+            if (!clienteRes.ok || !clienteData.id) {
+              return toast.error(
+                clienteData.message || 'Erro ao criar cliente.',
+              )
+            }
+            finalClienteId = clienteData.id
+          }
 
-    const formData = new FormData()
-    formData.append('nome', nome)
-    formData.append('cpfCnpj', cpfCnpj.replace(/\D/g, ''))
-    formData.append('valor', valor.replace(/[^\d,.-]/g, '').replace(',', '.'))
-    formData.append('responsavelId', userId)
-    formData.append('loteId', loteId)
-    if (rg) formData.append('rg', rg)
-    if (consulta) formData.append('consulta', consulta)
-    if (contrato) formData.append('contrato', contrato)
+          const formData = new FormData()
+          if (finalClienteId) formData.append('clienteId', finalClienteId)
+          formData.append(
+            'valor',
+            valor.replace(/[^\d,.-]/g, '').replace(',', '.'),
+          )
+          formData.append('responsavelId', userId)
+          formData.append('loteId', loteId)
+          if (rg) formData.append('rg', rg)
+          if (consulta) formData.append('consulta', consulta)
+          if (contrato) formData.append('contrato', contrato)
+          if (comprovante) formData.append('comprovante', comprovante)
 
-    startTransition(async () => {
-      try {
-        const res = await fetch('/api/clientes', {
-          method: 'POST',
-          body: formData,
-        })
+          const res = await fetch('/api/document', {
+            method: 'POST',
+            body: formData,
+          })
 
-        if (res.ok) {
-          toast.success('Cliente/documento criado com sucesso!')
-          setOpen(false)
-          window.location.reload()
-        } else {
-          const data = await res.json()
-          toast.error(data.message ?? 'Erro ao enviar documento.')
+          if (res.ok) {
+            toast.success('Documentos enviados com sucesso!')
+            setOpen(false)
+            window.location.reload()
+          } else {
+            const data = await res.json()
+            toast.error(data.message ?? 'Erro ao enviar documento.')
+          }
+        } catch (error) {
+          console.error(error)
+          toast.error('Erro inesperado.')
         }
-      } catch (error) {
-        console.error(error)
-        toast.error('Erro inesperado.')
-      }
+      })()
     })
   }
 
@@ -155,6 +170,9 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
           <DialogTitle className="text-lg font-semibold">
             Novo Documento
           </DialogTitle>
+          <DialogDescription>
+            Preencha os dados para envio dos documentos
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -265,7 +283,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
             </label>
             <Input
               type="file"
-              onChange={(e) => setContrato(e.target.files?.[0] ?? null)}
+              onChange={(e) => setComprovante(e.target.files?.[0] ?? null)}
             />
           </div>
 

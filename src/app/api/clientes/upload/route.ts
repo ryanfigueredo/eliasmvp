@@ -28,13 +28,17 @@ export default async function handler(
   let userId = ''
   let orgao = ''
   let status = ''
+  let valor = ''
   let fileUrl = ''
   let fileName = ''
+  let loteId = ''
 
   bb.on('field', (name, val) => {
     if (name === 'userId') userId = val
     if (name === 'orgao') orgao = val
     if (name === 'status') status = val
+    if (name === 'valor') valor = val
+    if (name === 'loteId') loteId = val
   })
 
   bb.on('file', async (name, file, info) => {
@@ -47,10 +51,8 @@ export default async function handler(
 
     const buffer = Buffer.concat(chunks)
 
-    // Nome único do arquivo
     fileName = `${Date.now()}-${randomUUID()}-${filename}`
 
-    // Faz o upload para o S3
     fileUrl = await uploadToS3({
       fileBuffer: buffer,
       fileName,
@@ -59,7 +61,7 @@ export default async function handler(
   })
 
   bb.on('close', async () => {
-    if (!userId || !orgao || !status || !fileUrl) {
+    if (!userId || !orgao || !status || !fileUrl || !loteId || !valor) {
       return res.status(400).json({ message: 'Campos obrigatórios ausentes.' })
     }
 
@@ -70,6 +72,8 @@ export default async function handler(
           orgao: orgao as Orgao,
           status: status as DocumentoStatus,
           fileUrl,
+          loteId,
+          valor: Number(valor),
         },
       })
 
