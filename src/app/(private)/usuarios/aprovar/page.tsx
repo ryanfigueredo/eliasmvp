@@ -7,7 +7,6 @@ import ApproveUserForm from '@/components/ApproveUserForm'
 export default async function AprovarUsuariosPage() {
   const session = await getServerSession(authOptions)
 
-  // Permitir apenas MASTER e ADMIN
   if (
     !session ||
     !session.user ||

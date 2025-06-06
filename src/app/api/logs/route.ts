@@ -1,15 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { getToken } from 'next-auth/jwt'
-import { NextApiRequest, NextApiResponse } from 'next'
+import { NextRequest, NextResponse } from 'next/server'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
+export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
 
+  console.log('[🔐 TOKEN LOGS]', token)
+
   if (!token || token.role !== 'master') {
-    return res.status(403).json({ message: 'Acesso negado' })
+    return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
   }
 
   try {
@@ -18,12 +17,15 @@ export default async function handler(
         user: { select: { name: true, email: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: 100, // limite para evitar retorno gigante
+      take: 100,
     })
 
-    res.status(200).json(logs)
+    return NextResponse.json(logs)
   } catch (error) {
     console.error('Erro ao buscar logs:', error)
-    res.status(500).json({ message: 'Erro ao buscar logs' })
+    return NextResponse.json(
+      { message: 'Erro ao buscar logs' },
+      { status: 500 },
+    )
   }
 }
