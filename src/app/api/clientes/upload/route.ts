@@ -1,96 +1,76 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getToken } from 'next-auth/jwt'
-import { NextApiRequest, NextApiResponse } from 'next'
-import busboy from 'busboy'
-import { uploadToS3 } from '@/lib/s3'
-import { Orgao, DocumentoStatus } from '@prisma/client'
-import { randomUUID } from 'crypto'
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { nome, cpfCnpj, responsavelId, valor } = body
+
+    const parsedValor = parseFloat(
+      String(valor)
+        .replace(/[^\d,.-]/g, '')
+        .replace(',', '.'),
+    )
+
+    if (!nome || !cpfCnpj || !responsavelId || isNaN(parsedValor)) {
+      return NextResponse.json(
+        { message: 'Campos obrigatórios ausentes ou inválidos.' },
+        { status: 400 },
+      )
+    }
+
+    const cliente = await prisma.cliente.create({
+      data: {
+        nome,
+        cpfCnpj,
+        valor: parsedValor,
+        user: {
+          connect: {
+            id: responsavelId,
+          },
+        },
+      },
+    })
+
+    return NextResponse.json({ id: cliente.id }, { status: 201 })
+  } catch (error: any) {
+    console.error('Erro ao criar cliente:', error)
+
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { message: 'CPF/CNPJ já cadastrado.' },
+        { status: 400 },
+      )
+    }
+
+    return NextResponse.json(
+      { message: 'Erro interno ao criar cliente' },
+      { status: 500 },
+    )
+  }
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  if (req.method !== 'POST') return res.status(405).end()
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const busca = searchParams.get('busca') || ''
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
-  if (!token?.id) {
-    return res.status(401).json({ message: 'Não autorizado.' })
-  }
-
-  const bb = busboy({ headers: req.headers })
-
-  let userId = ''
-  let orgao = ''
-  let status = ''
-  let valor = ''
-  let fileUrl = ''
-  let fileName = ''
-  let loteId = ''
-
-  bb.on('field', (name, val) => {
-    if (name === 'userId') userId = val
-    if (name === 'orgao') orgao = val
-    if (name === 'status') status = val
-    if (name === 'valor') valor = val
-    if (name === 'loteId') loteId = val
-  })
-
-  bb.on('file', async (name, file, info) => {
-    const { filename, mimeType } = info
-    const chunks: Uint8Array[] = []
-
-    for await (const chunk of file) {
-      chunks.push(chunk)
-    }
-
-    const buffer = Buffer.concat(chunks)
-
-    fileName = `${Date.now()}-${randomUUID()}-${filename}`
-
-    fileUrl = await uploadToS3({
-      fileBuffer: buffer,
-      fileName,
-      contentType: mimeType || 'application/octet-stream',
+  try {
+    const clientes = await prisma.cliente.findMany({
+      where: {
+        OR: [
+          { nome: { contains: busca, mode: 'insensitive' } },
+          { cpfCnpj: { contains: busca, mode: 'insensitive' } },
+        ],
+      },
+      take: 10,
     })
-  })
 
-  bb.on('close', async () => {
-    if (!userId || !orgao || !status || !fileUrl || !loteId || !valor) {
-      return res.status(400).json({ message: 'Campos obrigatórios ausentes.' })
-    }
-
-    try {
-      await prisma.document.create({
-        data: {
-          userId,
-          orgao: orgao as Orgao,
-          status: status as DocumentoStatus,
-          fileUrl,
-          loteId,
-          valor: Number(valor),
-        },
-      })
-
-      await prisma.log.create({
-        data: {
-          userId: String(token.id),
-          acao: 'UPLOAD DE DOCUMENTO',
-          detalhes: `Enviou o documento "${fileName}" com status ${status} para o órgão ${orgao}`,
-        },
-      })
-
-      return res.status(201).json({ message: 'Documento enviado com sucesso.' })
-    } catch (error) {
-      console.error('Erro ao salvar no banco:', error)
-      return res.status(500).json({ message: 'Erro interno.' })
-    }
-  })
-
-  req.pipe(bb)
+    return NextResponse.json(clientes)
+  } catch (error) {
+    console.error('Erro ao buscar clientes:', error)
+    return NextResponse.json(
+      { error: 'Erro ao buscar clientes' },
+      { status: 500 },
+    )
+  }
 }

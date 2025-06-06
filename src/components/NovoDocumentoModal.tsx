@@ -1,4 +1,3 @@
-// NovoDocumentoModal.tsx (corrigido com transição e validação de tipos)
 'use client'
 
 import {
@@ -97,6 +96,9 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
       return toast.error('Envie pelo menos RG e Contrato.')
     }
 
+    toast.success('Documentos sendo enviados...')
+    setOpen(false) // ← fecha o modal imediatamente
+
     startTransition(() => {
       ;(async () => {
         try {
@@ -109,18 +111,27 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
                 nome,
                 cpfCnpj: cpfCnpj.replace(/\D/g, ''),
                 responsavelId: userId,
-                valor,
+                valor: Number(valor.replace(/[^\d,.-]/g, '').replace(',', '.')),
               }),
               headers: { 'Content-Type': 'application/json' },
             })
-            const clienteData = await clienteRes.json()
 
-            if (!clienteRes.ok || !clienteData.id) {
-              return toast.error(
-                clienteData.message || 'Erro ao criar cliente.',
+            if (clienteRes.status === 400) {
+              // cliente já existe → buscar o ID
+              const buscaRes = await fetch(
+                `/api/clientes?busca=${cpfCnpj.replace(/\D/g, '')}`,
               )
+              const clientes = await buscaRes.json()
+              finalClienteId = clientes?.[0]?.id
+            } else {
+              const clienteData = await clienteRes.json()
+              if (!clienteRes.ok || !clienteData.id) {
+                return toast.error(
+                  clienteData.message || 'Erro ao criar cliente.',
+                )
+              }
+              finalClienteId = clienteData.id
             }
-            finalClienteId = clienteData.id
           }
 
           const formData = new FormData()
@@ -143,7 +154,6 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
 
           if (res.ok) {
             toast.success('Documentos enviados com sucesso!')
-            setOpen(false)
             window.location.reload()
           } else {
             const data = await res.json()
