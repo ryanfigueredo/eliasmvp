@@ -19,26 +19,48 @@ export async function GET(req: NextRequest) {
     if (role === 'consultor') {
       whereClause = { userId }
     } else if (role === 'admin') {
-      whereClause = {
-        user: {
-          OR: [{ id: userId }, { adminId: userId }],
-        },
+      const consultores = await prisma.user.findMany({
+        where: { adminId: userId },
+        select: { id: true },
+      })
+      const ids = [userId, ...consultores.map((c) => c.id)]
+      whereClause = { userId: { in: ids } }
+    }
+
+    const documentos = await prisma.document.findMany({
+      where: whereClause,
+      orderBy: { updatedAt: 'desc' },
+      include: { cliente: true },
+    })
+
+    // Agrupar por clienteId + loteId e pegar o status mais recente
+    const statusPorGrupo = new Map<string, string>()
+
+    for (const doc of documentos) {
+      const grupoKey = `${doc.clienteId}-${doc.loteId}`
+      if (!statusPorGrupo.has(grupoKey)) {
+        statusPorGrupo.set(grupoKey, doc.status)
       }
     }
 
-    const [iniciado, andamento, finalizado] = await Promise.all([
-      prisma.document.count({ where: { ...whereClause, status: 'INICIADO' } }),
-      prisma.document.count({
-        where: { ...whereClause, status: 'EM_ANDAMENTO' },
-      }),
-      prisma.document.count({
-        where: { ...whereClause, status: 'FINALIZADO' },
-      }),
-    ])
+    // Contagem por status
+    const contagem = {
+      iniciado: 0,
+      andamento: 0,
+      finalizado: 0,
+    }
 
-    return NextResponse.json({ iniciado, andamento, finalizado })
+    for (const status of statusPorGrupo.values()) {
+      if (status === 'INICIADO') contagem.iniciado++
+      if (status === 'EM_ANDAMENTO') contagem.andamento++
+      if (status === 'FINALIZADO') contagem.finalizado++
+    }
+
+    console.log('[📊 AGRUPADO STATUS]', contagem)
+
+    return NextResponse.json(contagem)
   } catch (error) {
-    console.error('Erro ao buscar status dos documentos:', error)
+    console.error('Erro ao buscar status dos documentos agrupados:', error)
     return NextResponse.json({ message: 'Erro interno.' }, { status: 500 })
   }
 }

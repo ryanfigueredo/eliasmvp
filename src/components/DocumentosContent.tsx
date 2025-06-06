@@ -11,6 +11,7 @@ import { Button } from './ui/button'
 import ClientesPorLoteDialog from './ClientesPorLoteDialog'
 import { ArrowLeft } from 'lucide-react'
 import DocumentosPorClienteGrouped from './DocumentosPorClienteGrouped'
+import { Trash } from 'lucide-react'
 
 interface Props {
   role: string
@@ -125,6 +126,25 @@ export default function DocumentosContent({ role, userId }: Props) {
       }, {})
     : {}
 
+  const handleExcluirLote = async (loteId: string) => {
+    const confirm = window.confirm('Tem certeza que deseja excluir este lote?')
+    if (!confirm) return
+
+    try {
+      const res = await fetch(`/api/lotes/${loteId}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) throw new Error('Erro ao excluir lote')
+
+      toast.success('Lote excluído com sucesso')
+      setLotesComStatus((prev) => prev.filter((l) => l.id !== loteId))
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao excluir lote')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Documentos</h1>
@@ -174,12 +194,22 @@ export default function DocumentosContent({ role, userId }: Props) {
                   </td>
                   {isGestor && (
                     <td className="p-4">
-                      <EditarLoteModal
-                        loteId={lote.id}
-                        nomeAtual={lote.nome}
-                        inicioAtual={lote.inicio}
-                        fimAtual={lote.fim}
-                      />
+                      <div className="flex items-center gap-2">
+                        <EditarLoteModal
+                          loteId={lote.id}
+                          nomeAtual={lote.nome}
+                          inicioAtual={lote.inicio}
+                          fimAtual={lote.fim}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleExcluirLote(lote.id)}
+                          className="text-red-600 hover:bg-red-100"
+                        >
+                          <Trash className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   )}
                 </tr>

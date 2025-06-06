@@ -24,6 +24,7 @@ export default function DocumentosPie({ userId, role }: Props) {
     `/api/stats/document-status?userId=${userId}&role=${role}`,
     fetcher,
   )
+  console.log('📊 Dados SWR:', data)
 
   if (isLoading || !data) {
     return <Skeleton className="w-full h-[300px] rounded-xl" />
