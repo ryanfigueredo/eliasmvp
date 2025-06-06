@@ -26,11 +26,11 @@ export default async function MasterDashboardPage() {
   const cardClass = 'bg-white rounded-xl p-6 shadow-sm border'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-[calc(100vh-80px)] overflow-y-auto pr-2">
       <h1 className="text-2xl font-bold">Visão geral</h1>
 
       {/* Primeira linha: usuários */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Total de usuários</p>
           <h2 className="text-2xl font-semibold">{total}</h2>
@@ -48,7 +48,7 @@ export default async function MasterDashboardPage() {
       </div>
 
       {/* Segunda linha: cargos */}
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Consultores</p>
           <h2 className="text-xl font-semibold">{consultores}</h2>

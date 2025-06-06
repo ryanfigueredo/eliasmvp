@@ -74,7 +74,7 @@ export default function EditarLoteModal({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-md border rounded-xl shadow-xl px-6 py-6">
+      <DialogContent className="max-w-md border bg-white rounded-xl shadow-xl px-6 py-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
             Editar Lote

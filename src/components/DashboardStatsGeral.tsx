@@ -39,7 +39,7 @@ export default function DashboardStatsGeral({ userId, role }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Card>
         <CardHeader>
           <CardTitle>Clientes</CardTitle>
@@ -75,7 +75,11 @@ export default function DashboardStatsGeral({ userId, role }: Props) {
         </CardHeader>
         <CardContent>
           <p className="text-2xl font-semibold text-zinc-800">
-            R$ {data.totalValor.toFixed(2).replace('.', ',')}
+            {' '}
+            {data.totalValor.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
           </p>
         </CardContent>
       </Card>
