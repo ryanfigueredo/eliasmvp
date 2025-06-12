@@ -58,20 +58,19 @@ export default function DocumentosPorClienteGrouped({
     (doc) => doc.lote?.id === loteSelecionado,
   )
 
-  const documentosPorCliente = documentosFiltrados.reduce<
+  const documentosPorInputador = documentosFiltrados.reduce<
     Record<string, { nome: string; documentos: DocumentoComLote[] }>
   >((acc, doc) => {
-    const clienteId = doc.cliente?.id ?? `sem-cliente-${doc.id}`
-    const clienteNome = doc.cliente?.nome ?? 'Cliente desconhecido'
+    const inputador = doc.user?.name ?? `Desconhecido-${doc.id}`
 
-    if (!acc[clienteId]) {
-      acc[clienteId] = {
-        nome: clienteNome,
+    if (!acc[inputador]) {
+      acc[inputador] = {
+        nome: inputador,
         documentos: [],
       }
     }
 
-    acc[clienteId].documentos.push(doc)
+    acc[inputador].documentos.push(doc)
     return acc
   }, {})
 
@@ -81,20 +80,20 @@ export default function DocumentosPorClienteGrouped({
         <ExportarDocumentos documentos={documentosFiltrados} />
       )}
 
-      {Object.entries(documentosPorCliente)
+      {Object.entries(documentosPorInputador)
         .sort(([, a], [, b]) => {
           const aDate = new Date(a.documentos[0].updatedAt).getTime()
           const bDate = new Date(b.documentos[0].updatedAt).getTime()
           return bDate - aDate
         })
-        .map(([clienteId, { nome, documentos }]) => {
+        .map(([inputador, { nome, documentos }]) => {
           const docsOrdenados = documentos.sort(
             (a, b) =>
               new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
           )
 
           return (
-            <div key={clienteId} className="border rounded-xl shadow">
+            <div key={inputador} className="border rounded-xl shadow">
               <div className="flex justify-between items-center p-4 bg-zinc-100">
                 <div>
                   <p className="font-semibold text-zinc-700">
@@ -132,7 +131,7 @@ export default function DocumentosPorClienteGrouped({
                     size="sm"
                     onClick={() =>
                       setOpenCliente(
-                        openCliente === clienteId ? null : clienteId,
+                        openCliente === inputador ? null : inputador,
                       )
                     }
                   >
@@ -142,7 +141,7 @@ export default function DocumentosPorClienteGrouped({
                 </div>
               </div>
 
-              {openCliente === clienteId && (
+              {openCliente === inputador && (
                 <table className="w-full bg-white text-sm">
                   <thead className="bg-zinc-50">
                     <tr>

@@ -12,6 +12,7 @@ import ClientesPorLoteDialog from './ClientesPorLoteDialog'
 import { ArrowLeft } from 'lucide-react'
 import DocumentosPorClienteGrouped from './DocumentosPorClienteGrouped'
 import { Trash } from 'lucide-react'
+import SelectStatusLote from './SelectStatusLote'
 
 interface Props {
   role: string
@@ -161,6 +162,7 @@ export default function DocumentosContent({ role, userId }: Props) {
               <th className="p-4 text-left">Lote</th>
               <th className="p-4 text-left">Período</th>
               <th className="p-4 text-left">Ação</th>
+              <th className="p-4 text-left">Status</th>
               {isGestor && <th className="p-4 text-left"></th>}
             </tr>
           </thead>
@@ -212,6 +214,27 @@ export default function DocumentosContent({ role, userId }: Props) {
                       </div>
                     </td>
                   )}
+                  <td className="p-4">
+                    {isGestor ? (
+                      <SelectStatusLote
+                        loteId={lote.id}
+                        statusAtual={lote.status}
+                        onChangeStatus={(novoStatus) => {
+                          setLotesComStatus((prev) =>
+                            prev.map((l) =>
+                              l.id === lote.id
+                                ? { ...l, status: novoStatus }
+                                : l,
+                            ),
+                          )
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm text-zinc-600">
+                        {lote.status}
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
           </tbody>

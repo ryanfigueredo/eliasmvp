@@ -43,6 +43,7 @@ model Lote {
   nome      String   @unique
   inicio    DateTime
   fim       DateTime
+  status    String   @default("Iniciado")
   createdAt DateTime @default(now())
 
   criadoPorId String?
