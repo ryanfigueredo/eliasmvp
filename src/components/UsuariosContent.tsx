@@ -40,7 +40,8 @@ export default function UsuariosContent({
       toast.success('Usuário excluído com sucesso!')
       setUsers((prev) => prev.filter((user) => user.id !== userId))
     } else {
-      toast.error('Erro ao excluir o usuário.')
+      const data = await res.json()
+      toast.error(data.message || 'Erro ao excluir o usuário.')
     }
   }
 

@@ -1,70 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function DELETE(
-  req: NextRequest,
+  req: Request,
   { params }: { params: { id: string } },
 ) {
   const session = await getServerSession(authOptions)
 
-  if (!session || !session.user) {
-    return NextResponse.json({ message: 'Não autenticado.' }, { status: 401 })
-  }
-
-  if (session.user.role !== 'master') {
+  if (!session?.user || session.user.role !== 'master') {
     return NextResponse.json(
       { message: 'Apenas o master pode excluir usuários.' },
       { status: 403 },
     )
   }
 
+  const userId = params.id
+
   try {
-    const user = await prisma.user.delete({ where: { id: params.id } })
-    return NextResponse.json(user)
-  } catch (error) {
-    return NextResponse.json(
-      { message: 'Erro ao excluir o usuário' },
-      { status: 500 },
-    )
-  }
-}
+    const documentos = await prisma.document.findFirst({
+      where: { userId },
+    })
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  const session = await getServerSession(authOptions)
-  if (!session || !session.user) {
-    return NextResponse.json({ message: 'Não autenticado.' }, { status: 401 })
-  }
-
-  const { name, status, role } = await req.json()
-  const updates: any = {}
-  if (name) updates.name = name
-  if (status) updates.status = status
-
-  if (role) {
-    if (session.user.role !== 'master') {
+    if (documentos) {
       return NextResponse.json(
-        { message: 'Apenas o master pode alterar o cargo.' },
-        { status: 403 },
+        {
+          message:
+            'Não é possível excluir este usuário pois ele possui documentos vinculados. Exclua os documentos antes de excluir o usuário.',
+        },
+        { status: 400 },
       )
     }
-    updates.role = role
-  }
 
-  try {
-    const updatedUser = await prisma.user.update({
-      where: { id: params.id },
-      data: updates,
-    })
-    return NextResponse.json(updatedUser)
-  } catch (error) {
-    console.error('Erro ao atualizar usuário:', error)
+    const deletedUser = await prisma.user.delete({ where: { id: userId } })
+    return NextResponse.json(deletedUser)
+  } catch (err) {
+    console.error('[DELETE USER]', err)
     return NextResponse.json(
-      { message: 'Erro ao atualizar usuário.' },
+      { message: 'Erro interno ao excluir usuário.' },
       { status: 500 },
     )
   }

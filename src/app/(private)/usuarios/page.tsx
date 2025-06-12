@@ -21,9 +21,12 @@ export default async function UsuariosPage() {
   }
 
   // Recupera a URL com os parâmetros da request
-  const headersList = headers()
-  const url = (await headersList).get('x-url') || ''
-  const searchParams = new URL(url, 'http://localhost:3000').searchParams
+  const headersList = await headers()
+  const url = headersList.get('x-url') || ''
+  const host = headersList.get('host') || 'localhost:3000'
+  const protocol = host.includes('localhost') ? 'http' : 'https'
+
+  const searchParams = new URL(url, `${protocol}://${host}`).searchParams
 
   const busca = searchParams.get('busca') || ''
   const role = searchParams.get('role') || ''
