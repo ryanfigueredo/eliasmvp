@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
+import StatusFarol from './StatusFarol'
 
 const statusOptions = [
   { value: 'INICIADO', label: 'Iniciado', color: 'bg-yellow-400' },
@@ -13,17 +14,22 @@ export default function SelectStatusDocumento({
   id,
   status,
   refreshDocumentos,
+  modoSomenteLeitura = false,
 }: {
   id: string
   status: 'INICIADO' | 'EM_ANDAMENTO' | 'FINALIZADO'
   refreshDocumentos?: () => void
+  modoSomenteLeitura?: boolean
 }) {
   const [currentStatus, setCurrentStatus] = useState(status)
   const [isPending, startTransition] = useTransition()
 
+  if (modoSomenteLeitura) {
+    return <StatusFarol status={status} />
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newStatus = e.target.value as typeof currentStatus
-
     if (newStatus === currentStatus) return
 
     startTransition(async () => {
@@ -35,7 +41,8 @@ export default function SelectStatusDocumento({
 
       if (res.ok) {
         toast.success('Status atualizado!')
-        refreshDocumentos?.() // <- Aqui está o segredo!
+        refreshDocumentos?.()
+        setCurrentStatus(newStatus)
       } else {
         toast.error('Erro ao atualizar status.')
       }

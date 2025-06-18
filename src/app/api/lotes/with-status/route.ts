@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       const statusList = lote.documentos.map((doc) => doc.status)
       const total = statusList.length
 
-      let status: string = 'Sem documentos'
+      let status: DocumentoStatus | 'SEM_DOCUMENTOS' = 'SEM_DOCUMENTOS'
 
       if (total > 0) {
         const count: Record<DocumentoStatus, number> = {
@@ -78,13 +78,13 @@ export async function GET(req: NextRequest) {
         }
 
         if (count.FINALIZADO === total) {
-          status = 'Finalizado'
+          status = 'FINALIZADO'
         } else if (count.EM_ANDAMENTO > 0) {
-          status = 'Em andamento'
+          status = 'EM_ANDAMENTO'
         } else if (count.INICIADO > 0) {
-          status = 'Iniciado'
+          status = 'INICIADO'
         } else {
-          status = 'Desconhecido'
+          status = 'SEM_DOCUMENTOS'
         }
       }
 

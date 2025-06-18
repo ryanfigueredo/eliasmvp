@@ -71,7 +71,6 @@ export default function PreviewDocumentoModal({
 
         <div className="flex-1 w-full h-full overflow-hidden">
           {loading ? (
-            // ⭐️ Loader bonito
             <div className="flex items-center justify-center h-full">
               <div className="animate-pulse rounded-xl bg-zinc-200 w-32 h-32" />
             </div>

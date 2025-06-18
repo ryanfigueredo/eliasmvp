@@ -147,7 +147,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
           if (contrato) formData.append('contrato', contrato)
           if (comprovante) formData.append('comprovante', comprovante)
 
-          const res = await fetch('/api/document', {
+          const res = await fetch('/api/documentos-cliente/upload', {
             method: 'POST',
             body: formData,
           })

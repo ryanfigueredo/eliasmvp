@@ -4,8 +4,7 @@ import { DocumentoStatus } from '@prisma/client'
 import { useState } from 'react'
 import { Download, Eye } from 'lucide-react'
 import PreviewDocumentoModal from './PreviewDocumentoModal'
-import SelectStatusDocumento from './SelectStatusDocumento'
-import StatusFarol from './StatusFarol'
+
 import { Button } from './ui/button'
 import ExportarDocumentos from './ExportarDocumentos'
 
@@ -16,6 +15,7 @@ type DocumentoComLote = {
   status: DocumentoStatus
   fileUrl: string
   updatedAt: string
+  tipo?: string
   user?: {
     name: string
     admin?: {
@@ -53,7 +53,6 @@ export default function DocumentosPorClienteGrouped({
   const isAdmin = role === 'admin'
   const [openCliente, setOpenCliente] = useState<string | null>(null)
 
-  // 🔎 Filtro apenas do lote selecionado
   const documentosFiltrados = documentos.filter(
     (doc) => doc.lote?.id === loteSelecionado,
   )
@@ -62,14 +61,9 @@ export default function DocumentosPorClienteGrouped({
     Record<string, { nome: string; documentos: DocumentoComLote[] }>
   >((acc, doc) => {
     const inputador = doc.user?.name ?? `Desconhecido-${doc.id}`
-
     if (!acc[inputador]) {
-      acc[inputador] = {
-        nome: inputador,
-        documentos: [],
-      }
+      acc[inputador] = { nome: inputador, documentos: [] }
     }
-
     acc[inputador].documentos.push(doc)
     return acc
   }, {})
@@ -117,15 +111,6 @@ export default function DocumentosPorClienteGrouped({
                 </div>
 
                 <div className="flex items-center gap-4">
-                  {isGestor ? (
-                    <SelectStatusDocumento
-                      id={docsOrdenados[0].id}
-                      status={docsOrdenados[0].status}
-                      refreshDocumentos={refreshDocumentos}
-                    />
-                  ) : (
-                    <StatusFarol status={docsOrdenados[0].status} />
-                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -152,9 +137,13 @@ export default function DocumentosPorClienteGrouped({
                     </tr>
                   </thead>
                   <tbody>
-                    {docsOrdenados.map((doc, i) => (
+                    {docsOrdenados.map((doc) => (
                       <tr key={doc.id} className="border-t">
-                        <td className="p-4">Documento {i + 1}</td>
+                        <td className="p-4">
+                          {doc.tipo
+                            ? `Documento ${doc.tipo}`
+                            : 'Documento desconhecido'}
+                        </td>
                         <td className="p-4">
                           {doc.user?.admin?.name ??
                             (isGestor || isAdmin ? doc.user?.name : '—')}

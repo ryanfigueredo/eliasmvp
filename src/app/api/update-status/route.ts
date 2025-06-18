@@ -9,32 +9,24 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { id, status } = body
+  const { loteId, status } = body
   const statusPermitidos = ['INICIADO', 'EM_ANDAMENTO', 'FINALIZADO']
 
-  if (!id || !status || !statusPermitidos.includes(status)) {
+  if (!loteId || !status || !statusPermitidos.includes(status)) {
     return NextResponse.json({ message: 'Dados inválidos.' }, { status: 400 })
   }
 
   try {
-    // Busca o clienteId e loteId do documento original
-    const docOriginal = await prisma.document.findUnique({
-      where: { id },
-      select: { clienteId: true, loteId: true },
+    // Atualiza o status do próprio lote
+    await prisma.lote.update({
+      where: { id: loteId },
+      data: { status },
     })
 
-    if (!docOriginal || !docOriginal.clienteId || !docOriginal.loteId) {
-      return NextResponse.json(
-        { message: 'Documento não encontrado ou incompleto.' },
-        { status: 404 },
-      )
-    }
-
-    // Atualiza todos os documentos do mesmo cliente e lote
+    // Atualiza todos os documentos vinculados a esse lote
     await prisma.document.updateMany({
       where: {
-        clienteId: docOriginal.clienteId,
-        loteId: docOriginal.loteId,
+        loteId,
       },
       data: {
         status,
@@ -46,12 +38,12 @@ export async function POST(req: NextRequest) {
       data: {
         userId: String(token.id),
         acao: 'ALTERAÇÃO DE STATUS EM LOTE',
-        detalhes: `Alterou status de todos os documentos do cliente ${docOriginal.clienteId} no lote ${docOriginal.loteId} para ${status}`,
+        detalhes: `Alterou status do lote ${loteId} e documentos para ${status}`,
       },
     })
 
     return NextResponse.json(
-      { message: 'Status atualizado com sucesso.' },
+      { message: 'Status do lote e documentos atualizado.' },
       { status: 200 },
     )
   } catch (error) {

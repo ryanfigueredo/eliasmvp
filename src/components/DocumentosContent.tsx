@@ -194,6 +194,33 @@ export default function DocumentosContent({ role, userId }: Props) {
                       />
                     )}
                   </td>
+
+                  <td className="p-4">
+                    {isGestor ? (
+                      <SelectStatusLote
+                        loteId={lote.id}
+                        statusAtual={
+                          lote.status as
+                            | 'INICIADO'
+                            | 'EM_ANDAMENTO'
+                            | 'FINALIZADO'
+                        }
+                        onChangeStatus={(novoStatus) => {
+                          setLotesComStatus((prev) =>
+                            prev.map((l) =>
+                              l.id === lote.id
+                                ? { ...l, status: novoStatus }
+                                : l,
+                            ),
+                          )
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm text-zinc-600">
+                        {lote.status}
+                      </span>
+                    )}
+                  </td>
                   {isGestor && (
                     <td className="p-4">
                       <div className="flex items-center gap-2">
@@ -214,27 +241,6 @@ export default function DocumentosContent({ role, userId }: Props) {
                       </div>
                     </td>
                   )}
-                  <td className="p-4">
-                    {isGestor ? (
-                      <SelectStatusLote
-                        loteId={lote.id}
-                        statusAtual={lote.status}
-                        onChangeStatus={(novoStatus) => {
-                          setLotesComStatus((prev) =>
-                            prev.map((l) =>
-                              l.id === lote.id
-                                ? { ...l, status: novoStatus }
-                                : l,
-                            ),
-                          )
-                        }}
-                      />
-                    ) : (
-                      <span className="text-sm text-zinc-600">
-                        {lote.status}
-                      </span>
-                    )}
-                  </td>
                 </tr>
               ))}
           </tbody>
