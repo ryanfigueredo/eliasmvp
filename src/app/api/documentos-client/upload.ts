@@ -53,7 +53,6 @@ export default async function handler(
             Key: filename,
             Body: buffer,
             ContentType: info.mimeType,
-            ACL: 'public-read',
           }),
         )
 
