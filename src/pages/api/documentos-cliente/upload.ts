@@ -1,5 +1,3 @@
-// src/pages/api/documentos-cliente/upload.ts
-
 import { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { v4 as uuid } from 'uuid'
@@ -30,51 +28,73 @@ export default async function handler(
   const uploads: Promise<void>[] = []
 
   let clienteId = ''
+  let userId = ''
+  let loteId = ''
+  let valor = ''
+  const arquivos: {
+    tipo: string
+    buffer: Uint8Array[]
+    filename: string
+    mimeType: string
+  }[] = []
 
   bb.on('field', (name, val) => {
     if (name === 'clienteId') clienteId = val
+    if (name === 'responsavelId') userId = val
+    if (name === 'loteId') loteId = val
+    if (name === 'valor') valor = val
   })
 
   bb.on('file', (name, file, info) => {
-    const tipo = name // 'rg', 'consulta', etc.
     const filename = `${Date.now()}-${uuid()}-${info.filename}`
-    const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${filename}`
-
-    uploads.push(
-      (async () => {
-        const chunks: Uint8Array[] = []
-        for await (const chunk of file) {
-          chunks.push(chunk)
-        }
-
-        const buffer = Buffer.concat(chunks)
-
-        await s3.send(
-          new PutObjectCommand({
-            Bucket: process.env.AWS_S3_BUCKET!,
-            Key: filename,
-            Body: buffer,
-            ContentType: info.mimeType,
-          }),
-        )
-
-        await prisma.documentoCliente.create({
-          data: {
-            clienteId,
-            tipo: tipo.toUpperCase(),
-            fileUrl,
-          },
-        })
-      })(),
-    )
+    const buffer: Uint8Array[] = []
+    file.on('data', (data) => buffer.push(data))
+    file.on('end', () => {
+      arquivos.push({
+        tipo: name.toUpperCase(),
+        buffer,
+        filename,
+        mimeType: info.mimeType,
+      })
+    })
   })
 
   bb.on('close', async () => {
     try {
-      await Promise.all(uploads)
-      return res.status(201).json({ message: 'Documentos do cliente salvos.' })
+      if (!clienteId || !userId || !loteId || !valor) {
+        return res
+          .status(400)
+          .json({ message: 'Campos obrigatórios faltando.' })
+      }
+
+      for (const arq of arquivos) {
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET!,
+            Key: arq.filename,
+            Body: Buffer.concat(arq.buffer),
+            ContentType: arq.mimeType,
+          }),
+        )
+
+        const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${arq.filename}`
+
+        await prisma.document.create({
+          data: {
+            clienteId,
+            userId,
+            loteId,
+            valor: parseFloat(valor),
+            orgao: 'SERASA',
+            status: 'INICIADO',
+            fileUrl,
+          },
+        })
+      }
+
+      return res.status(201).json({ message: 'Documentos salvos com sucesso.' })
     } catch (error) {
-      console.error(error)
+      console.error('Erro no upload:', error)
       return res.status(500).json({ message: 'Erro ao salvar documentos.' })
     }
   })

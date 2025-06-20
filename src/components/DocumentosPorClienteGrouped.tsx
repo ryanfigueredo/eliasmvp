@@ -1,14 +1,13 @@
 'use client'
 
 import { DocumentoStatus } from '@prisma/client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Download, Eye } from 'lucide-react'
 import PreviewDocumentoModal from './PreviewDocumentoModal'
-
 import { Button } from './ui/button'
 import ExportarDocumentos from './ExportarDocumentos'
 
-type DocumentoComLote = {
+interface DocumentoComLote {
   id: string
   userId: string
   orgao: string
@@ -53,6 +52,11 @@ export default function DocumentosPorClienteGrouped({
   const isAdmin = role === 'admin'
   const [openCliente, setOpenCliente] = useState<string | null>(null)
 
+  useEffect(() => {
+    console.log('🧾 Documentos recebidos:', documentos)
+    console.log('📦 Lote selecionado:', loteSelecionado)
+  }, [documentos, loteSelecionado])
+
   const documentosFiltrados = documentos.filter(
     (doc) => doc.lote?.id === loteSelecionado,
   )
@@ -72,6 +76,12 @@ export default function DocumentosPorClienteGrouped({
     <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2 border rounded-xl">
       {(isGestor || isAdmin) && (
         <ExportarDocumentos documentos={documentosFiltrados} />
+      )}
+
+      {Object.entries(documentosPorInputador).length === 0 && (
+        <div className="text-center text-sm text-zinc-500 mt-4">
+          Nenhum documento encontrado para este lote.
+        </div>
       )}
 
       {Object.entries(documentosPorInputador)

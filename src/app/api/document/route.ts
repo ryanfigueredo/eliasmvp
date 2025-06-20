@@ -2,7 +2,6 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { IncomingForm, Fields, Files, File } from 'formidable'
 import { readFile } from 'fs/promises'
-import path from 'path'
 import { DocumentoStatus, Orgao } from '@prisma/client'
 import { Readable } from 'stream'
 import { uploadToS3 } from '@/lib/s3'
@@ -11,7 +10,7 @@ export const config = {
   api: { bodyParser: false },
 }
 
-// Converte NextRequest para stream compatível com formidable
+// Conversão do NextRequest para formato compatível com Formidable
 async function nextRequestToNodeRequest(req: NextRequest) {
   const reader = req.body?.getReader()
   const stream = new Readable({
@@ -49,15 +48,12 @@ export async function POST(req: NextRequest) {
   try {
     const { fields, files } = await parseForm(req)
 
-    console.log('📝 Campos recebidos:', fields)
-    console.log('📎 Arquivos recebidos:', files)
-
     const clienteId = fields.clienteId?.[0]
-    const valor = fields.valor?.[0]
-    const responsavelId = fields.responsavelId?.[0]
     const loteId = fields.loteId?.[0]
+    const valor = fields.valor?.[0]
+    const userId = fields.responsavelId?.[0]
 
-    if (!clienteId || !valor || !responsavelId || !loteId) {
+    if (!clienteId || !loteId || !valor || !userId) {
       return NextResponse.json(
         { message: 'Campos obrigatórios ausentes.' },
         { status: 400 },
@@ -69,57 +65,32 @@ export async function POST(req: NextRequest) {
     const contrato = (files.contrato as File[] | undefined)?.[0]
     const comprovante = (files.comprovante as File[] | undefined)?.[0]
 
-    if (!rg || !contrato) {
-      return NextResponse.json(
-        { message: 'RG e Contrato são obrigatórios.' },
-        { status: 400 },
-      )
-    }
+    const uploads = [
+      rg && { tipo: 'RG', file: rg },
+      consulta && { tipo: 'CONSULTA', file: consulta },
+      contrato && { tipo: 'CONTRATO', file: contrato },
+      comprovante && { tipo: 'COMPROVANTE', file: comprovante },
+    ].filter(Boolean) as { tipo: string; file: File }[]
 
-    const rgUrl = await uploadToS3({
-      fileBuffer: await readFile(rg.filepath),
-      fileName: `${Date.now()}-rg-${rg.originalFilename}`,
-      contentType: rg.mimetype || 'application/pdf',
-    })
+    for (const item of uploads) {
+      const fileBuffer = await readFile(item.file.filepath)
+      const fileUrl = await uploadToS3({
+        fileBuffer,
+        fileName: `${Date.now()}-${item.tipo.toLowerCase()}-${item.file.originalFilename}`,
+        contentType: item.file.mimetype || 'application/pdf',
+      })
 
-    const consultaUrl = consulta
-      ? await uploadToS3({
-          fileBuffer: await readFile(consulta.filepath),
-          fileName: `${Date.now()}-consulta-${consulta.originalFilename}`,
-          contentType: consulta.mimetype || 'application/pdf',
-        })
-      : null
-
-    const contratoUrl = await uploadToS3({
-      fileBuffer: await readFile(contrato.filepath),
-      fileName: `${Date.now()}-contrato-${contrato.originalFilename}`,
-      contentType: contrato.mimetype || 'application/pdf',
-    })
-
-    const comprovanteUrl = comprovante
-      ? await uploadToS3({
-          fileBuffer: await readFile(comprovante.filepath),
-          fileName: `${Date.now()}-comprovante-${comprovante.originalFilename}`,
-          contentType: comprovante.mimetype || 'application/pdf',
-        })
-      : null
-
-    const docsData = [rgUrl, consultaUrl, contratoUrl, comprovanteUrl]
-      .filter(Boolean)
-      .map((url) => ({
-        clienteId,
-        userId: responsavelId,
-        loteId,
-        valor: Number(valor),
-        status: DocumentoStatus.INICIADO,
-        orgao: Orgao.SERASA,
-        fileUrl: url as string,
-      }))
-
-    console.log('📦 Dados a serem salvos no banco:', docsData)
-
-    for (const doc of docsData) {
-      await prisma.document.create({ data: doc })
+      await prisma.document.create({
+        data: {
+          userId,
+          clienteId,
+          loteId,
+          valor: parseFloat(valor),
+          orgao: Orgao.SERASA,
+          status: DocumentoStatus.INICIADO,
+          fileUrl,
+        },
+      })
     }
 
     return NextResponse.json(
@@ -129,7 +100,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('❌ Erro ao processar upload:', error)
     return NextResponse.json(
-      { message: 'Erro interno ao enviar documentos.' },
+      { message: 'Erro ao enviar documentos.' },
       { status: 500 },
     )
   }
@@ -144,10 +115,12 @@ export async function GET(req: NextRequest) {
 
     const where: any = {}
 
+    // Se for consultor, filtra apenas pelos documentos dele
     if (role === 'consultor' && userId) {
       where.userId = userId
     }
 
+    // Se houver filtro por lote
     if (loteId) {
       where.loteId = loteId
     }
@@ -174,7 +147,14 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        lote: true,
+        lote: {
+          select: {
+            id: true,
+            nome: true,
+            inicio: true,
+            fim: true,
+          },
+        },
       },
       orderBy: {
         updatedAt: 'desc',
@@ -185,7 +165,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Erro ao buscar documentos:', error)
     return NextResponse.json(
-      { message: 'Erro ao buscar documentos' },
+      { message: 'Erro ao buscar documentos.' },
       { status: 500 },
     )
   }
