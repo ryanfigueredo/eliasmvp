@@ -22,7 +22,7 @@ export async function uploadToS3({
   fileName: string
   contentType: string
 }) {
-  const bucketName = process.env.AWS_S3_BUCKET_NAME!
+  const bucketName = process.env.AWS_S3_BUCKET!
 
   const command = new PutObjectCommand({
     Bucket: bucketName,
@@ -38,7 +38,7 @@ export async function uploadToS3({
 }
 
 export async function getS3SignedUrl(key: string) {
-  const bucketName = process.env.AWS_S3_BUCKET_NAME!
+  const bucketName = process.env.AWS_S3_BUCKET!
 
   const command = new GetObjectCommand({
     Bucket: bucketName,

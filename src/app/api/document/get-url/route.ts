@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const bucketName = process.env.AWS_S3_BUCKET_NAME!
+    const bucketName = process.env.AWS_S3_BUCKET!
     const command = new GetObjectCommand({
       Bucket: bucketName,
       Key: key,
