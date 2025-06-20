@@ -38,7 +38,7 @@ export default async function handler(
   bb.on('file', (name, file, info) => {
     const tipo = name // 'rg', 'consulta', etc.
     const filename = `${Date.now()}-${uuid()}-${info.filename}`
-    const fileUrl = `https://${process.env.AWS_BUCKET}.s3.amazonaws.com/${filename}`
+    const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${filename}`
 
     uploads.push(
       (async () => {
@@ -51,7 +51,7 @@ export default async function handler(
 
         await s3.send(
           new PutObjectCommand({
-            Bucket: process.env.AWS_BUCKET!,
+            Bucket: process.env.AWS_S3_BUCKET!,
             Key: filename,
             Body: buffer,
             ContentType: info.mimeType,
