@@ -64,11 +64,12 @@ export default function DocumentosPorClienteGrouped({
   const documentosPorInputador = documentosFiltrados.reduce<
     Record<string, { nome: string; documentos: DocumentoComLote[] }>
   >((acc, doc) => {
-    const inputador = doc.user?.name ?? `Desconhecido-${doc.id}`
-    if (!acc[inputador]) {
-      acc[inputador] = { nome: inputador, documentos: [] }
+    const chave = doc.userId
+    const nome = doc.user?.name ?? `Desconhecido-${doc.id}`
+    if (!acc[chave]) {
+      acc[chave] = { nome, documentos: [] }
     }
-    acc[inputador].documentos.push(doc)
+    acc[chave].documentos.push(doc)
     return acc
   }, {})
 

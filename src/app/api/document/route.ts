@@ -121,20 +121,12 @@ export async function GET(req: NextRequest) {
       where.userId = userId
     }
 
-    // Se for admin, busca documentos dos consultores vinculados
+    // Se for admin, filtra os documentos dos consultores vinculados E os dele mesmo
     if (role === 'admin' && userId) {
-      const consultores = await prisma.user.findMany({
-        where: { adminId: userId },
-        select: { id: true },
-      })
-
-      const consultorIds = consultores.map((c) => c.id)
-
-      // Garante que só documentos desses consultores apareçam
-      where.userId = { in: consultorIds }
+      where.OR = [{ userId: userId }, { user: { adminId: userId } }]
     }
 
-    // Se for master, não aplica filtro (vê tudo)
+    // Se houver filtro por lote
     if (loteId) {
       where.loteId = loteId
     }
@@ -152,9 +144,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             nome: true,
-            user: {
-              select: { name: true },
-            },
+            user: { select: { name: true } },
           },
         },
         lote: {
