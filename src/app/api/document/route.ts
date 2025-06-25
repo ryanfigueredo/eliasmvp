@@ -116,12 +116,25 @@ export async function GET(req: NextRequest) {
 
     const where: any = {}
 
-    // Se for consultor, filtra apenas pelos documentos dele
+    // Se for consultor, filtra apenas os documentos dele
     if (role === 'consultor' && userId) {
       where.userId = userId
     }
 
-    // Se houver filtro por lote
+    // Se for admin, busca documentos dos consultores vinculados
+    if (role === 'admin' && userId) {
+      const consultores = await prisma.user.findMany({
+        where: { adminId: userId },
+        select: { id: true },
+      })
+
+      const consultorIds = consultores.map((c) => c.id)
+
+      // Garante que só documentos desses consultores apareçam
+      where.userId = { in: consultorIds }
+    }
+
+    // Se for master, não aplica filtro (vê tudo)
     if (loteId) {
       where.loteId = loteId
     }
@@ -132,9 +145,7 @@ export async function GET(req: NextRequest) {
         user: {
           select: {
             name: true,
-            admin: {
-              select: { name: true },
-            },
+            admin: { select: { name: true } },
           },
         },
         cliente: {
@@ -142,17 +153,20 @@ export async function GET(req: NextRequest) {
             id: true,
             nome: true,
             user: {
-              select: {
-                name: true,
-              },
+              select: { name: true },
             },
           },
         },
-        lote: true,
+        lote: {
+          select: {
+            id: true,
+            nome: true,
+            inicio: true,
+            fim: true,
+          },
+        },
       },
-      orderBy: {
-        updatedAt: 'desc',
-      },
+      orderBy: { updatedAt: 'desc' },
     })
 
     return NextResponse.json(documentos)
