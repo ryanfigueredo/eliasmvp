@@ -54,6 +54,7 @@ model Lote {
 
 model Document {
   id          String          @id @default(uuid())
+  tipo        String?
   userId      String
   agrupadorId String?
   clienteId   String?

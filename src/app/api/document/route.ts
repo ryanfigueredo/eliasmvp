@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
           clienteId,
           loteId,
           valor: parseFloat(valor),
+          tipo: item.tipo,
           orgao: Orgao.SERASA,
           status: DocumentoStatus.INICIADO,
           fileUrl,
@@ -147,14 +148,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        lote: {
-          select: {
-            id: true,
-            nome: true,
-            inicio: true,
-            fim: true,
-          },
-        },
+        lote: true,
       },
       orderBy: {
         updatedAt: 'desc',

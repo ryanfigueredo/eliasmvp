@@ -5,9 +5,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import busboy from 'busboy'
 
 export const config = {
-  api: {
-    bodyParser: false,
-  },
+  api: { bodyParser: false },
 }
 
 const s3 = new S3Client({
@@ -48,6 +46,7 @@ export default async function handler(
   bb.on('file', (name, file, info) => {
     const filename = `${Date.now()}-${uuid()}-${info.filename}`
     const buffer: Uint8Array[] = []
+
     file.on('data', (data) => buffer.push(data))
     file.on('end', () => {
       arquivos.push({
@@ -94,7 +93,7 @@ export default async function handler(
 
       return res.status(201).json({ message: 'Documentos salvos com sucesso.' })
     } catch (error) {
-      console.error('Erro no upload:', error)
+      console.error('❌ Erro no upload:', error)
       return res.status(500).json({ message: 'Erro ao salvar documentos.' })
     }
   })
