@@ -25,53 +25,62 @@ interface Props {
 
 export default function ExportarDocumentos({ documentos }: Props) {
   const exportarCsv = () => {
-    const csv = Papa.unparse(
-      documentos.map((doc) => ({
-        Cliente: doc.cliente?.nome ?? '—',
-        Responsável: doc.user?.admin?.name ?? '—',
-        InputadoPor: doc.user?.name ?? '—',
-        Orgao: doc.orgao,
-        Status: doc.status,
-        Arquivo: doc.fileUrl,
-        AtualizadoEm: new Date(doc.updatedAt).toLocaleDateString('pt-BR'),
-      })),
-    )
+    const agrupado = new Map()
+
+    documentos.forEach((doc: any) => {
+      const key = doc.agrupadorId ?? doc.id
+      if (!agrupado.has(key)) {
+        agrupado.set(key, {
+          Cliente: doc.cliente?.nome ?? '—',
+          CPF_CNPJ: doc.cliente?.cpfCnpj ?? '—',
+          Responsável: doc.user?.admin?.name ?? '—',
+          InputadoPor: doc.user?.name ?? '—',
+          AtualizadoEm: new Date(
+            doc.createdAt ?? doc.updatedAt,
+          ).toLocaleDateString('pt-BR'),
+        })
+      }
+    })
+
+    const data = Array.from(agrupado.values())
+    const csv = Papa.unparse(data)
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', 'documentos.csv')
+    link.setAttribute('download', 'documentos_por_envio.csv')
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
   const exportarPdf = () => {
+    const agrupado = new Map()
+
+    documentos.forEach((doc: any) => {
+      const key = doc.agrupadorId ?? doc.id
+      if (!agrupado.has(key)) {
+        agrupado.set(key, [
+          doc.cliente?.nome ?? '—',
+          doc.cliente?.cpfCnpj ?? '—',
+          doc.user?.admin?.name ?? '—',
+          doc.user?.name ?? '—',
+          new Date(doc.createdAt ?? doc.updatedAt).toLocaleDateString('pt-BR'),
+        ])
+      }
+    })
+
+    const data = Array.from(agrupado.values())
+
     const doc = new jsPDF()
     autoTable(doc, {
       head: [
-        [
-          'Cliente',
-          'Responsável',
-          'Inputado por',
-          'Órgão',
-          'Status',
-          'Arquivo',
-          'Atualizado em',
-        ],
+        ['Cliente', 'CPF/CNPJ', 'Responsável', 'Inputado por', 'Enviado em'],
       ],
-      body: documentos.map((d) => [
-        d.cliente?.nome ?? '—',
-        d.user?.admin?.name ?? '—',
-        d.user?.name ?? '—',
-        d.orgao,
-        d.status,
-        d.fileUrl,
-        new Date(d.updatedAt).toLocaleDateString('pt-BR'),
-      ]),
+      body: data,
     })
-    doc.save('documentos.pdf')
+    doc.save('documentos_por_envio.pdf')
   }
 
   return (

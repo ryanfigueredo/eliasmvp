@@ -27,6 +27,7 @@ interface DocumentoComLote {
   cliente?: {
     id: string
     nome: string
+    cpfCnpj: string
     user?: { name: string }
   }
   lote?: {

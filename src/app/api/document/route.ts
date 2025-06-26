@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         tipo: true,
-        agrupadorId: true, // <-- ESSENCIAL
+        agrupadorId: true,
         userId: true,
         loteId: true,
         clienteId: true,
@@ -154,6 +154,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             nome: true,
+            cpfCnpj: true,
             user: { select: { name: true } },
           },
         },
