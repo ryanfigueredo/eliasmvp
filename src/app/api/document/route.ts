@@ -133,7 +133,17 @@ export async function GET(req: NextRequest) {
 
     const documentos = await prisma.document.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        tipo: true,
+        agrupadorId: true, // <-- ESSENCIAL
+        userId: true,
+        loteId: true,
+        clienteId: true,
+        fileUrl: true,
+        updatedAt: true,
+        status: true,
+        orgao: true,
         user: {
           select: {
             name: true,

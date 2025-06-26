@@ -2,19 +2,22 @@
 
 import { DocumentoStatus } from '@prisma/client'
 import { useState, useEffect } from 'react'
-import { Download, Eye } from 'lucide-react'
+import { Download, Eye, Trash2 } from 'lucide-react'
 import PreviewDocumentoModal from './PreviewDocumentoModal'
 import { Button } from './ui/button'
 import ExportarDocumentos from './ExportarDocumentos'
+import { toast } from 'sonner'
 
 interface DocumentoComLote {
   id: string
+  tipo?: string
+  agrupadorId?: string | null
   userId: string
   orgao: string
   status: DocumentoStatus
   fileUrl: string
   updatedAt: string
-  tipo?: string
+  createdAt?: string
   user?: {
     name: string
     admin?: {
@@ -46,32 +49,51 @@ export default function DocumentosPorClienteGrouped({
   documentos,
   loteSelecionado,
   role,
+  userId,
   refreshDocumentos,
 }: Props) {
   const isGestor = role === 'master'
   const isAdmin = role === 'admin'
-  const [openCliente, setOpenCliente] = useState<string | null>(null)
-
-  useEffect(() => {
-    console.log('🧾 Documentos recebidos:', documentos)
-    console.log('📦 Lote selecionado:', loteSelecionado)
-  }, [documentos, loteSelecionado])
+  const [openGrupo, setOpenGrupo] = useState<string | null>(null)
 
   const documentosFiltrados = documentos.filter(
     (doc) => doc.lote?.id === loteSelecionado,
   )
 
-  const documentosPorInputador = documentosFiltrados.reduce<
-    Record<string, { nome: string; documentos: DocumentoComLote[] }>
+  const documentosPorEnvio = documentosFiltrados.reduce<
+    Record<string, { documentos: DocumentoComLote[] }>
   >((acc, doc) => {
-    const chave = doc.userId
-    const nome = doc.user?.name ?? `Desconhecido-${doc.id}`
+    const chave = doc.agrupadorId ?? `sem-grupo-${doc.id}`
     if (!acc[chave]) {
-      acc[chave] = { nome, documentos: [] }
+      acc[chave] = { documentos: [] }
     }
     acc[chave].documentos.push(doc)
     return acc
   }, {})
+
+  async function handleExcluirGrupo(agrupadorId: string) {
+    const confirm = window.confirm(
+      'Tem certeza que deseja excluir todos os documentos deste envio?',
+    )
+    if (!confirm) return
+
+    try {
+      const res = await fetch(
+        `/api/document/delete?agrupadorId=${agrupadorId}`,
+        {
+          method: 'DELETE',
+        },
+      )
+
+      if (!res.ok) throw new Error('Erro ao excluir documentos')
+
+      toast.success('Documentos do grupo excluídos com sucesso.')
+      await refreshDocumentos()
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao excluir documentos')
+    }
+  }
 
   return (
     <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2 border rounded-xl">
@@ -79,56 +101,67 @@ export default function DocumentosPorClienteGrouped({
         <ExportarDocumentos documentos={documentosFiltrados} />
       )}
 
-      {Object.entries(documentosPorInputador).length === 0 && (
+      {Object.entries(documentosPorEnvio).length === 0 && (
         <div className="text-center text-sm text-zinc-500 mt-4">
           Nenhum documento encontrado para este lote.
         </div>
       )}
 
-      {Object.entries(documentosPorInputador)
+      {Object.entries(documentosPorEnvio)
         .sort(([, a], [, b]) => {
           const aDate = new Date(a.documentos[0].updatedAt).getTime()
           const bDate = new Date(b.documentos[0].updatedAt).getTime()
           return bDate - aDate
         })
-        .map(([inputador, { nome, documentos }]) => {
+        .map(([grupoId, { documentos }]) => {
+          const clienteNome =
+            documentos[0].cliente?.nome ?? 'Cliente não identificado'
+          const responsavel = documentos[0].user?.admin?.name ?? '—'
+          const inputado = documentos[0].user?.name ?? '—'
+
           const docsOrdenados = documentos.sort(
             (a, b) =>
               new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
           )
 
           return (
-            <div key={inputador} className="border rounded-xl shadow">
+            <div key={grupoId} className="border rounded-xl shadow">
               <div className="flex justify-between items-center p-4 bg-zinc-100">
                 <div>
                   <p className="font-semibold text-zinc-700">
-                    {nome} ({documentos.length} documentos)
+                    {clienteNome} ({documentos.length} documentos)
                   </p>
                   <div className="text-sm text-zinc-500">
-                    Última atualização:{' '}
-                    {new Date(docsOrdenados[0].updatedAt).toLocaleDateString(
-                      'pt-BR',
-                    )}
+                    Enviado em:{' '}
+                    {new Date(
+                      docsOrdenados[0].createdAt ?? docsOrdenados[0].updatedAt,
+                    ).toLocaleDateString('pt-BR')}
                   </div>
                   <div className="text-sm text-zinc-500 mt-1">
                     <span className="font-medium">Responsável: </span>
-                    {docsOrdenados[0].user?.admin?.name ??
-                      (isGestor || isAdmin ? docsOrdenados[0].user?.name : '—')}
+                    {responsavel}
                   </div>
                   <div className="text-sm text-zinc-500">
                     <span className="font-medium">Inputado por: </span>
-                    {docsOrdenados[0].user?.name ?? '—'}
+                    {inputado}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-600"
+                    onClick={() => handleExcluirGrupo(grupoId)}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() =>
-                      setOpenCliente(
-                        openCliente === inputador ? null : inputador,
-                      )
+                      setOpenGrupo(openGrupo === grupoId ? null : grupoId)
                     }
                   >
                     <Eye className="w-4 h-4 mr-2" />
@@ -137,7 +170,7 @@ export default function DocumentosPorClienteGrouped({
                 </div>
               </div>
 
-              {openCliente === inputador && (
+              {openGrupo === grupoId && (
                 <table className="w-full bg-white text-sm">
                   <thead className="bg-zinc-50">
                     <tr>
@@ -152,14 +185,12 @@ export default function DocumentosPorClienteGrouped({
                       <tr key={doc.id} className="border-t">
                         <td className="p-4">
                           {doc.tipo
-                            ? `Documento ${doc.tipo}`
+                            ? doc.tipo.charAt(0).toUpperCase() +
+                              doc.tipo.slice(1).toLowerCase()
                             : 'Documento desconhecido'}
                         </td>
-                        <td className="p-4">
-                          {doc.user?.admin?.name ??
-                            (isGestor || isAdmin ? doc.user?.name : '—')}
-                        </td>
-                        <td className="p-4">{doc.user?.name ?? '—'}</td>
+                        <td className="p-4">{responsavel}</td>
+                        <td className="p-4">{inputado}</td>
                         <td className="p-4 flex items-center gap-2">
                           <PreviewDocumentoModal fileUrl={doc.fileUrl} />
                           <a

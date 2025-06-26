@@ -36,6 +36,9 @@ export default async function handler(
     mimeType: string
   }[] = []
 
+  // 🚨 Aqui está o agrupador que será o mesmo para todos os arquivos enviados
+  const agrupadorId = uuid()
+
   bb.on('field', (name, val) => {
     if (name === 'clienteId') clienteId = val
     if (name === 'responsavelId') userId = val
@@ -84,9 +87,11 @@ export default async function handler(
             userId,
             loteId,
             valor: parseFloat(valor),
+            agrupadorId, // ✅ agora será salvo corretamente
+            tipo: arq.tipo,
+            fileUrl,
             orgao: 'SERASA',
             status: 'INICIADO',
-            fileUrl,
           },
         })
       }

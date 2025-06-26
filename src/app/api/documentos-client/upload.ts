@@ -5,9 +5,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import busboy from 'busboy'
 
 export const config = {
-  api: {
-    bodyParser: false,
-  },
+  api: { bodyParser: false },
 }
 
 const s3 = new S3Client({
@@ -28,13 +26,21 @@ export default async function handler(
   const uploads: Promise<void>[] = []
 
   let clienteId = ''
+  let userId = ''
+  let loteId = ''
+  let valor = 0
+
+  const agrupadorId = uuid()
 
   bb.on('field', (name, val) => {
     if (name === 'clienteId') clienteId = val
+    if (name === 'responsavelId') userId = val
+    if (name === 'loteId') loteId = val
+    if (name === 'valor') valor = parseFloat(val)
   })
 
   bb.on('file', (name, file, info) => {
-    const tipo = name
+    const tipo = name.toUpperCase()
     const filename = `${Date.now()}-${uuid()}-${info.filename}`
     const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${filename}`
 
@@ -56,11 +62,17 @@ export default async function handler(
           }),
         )
 
-        await prisma.documentoCliente.create({
+        await prisma.document.create({
           data: {
             clienteId,
-            tipo: tipo.toUpperCase(),
+            userId,
+            loteId,
+            valor,
+            agrupadorId,
+            tipo,
             fileUrl,
+            orgao: 'SERASA',
+            status: 'INICIADO',
           },
         })
       })(),
@@ -70,10 +82,12 @@ export default async function handler(
   bb.on('close', async () => {
     try {
       await Promise.all(uploads)
-      return res.status(201).json({ message: 'Documentos do cliente salvos.' })
+      return res
+        .status(201)
+        .json({ message: 'Documentos enviados com sucesso.' })
     } catch (error) {
-      console.error('Erro no upload:', error)
-      return res.status(500).json({ message: 'Erro ao salvar documentos.' })
+      console.error('Erro ao salvar documentos:', error)
+      return res.status(500).json({ message: 'Erro interno no servidor.' })
     }
   })
 
