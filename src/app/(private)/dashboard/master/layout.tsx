@@ -21,8 +21,8 @@ export default async function MasterLayout({
   if (!user) return redirect('/login')
 
   return (
-    <div className="min-h-screen flex bg-zinc-100">
-      <main className="flex-1 p-8">{children}</main>
+    <div className="flex h-screen overflow-hidden bg-zinc-100">
+      <main className="flex-1 overflow-y-auto px-4 py-6">{children}</main>
     </div>
   )
 }

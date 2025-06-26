@@ -97,7 +97,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
     }
 
     toast.success('Documentos sendo enviados...')
-    setOpen(false) // ← fecha o modal imediatamente
+    setOpen(false)
 
     startTransition(() => {
       ;(async () => {

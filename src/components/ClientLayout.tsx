@@ -149,7 +149,9 @@ export function ClientLayout({
       </aside>
 
       {/* Conteúdo principal */}
-      <main className="flex-1 p-8">{children}</main>
+      <main className="flex-1 h-screen overflow-y-auto p-8 bg-zinc-100">
+        {children}
+      </main>
     </div>
   )
 }

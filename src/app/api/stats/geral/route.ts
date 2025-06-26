@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     userIds = [userId, ...consultores.map((c) => c.id)]
   }
 
-  const where = userIds ? { userId: { in: userIds } } : {} // master não filtra
+  const where = userIds ? { userId: { in: userIds } } : {}
 
   const documentos = await prisma.document.findMany({
     where,
@@ -38,9 +38,14 @@ export async function GET(req: NextRequest) {
     (doc) => doc.status === 'FINALIZADO',
   ).length
 
-  const totalValor = documentos.reduce((acc, doc) => {
-    return acc + (doc.cliente?.valor || 0)
-  }, 0)
+  // 🔥 Corrigido: soma única por agrupador
+  const documentosUnicos = await prisma.document.findMany({
+    where,
+    distinct: ['agrupadorId'],
+    select: { valor: true },
+  })
+
+  const totalValor = documentosUnicos.reduce((acc, doc) => acc + doc.valor, 0)
 
   return NextResponse.json({
     totalClientes,

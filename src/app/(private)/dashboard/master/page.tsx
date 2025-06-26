@@ -26,9 +26,8 @@ export default async function MasterDashboardPage() {
   const cardClass = 'bg-white rounded-xl p-6 shadow-sm border'
 
   return (
-    <div className="space-y-6 h-[calc(100vh-80px)] overflow-y-auto pr-2">
+    <div className="space-y-6 h-full overflow-y-auto pr-4 pb-6">
       <h1 className="text-2xl font-bold">Visão geral</h1>
-
       {/* Primeira linha: usuários */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className={cardClass}>
@@ -46,7 +45,6 @@ export default async function MasterDashboardPage() {
           </h2>
         </div>
       </div>
-
       {/* Segunda linha: cargos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className={cardClass}>
@@ -58,7 +56,6 @@ export default async function MasterDashboardPage() {
           <h2 className="text-xl font-semibold">{admins}</h2>
         </div>
       </div>
-
       {/* Terceira linha: estatísticas gerais */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className={cardClass}>
@@ -68,8 +65,7 @@ export default async function MasterDashboardPage() {
           <DocumentosPie userId={session.user.id} role="master" />
         </div>
       </div>
-
-      {/* Quarta linha: valores mensais/semanais */}
+      {/* Quarta linha: valores mensais/semanais
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Valor movimentado - Mensal</p>
@@ -87,7 +83,7 @@ export default async function MasterDashboardPage() {
             userId={session.user.id}
           />
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }

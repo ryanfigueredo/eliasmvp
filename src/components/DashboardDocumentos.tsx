@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import {
   PieChart,
   Pie,
@@ -10,9 +9,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Select, SelectItem } from '@/components/ui/select'
 
 export default function DashboardDocumentos() {
   const [lotes, setLotes] = useState<{ id: string; nome: string }[]>([])

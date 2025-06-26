@@ -23,7 +23,7 @@ export default function DashboardValores({
           `/api/dashboard/valores?tipo=${type}&role=${role}&userId=${userId}`,
         )
         const data = await res.json()
-        setValor(data[type]) // pega só o valor necessário
+        setValor(data[type])
       } catch (error) {
         console.error('Erro ao buscar valor:', error)
         toast.error('Erro ao buscar valor de documentos')
