@@ -102,10 +102,22 @@ export default function NovoUsuarioModal() {
 
             <div className="space-y-1">
               <label className="text-sm font-medium text-zinc-700">CPF</label>
-              <Input placeholder="CPF" {...register('cpf')} />
-              {errors.cpf && (
-                <p className="text-red-500 text-xs">{errors.cpf.message}</p>
-              )}
+              <Input
+                placeholder="CPF"
+                {...register('cpf')}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '')
+                  let formatted = raw
+                  if (raw.length <= 11) {
+                    formatted = raw
+                      .replace(/^(\d{3})(\d)/, '$1.$2')
+                      .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+                      .replace(/\.(\d{3})\.(\d{3})(\d)/, '.$1.$2-$3')
+                  }
+                  e.target.value = formatted
+                  return e
+                }}
+              />
             </div>
 
             <div className="space-y-1">
