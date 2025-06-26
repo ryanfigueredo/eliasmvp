@@ -56,7 +56,8 @@ export default async function AdminDashboardPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Visão geral</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Grid responsiva automática */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-max">
         <div className={cardClass}>
           <p className="text-sm text-gray-500">Total de usuários</p>
           <h2 className="text-2xl font-semibold">{total}</h2>
@@ -79,8 +80,13 @@ export default async function AdminDashboardPage() {
           <h2 className="text-xl font-semibold">{consultores}</h2>
         </div>
 
-        <DashboardStatsGeral userId={session.user.id} role={'admin'} />
-        <DocumentosPie userId={session.user.id} role={session.user.role} />
+        <div className="col-span-full">
+          <DashboardStatsGeral userId={session.user.id} role="admin" />
+        </div>
+
+        <div className="col-span-full">
+          <DocumentosPie userId={session.user.id} role="admin" />
+        </div>
       </div>
     </div>
   )

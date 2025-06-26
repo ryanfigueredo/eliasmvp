@@ -49,14 +49,14 @@ export default function DashboardStatsGeral({ userId, role }: Props) {
         </CardContent>
       </Card> */}
 
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Documentos</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-2xl font-semibold">{data.totalDocumentos}</p>
         </CardContent>
-      </Card>
+      </Card> */}
 
       <Card>
         <CardHeader>
