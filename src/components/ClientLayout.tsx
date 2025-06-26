@@ -31,7 +31,12 @@ export function ClientLayout({
   sessionUser,
   user,
 }: ClientLayoutProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768
+    }
+    return false
+  })
   const [imageKey, setImageKey] = useState<string | null>(null)
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
 
