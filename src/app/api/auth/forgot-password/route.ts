@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`
 
     await resend.emails.send({
-      from: 'no-reply@elias.com',
+      from: 'onboarding@resend.dev',
       to: email,
       subject: 'Recuperação de Senha - Sistema Elias',
       html: `
