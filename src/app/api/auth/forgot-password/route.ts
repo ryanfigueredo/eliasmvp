@@ -1,40 +1,35 @@
 import { prisma } from '@/lib/prisma'
-import { NextApiRequest, NextApiResponse } from 'next'
-import { resend } from '@/lib/resend'
 import { addHours } from 'date-fns'
 import crypto from 'crypto'
+import { NextResponse } from 'next/server'
+import { resend } from '@/lib/resend'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  if (req.method !== 'POST') return res.status(405).end()
+export async function POST(req: Request) {
+  const { email } = await req.json()
 
-  const { email } = req.body
-
-  // Verifica se o email foi fornecido
   if (!email) {
-    return res.status(400).json({ message: 'Email é obrigatório.' })
+    return NextResponse.json(
+      { message: 'Email é obrigatório.' },
+      { status: 400 },
+    )
   }
 
   try {
-    // Verifica se o usuário existe
     const user = await prisma.user.findUnique({ where: { email } })
+
     if (!user) {
-      return res.status(404).json({ message: 'Usuário não encontrado.' })
+      return NextResponse.json(
+        { message: 'Usuário não encontrado.' },
+        { status: 404 },
+      )
     }
 
-    // Gera um token único para a redefinição de senha
     const resetToken = crypto.randomBytes(32).toString('hex')
-    const resetTokenExpiry = addHours(new Date(), 1) // Token válido por 1 hora
+    const resetTokenExpiry = addHours(new Date(), 1)
 
-    // Salva o token e a data de expiração no banco de dados
     await prisma.user.update({
       where: { email },
-      data: {
-        resetToken,
-        resetTokenExpiry,
-      },
+      data: { resetToken, resetTokenExpiry },
     })
 
     const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`
@@ -43,15 +38,20 @@ export default async function handler(
       from: 'no-reply@elias.com',
       to: email,
       subject: 'Recuperação de Senha - Sistema Elias',
-      html: `<p>Olá ${user.name},</p>
-             <p>Recebemos uma solicitação para redefinir sua senha. Clique no link abaixo para continuar:</p>
-             <a href="${resetLink}" target="_blank">Redefinir Senha</a>
-             <p>Se você não solicitou essa mudança, por favor, ignore este e-mail.</p>`,
+      html: `
+        <p>Olá ${user.name},</p>
+        <p>Recebemos uma solicitação para redefinir sua senha. Clique no link abaixo para continuar:</p>
+        <a href="${resetLink}" target="_blank">Redefinir Senha</a>
+        <p>Se você não solicitou essa mudança, por favor, ignore este e-mail.</p>
+      `,
     })
 
-    return res.status(200).json({ message: 'Link de redefinição enviado!' })
+    return NextResponse.json({ message: 'Link de redefinição enviado!' })
   } catch (error) {
-    console.error('Erro ao processar recuperação de senha:', error)
-    return res.status(500).json({ message: 'Erro interno do servidor.' })
+    console.error('[FORGOT_PASSWORD]', error)
+    return NextResponse.json(
+      { message: 'Erro interno do servidor.' },
+      { status: 500 },
+    )
   }
 }
