@@ -1,15 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams()
+  const [token, setToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const t = url.searchParams.get('token')
+    setToken(t)
+  }, [])
+
   const router = useRouter()
-  const token = searchParams?.get('token')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [isPending, setIsPending] = useState(false)
