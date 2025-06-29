@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import { getToken } from 'next-auth/jwt'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { resend } from '@/lib/resend'
 import { addHours } from 'date-fns'
@@ -38,10 +37,8 @@ export default async function handler(
       },
     })
 
-    // Cria o link de recuperação
     const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`
 
-    // Envia o e-mail via Resend
     await resend.emails.send({
       from: 'no-reply@elias.com',
       to: email,
