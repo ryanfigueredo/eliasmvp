@@ -25,7 +25,12 @@ export async function GET(req: NextRequest) {
     userIds = [userId, ...consultores.map((c) => c.id)]
   }
 
-  const where = userIds ? { userId: { in: userIds } } : {}
+  // 🔒 Só considera documentos com lote atribuído
+  const baseWhere = {
+    loteId: { not: null },
+  }
+
+  const where = userIds ? { ...baseWhere, userId: { in: userIds } } : baseWhere
 
   const documentos = await prisma.document.findMany({
     where,

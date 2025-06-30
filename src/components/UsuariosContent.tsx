@@ -19,7 +19,7 @@ type Usuario = {
   role: string
   status: string
   createdAt: string
-  admin?: { name: string | null } // <- aqui
+  admin?: { name: string | null }
 }
 
 export default function UsuariosContent({
@@ -30,6 +30,7 @@ export default function UsuariosContent({
   isMaster: boolean
 }) {
   const [users, setUsers] = useState<Usuario[]>(initialUsers)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const handleDeleteUser = async (userId: string) => {
     const res = await fetch(`/api/users/${userId}`, {
@@ -45,13 +46,60 @@ export default function UsuariosContent({
     }
   }
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    )
+  }
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === users.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(users.map((u) => u.id))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    const confirm = window.confirm(
+      `Tem certeza que deseja excluir ${selectedIds.length} usuário(s)?`,
+    )
+    if (!confirm) return
+
+    const res = await fetch('/api/users/delete-many', {
+      method: 'DELETE',
+      body: JSON.stringify({ userIds: selectedIds }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    if (res.ok) {
+      toast.success('Usuários excluídos com sucesso')
+      setUsers((prev) => prev.filter((u) => !selectedIds.includes(u.id)))
+      setSelectedIds([])
+    } else {
+      const data = await res.json()
+      toast.error(data.message || 'Erro ao excluir usuários.')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Todos os usuários</h1>
         <div className="flex space-x-6 justify-between items-center">
           <UsuarioFiltroModal />
-          <NovoUsuarioModal />
+          <div className="gap-4 flex">
+            {isMaster && selectedIds.length > 0 && (
+              <Button
+                onClick={handleDeleteSelected}
+                variant="destructive"
+                className="bg-red-600"
+              >
+                Excluir selecionados ({selectedIds.length})
+              </Button>
+            )}
+            <NovoUsuarioModal />
+          </div>
         </div>
       </div>
 
@@ -59,6 +107,13 @@ export default function UsuariosContent({
         <table className="w-full border-collapse bg-white text-sm">
           <thead className="sticky top-0 bg-gray-100 shadow z-10">
             <tr className="text-left">
+              <th className="p-4">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.length === users.length}
+                  onChange={handleSelectAll}
+                />
+              </th>
               <th className="p-4">Nome</th>
               <th className="p-4">Email</th>
               <th className="p-4">Situação</th>
@@ -71,6 +126,13 @@ export default function UsuariosContent({
           <tbody>
             {users.map((user) => (
               <tr key={user.id} className="border-t">
+                <td className="p-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(user.id)}
+                    onChange={() => toggleSelect(user.id)}
+                  />
+                </td>
                 <td className="p-4">{user.name || '-'}</td>
                 <td className="p-4">{user.email}</td>
                 <td className="p-4">
