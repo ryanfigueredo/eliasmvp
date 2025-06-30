@@ -120,11 +120,12 @@ export default function PerfilPage() {
           <AvatarFallback>{nome?.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
 
-        <Input
+        <input
           name="foto"
           type="file"
           accept="image/*"
           onChange={(e) => setFoto(e.target.files?.[0] || null)}
+          className="text-sm"
         />
       </div>
 
