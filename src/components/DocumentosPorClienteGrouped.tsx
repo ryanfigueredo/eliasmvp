@@ -178,7 +178,7 @@ export default function DocumentosPorClienteGrouped({
                       <th className="p-4 text-left">Tipo</th>
                       <th className="p-4 text-left">Responsável</th>
                       <th className="p-4 text-left">Inputado por</th>
-                      <th className="p-4 text-left">Download</th>
+                      <th className="p-4 text-left">Visualizar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -194,13 +194,6 @@ export default function DocumentosPorClienteGrouped({
                         <td className="p-4">{inputado}</td>
                         <td className="p-4 flex items-center gap-2">
                           <PreviewDocumentoModal fileUrl={doc.fileUrl} />
-                          <a
-                            href={doc.fileUrl}
-                            download
-                            className="text-sm text-zinc-600 hover:text-zinc-900"
-                          >
-                            <Download size={18} />
-                          </a>
                         </td>
                       </tr>
                     ))}
