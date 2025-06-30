@@ -6,7 +6,7 @@ import { Skeleton } from './ui/skeleton'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-const COLORS = ['#facc15', '#60a5fa', '#22c55e'] // amarelo, azul, verde
+const COLORS = ['#facc15', '#60a5fa', '#22c55e']
 
 const STATUS_LABELS: Record<string, string> = {
   iniciado: 'Iniciado',
@@ -30,10 +30,12 @@ export default function DocumentosPie({ userId, role }: Props) {
     return <Skeleton className="w-full h-[300px] rounded-xl" />
   }
 
-  const chartData = Object.entries(data).map(([key, value]) => ({
-    name: STATUS_LABELS[key] ?? key,
-    value: Number(value),
-  }))
+  const chartData = Object.entries(data)
+    .map(([key, value]) => ({
+      name: STATUS_LABELS[key] ?? key,
+      value: Number(value),
+    }))
+    .filter((item) => item.value > 0)
 
   const total = chartData.reduce((acc, item) => acc + item.value, 0)
 
