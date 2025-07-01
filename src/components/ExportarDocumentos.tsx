@@ -8,7 +8,11 @@ import autoTable from 'jspdf-autotable'
 import Papa from 'papaparse'
 
 interface Documento {
-  cliente?: { nome: string }
+  cliente?: {
+    nome: string
+    cpfCnpj?: string
+    valor?: number
+  }
   user?: {
     name: string
     admin?: { name: string }
@@ -17,6 +21,9 @@ interface Documento {
   status: DocumentoStatus
   fileUrl: string
   updatedAt: string
+  createdAt?: string
+  agrupadorId?: string
+  id: string
 }
 
 interface Props {
@@ -27,9 +34,17 @@ export default function ExportarDocumentos({ documentos }: Props) {
   const exportarCsv = () => {
     const agrupado = new Map()
 
-    documentos.forEach((doc: any) => {
+    documentos.forEach((doc) => {
       const key = doc.agrupadorId ?? doc.id
       if (!agrupado.has(key)) {
+        const valorFormatado =
+          typeof doc.cliente?.valor === 'number' && !isNaN(doc.cliente.valor)
+            ? doc.cliente.valor.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })
+            : '—'
+
         agrupado.set(key, {
           Cliente: doc.cliente?.nome ?? '—',
           CPF_CNPJ: doc.cliente?.cpfCnpj ?? '—',
@@ -38,6 +53,7 @@ export default function ExportarDocumentos({ documentos }: Props) {
           AtualizadoEm: new Date(
             doc.createdAt ?? doc.updatedAt,
           ).toLocaleDateString('pt-BR'),
+          Valor: valorFormatado,
         })
       }
     })
@@ -58,15 +74,24 @@ export default function ExportarDocumentos({ documentos }: Props) {
   const exportarPdf = () => {
     const agrupado = new Map()
 
-    documentos.forEach((doc: any) => {
+    documentos.forEach((doc) => {
       const key = doc.agrupadorId ?? doc.id
       if (!agrupado.has(key)) {
+        const valorFormatado =
+          typeof doc.cliente?.valor === 'number' && !isNaN(doc.cliente.valor)
+            ? doc.cliente.valor.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })
+            : '—'
+
         agrupado.set(key, [
           doc.cliente?.nome ?? '—',
           doc.cliente?.cpfCnpj ?? '—',
           doc.user?.admin?.name ?? '—',
           doc.user?.name ?? '—',
           new Date(doc.createdAt ?? doc.updatedAt).toLocaleDateString('pt-BR'),
+          valorFormatado,
         ])
       }
     })
@@ -76,7 +101,14 @@ export default function ExportarDocumentos({ documentos }: Props) {
     const doc = new jsPDF()
     autoTable(doc, {
       head: [
-        ['Cliente', 'CPF/CNPJ', 'Responsável', 'Inputado por', 'Enviado em'],
+        [
+          'Cliente',
+          'CPF/CNPJ',
+          'Responsável',
+          'Inputado por',
+          'Enviado em',
+          'Valor',
+        ],
       ],
       body: data,
     })

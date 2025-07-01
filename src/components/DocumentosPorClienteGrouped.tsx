@@ -99,7 +99,12 @@ export default function DocumentosPorClienteGrouped({
   return (
     <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2 border rounded-xl">
       {(isGestor || isAdmin) && (
-        <ExportarDocumentos documentos={documentosFiltrados} />
+        <ExportarDocumentos
+          documentos={documentosFiltrados.map((doc) => ({
+            ...doc,
+            agrupadorId: doc.agrupadorId ?? undefined,
+          }))}
+        />
       )}
 
       {Object.entries(documentosPorEnvio).length === 0 && (

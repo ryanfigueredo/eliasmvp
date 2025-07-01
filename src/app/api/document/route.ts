@@ -155,6 +155,7 @@ export async function GET(req: NextRequest) {
             id: true,
             nome: true,
             cpfCnpj: true,
+            valor: true,
             user: { select: { name: true } },
           },
         },

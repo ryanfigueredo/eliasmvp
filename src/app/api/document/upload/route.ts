@@ -33,12 +33,14 @@ export default async function handler(
   let fileUrl = ''
   let filename = ''
   let loteId = ''
+  let valor = 0
 
   bb.on('field', (name, val) => {
     if (name === 'userId') userId = val
     if (name === 'orgao') orgao = val
     if (name === 'status') status = val
     if (name === 'loteId') loteId = val
+    if (name === 'valor') valor = Number(val.replace(',', '.')) || 0
   })
 
   bb.on('file', async (name, file, info) => {
@@ -69,7 +71,7 @@ export default async function handler(
           status: status as DocumentoStatus,
           fileUrl,
           loteId,
-          valor: 0,
+          valor,
         },
       })
 

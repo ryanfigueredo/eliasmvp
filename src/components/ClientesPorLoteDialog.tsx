@@ -69,14 +69,8 @@ export default function ClientesPorLoteDialog({
               <tr key={cliente.id} className="border-t">
                 <td className="p-3">{cliente.nome}</td>
                 <td className="p-3">{cliente.cpfCnpj}</td>
-                <td className="p-3">
-                  {/* 👇 mostra o admin se houver */}
-                  {cliente.user?.admin?.name ?? '—'}
-                </td>
-                <td className="p-3">
-                  {/* 👇 mostra quem subiu o cliente */}
-                  {cliente.user?.name ?? '—'}
-                </td>
+                <td className="p-3">{cliente.user?.admin?.name ?? '—'}</td>
+                <td className="p-3">{cliente.user?.name ?? '—'}</td>
                 <td className="p-3">
                   R${' '}
                   {cliente.valor.toLocaleString('pt-BR', {
