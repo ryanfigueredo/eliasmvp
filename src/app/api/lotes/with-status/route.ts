@@ -8,46 +8,49 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const statusFiltro = searchParams.get('status')
-  const userIdFiltro = searchParams.get('userId')
-  const clienteId = searchParams.get('clienteId')
+  const userIdFiltro = searchParams.get('userId') // usado para cliente selecionado
+  const adminIdFiltro = searchParams.get('adminId')
+  const consultorIdFiltro = searchParams.get('consultorId')
 
   let userIds: string[] = []
 
-  if (role === 'master') {
-    userIds = []
-  } else if (role === 'admin') {
+  if (consultorIdFiltro) {
+    userIds = [consultorIdFiltro]
+  } else if (adminIdFiltro) {
     const consultores = await prisma.user.findMany({
-      where: { role: 'consultor', adminId: userId || '' },
+      where: { adminId: adminIdFiltro },
       select: { id: true },
     })
-    userIds = [userId!, ...consultores.map((c) => c.id)]
-  } else if (role === 'consultor') {
-    userIds = [userId!]
+    userIds = consultores.map((c) => c.id)
+  } else if (role === 'admin' && userId) {
+    const consultores = await prisma.user.findMany({
+      where: { adminId: userId },
+      select: { id: true },
+    })
+    userIds = [userId, ...consultores.map((c) => c.id)]
+  } else if (role === 'consultor' && userId) {
+    userIds = [userId]
   }
 
   try {
     const lotes = await prisma.lote.findMany({
-      where: {
-        ...(role !== 'master' && {
-          OR: [
-            {
-              documentos: {
-                some: {
-                  userId: { in: userIds },
+      where:
+        role === 'master' && !adminIdFiltro && !consultorIdFiltro
+          ? {}
+          : {
+              OR: [
+                {
+                  documentos: {
+                    some: {
+                      userId: { in: userIds },
+                    },
+                  },
                 },
-              },
+                {
+                  criadoPorId: { in: userIds },
+                },
+              ],
             },
-            {
-              criadoPorId: { in: userIds },
-            },
-          ],
-        }),
-        ...(clienteId && {
-          documentos: {
-            some: { clienteId },
-          },
-        }),
-      },
       orderBy: { createdAt: 'desc' },
       include: {
         documentos: {
@@ -57,13 +60,13 @@ export async function GET(req: NextRequest) {
                 statusFiltro as DocumentoStatus,
               ) && { status: statusFiltro as DocumentoStatus }),
             ...(userIdFiltro && { userId: userIdFiltro }),
-            ...(clienteId && { clienteId }),
           },
           select: { status: true },
         },
       },
     })
 
+    // ... (status aggregation permanece igual)
     const lotesComStatus = lotes.map((lote) => {
       const statusList = lote.documentos.map((doc) => doc.status)
       const total = statusList.length
@@ -79,19 +82,13 @@ export async function GET(req: NextRequest) {
 
         for (const s of statusList) {
           if (s in count) {
-            count[s as DocumentoStatus] += 1
+            count[s]++
           }
         }
 
-        if (count.FINALIZADO === total) {
-          status = 'FINALIZADO'
-        } else if (count.EM_ANDAMENTO > 0) {
-          status = 'EM_ANDAMENTO'
-        } else if (count.INICIADO > 0) {
-          status = 'INICIADO'
-        } else {
-          status = 'SEM_DOCUMENTOS'
-        }
+        if (count.FINALIZADO === total) status = 'FINALIZADO'
+        else if (count.EM_ANDAMENTO > 0) status = 'EM_ANDAMENTO'
+        else if (count.INICIADO > 0) status = 'INICIADO'
       }
 
       return {
