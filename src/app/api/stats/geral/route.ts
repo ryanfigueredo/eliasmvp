@@ -39,9 +39,13 @@ export async function GET(req: NextRequest) {
 
   const totalClientes = new Set(documentos.map((doc) => doc.clienteId)).size
 
-  const finalizados = documentos.filter(
-    (doc) => doc.status === 'FINALIZADO',
-  ).length
+  const agrupadoresFinalizados = new Set(
+    documentos
+      .filter((doc) => doc.status === 'FINALIZADO')
+      .map((doc) => doc.agrupadorId ?? doc.id),
+  )
+
+  const finalizados = agrupadoresFinalizados.size
 
   // 🔥 Corrigido: soma única por agrupador
   const documentosUnicos = await prisma.document.findMany({
