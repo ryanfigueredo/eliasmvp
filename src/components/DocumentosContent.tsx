@@ -1,18 +1,19 @@
 'use client'
 
 import { useEffect, useState, useTransition, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import NovoDocumentoModal from './NovoDocumentoModal'
-
 import { DocumentoStatus } from '@prisma/client'
+import { ArrowLeft, Trash } from 'lucide-react'
+
+import NovoDocumentoModal from './NovoDocumentoModal'
 import NovoLoteModal from './NovoLoteModal'
 import EditarLoteModal from './EditarLoteModal'
-import { Button } from './ui/button'
 import ClientesPorLoteDialog from './ClientesPorLoteDialog'
-import { ArrowLeft } from 'lucide-react'
 import DocumentosPorClienteGrouped from './DocumentosPorClienteGrouped'
-import { Trash } from 'lucide-react'
 import SelectStatusLote from './SelectStatusLote'
+import ClienteFiltroModal from './ClienteFiltroModal'
+import { Button } from './ui/button'
 
 interface Props {
   role: string
@@ -28,9 +29,7 @@ type DocumentoComLote = {
   updatedAt: string
   user?: {
     name: string
-    admin?: {
-      name: string
-    }
+    admin?: { name: string }
   }
   cliente?: {
     id: string
@@ -52,6 +51,7 @@ export default function DocumentosContent({ role, userId }: Props) {
   >([])
   const [loteSelecionado, setLoteSelecionado] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const searchParams = useSearchParams()
 
   const isConsultor = role === 'consultor'
   const isGestor = role === 'master'
@@ -70,7 +70,6 @@ export default function DocumentosContent({ role, userId }: Props) {
       })
 
       if (!res.ok) throw new Error('Erro na resposta da API')
-
       const data = await res.json()
       if (!Array.isArray(data)) throw new Error('Resposta inválida')
 
@@ -85,12 +84,40 @@ export default function DocumentosContent({ role, userId }: Props) {
     fetchDocumentos()
   }, [fetchDocumentos])
 
+  const [admins, setAdmins] = useState<{ id: string; name: string }[]>([])
+  const [consultores, setConsultores] = useState<
+    { id: string; name: string }[]
+  >([])
+
+  useEffect(() => {
+    fetch('/api/users/filtro-options')
+      .then((res) => res.json())
+      .then((data) => {
+        setAdmins(data.admins)
+        setConsultores(data.consultores)
+      })
+      .catch((err) => {
+        console.error('Erro ao buscar filtros:', err)
+        toast.error('Erro ao carregar filtros')
+      })
+  }, [])
+
   useEffect(() => {
     async function fetchLotes() {
       try {
+        if (!searchParams) return
+        const clienteId = searchParams.get('clienteId')
+        const adminId = searchParams.get('adminId')
+        const consultorId = searchParams.get('consultorId')
+
+        const queryParams = new URLSearchParams()
+        if (clienteId) queryParams.append('clienteId', clienteId)
+        if (consultorId) queryParams.append('userId', consultorId)
+        if (adminId) queryParams.append('adminId', adminId)
+
         const url = isConsultor
           ? `/api/lotes/por-consultor?userId=${userId}`
-          : `/api/lotes/with-status`
+          : `/api/lotes/with-status?${queryParams.toString()}`
 
         const res = await fetch(url, {
           headers: {
@@ -108,8 +135,9 @@ export default function DocumentosContent({ role, userId }: Props) {
         toast.error('Erro ao buscar lotes')
       }
     }
+
     fetchLotes()
-  }, [role, userId, isConsultor])
+  }, [role, userId, isConsultor, searchParams])
 
   const documentosPorLote = Array.isArray(documentos)
     ? documentos.reduce<
@@ -153,6 +181,12 @@ export default function DocumentosContent({ role, userId }: Props) {
       <div className="flex flex-wrap items-center gap-4 mb-4">
         <NovoDocumentoModal userId={userId} />
         {role === 'master' && <NovoLoteModal userId={userId} />}
+        <ClienteFiltroModal
+          admins={admins}
+          consultores={consultores}
+          userId={userId}
+          role={role}
+        />
       </div>
 
       {!loteSelecionado && (
@@ -194,17 +228,11 @@ export default function DocumentosContent({ role, userId }: Props) {
                       />
                     )}
                   </td>
-
                   <td className="p-4">
                     {isGestor ? (
                       <SelectStatusLote
                         loteId={lote.id}
-                        statusAtual={
-                          lote.status as
-                            | 'INICIADO'
-                            | 'EM_ANDAMENTO'
-                            | 'FINALIZADO'
-                        }
+                        statusAtual={lote.status as DocumentoStatus}
                         onChangeStatus={(novoStatus) => {
                           setLotesComStatus((prev) =>
                             prev.map((l) =>

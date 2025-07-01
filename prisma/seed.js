@@ -6,27 +6,11 @@ const prisma = new PrismaClient()
 async function main() {
   const users = [
     {
-      name: 'Master Elias',
-      email: 'master@elias.com',
-      cpf: '00000000000',
+      name: 'Master Ryan',
+      email: 'ryan@elias.com',
+      cpf: '00002000000',
       password: 'Master@123',
       role: 'master',
-      status: 'aprovado',
-    },
-    {
-      name: 'Admin Elias',
-      email: 'admin@elias.com',
-      cpf: '11111111111',
-      password: 'Admin@123',
-      role: 'admin',
-      status: 'aprovado',
-    },
-    {
-      name: 'Consultor Elias',
-      email: 'consultor@elias.com',
-      cpf: '22222222222',
-      password: 'Consultor@123',
-      role: 'consultor',
       status: 'aprovado',
     },
   ]

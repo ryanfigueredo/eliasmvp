@@ -109,12 +109,15 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    const where: any = {}
     const { searchParams } = new URL(req.url)
+    const clienteId = searchParams.get('clienteId')
+    if (clienteId) {
+      where.clienteId = clienteId
+    }
     const userId = searchParams.get('userId')
     const loteId = searchParams.get('loteId')
     const role = searchParams.get('role')
-
-    const where: any = {}
 
     // Se for consultor, filtra apenas os documentos dele
     if (role === 'consultor' && userId) {

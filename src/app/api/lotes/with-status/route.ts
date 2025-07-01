@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const statusFiltro = searchParams.get('status')
   const userIdFiltro = searchParams.get('userId')
+  const clienteId = searchParams.get('clienteId')
 
   let userIds: string[] = []
 
@@ -26,23 +27,27 @@ export async function GET(req: NextRequest) {
 
   try {
     const lotes = await prisma.lote.findMany({
-      where:
-        role === 'master'
-          ? {}
-          : {
-              OR: [
-                {
-                  documentos: {
-                    some: {
-                      userId: { in: userIds },
-                    },
-                  },
+      where: {
+        ...(role !== 'master' && {
+          OR: [
+            {
+              documentos: {
+                some: {
+                  userId: { in: userIds },
                 },
-                {
-                  criadoPorId: { in: userIds },
-                },
-              ],
+              },
             },
+            {
+              criadoPorId: { in: userIds },
+            },
+          ],
+        }),
+        ...(clienteId && {
+          documentos: {
+            some: { clienteId },
+          },
+        }),
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         documentos: {
@@ -52,6 +57,7 @@ export async function GET(req: NextRequest) {
                 statusFiltro as DocumentoStatus,
               ) && { status: statusFiltro as DocumentoStatus }),
             ...(userIdFiltro && { userId: userIdFiltro }),
+            ...(clienteId && { clienteId }),
           },
           select: { status: true },
         },
