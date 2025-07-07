@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import SelectRole from '@/components/SelectRole'
@@ -23,14 +24,34 @@ type Usuario = {
 }
 
 export default function UsuariosContent({
-  users: initialUsers,
   isMaster,
+  admins,
 }: {
-  users: Usuario[]
   isMaster: boolean
+  admins: { id: string; name: string }[]
 }) {
-  const [users, setUsers] = useState<Usuario[]>(initialUsers)
+  const searchParams = useSearchParams()!
+  const [users, setUsers] = useState<Usuario[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true)
+        const query = searchParams.toString()
+        const res = await fetch(`/api/users?${query}`)
+        const data = await res.json()
+        setUsers(data)
+      } catch (error) {
+        toast.error('Erro ao carregar usuários.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [searchParams])
 
   const handleDeleteUser = async (userId: string) => {
     const res = await fetch(`/api/users/${userId}`, {
@@ -87,7 +108,7 @@ export default function UsuariosContent({
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Todos os usuários</h1>
         <div className="flex space-x-6 justify-between items-center">
-          <UsuarioFiltroModal />
+          <UsuarioFiltroModal admins={admins} />
           <div className="gap-4 flex">
             {isMaster && selectedIds.length > 0 && (
               <Button
@@ -103,77 +124,80 @@ export default function UsuariosContent({
         </div>
       </div>
 
-      <div className="max-h-[600px] overflow-y-auto border rounded-xl">
-        <table className="w-full border-collapse bg-white text-sm">
-          <thead className="sticky top-0 bg-gray-100 shadow z-10">
-            <tr className="text-left">
-              <th className="p-4">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.length === users.length}
-                  onChange={handleSelectAll}
-                />
-              </th>
-              <th className="p-4">Nome</th>
-              <th className="p-4">Email</th>
-              <th className="p-4">Situação</th>
-              <th className="p-4">Cargo</th>
-              <th className="p-4">Criado em</th>
-              <th className="p-4">Responsável</th>
-              <th className="p-4 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-t">
-                <td className="p-4">
+      {loading ? (
+        <p className="text-sm text-zinc-500 mt-4">Carregando usuários...</p>
+      ) : (
+        <div className="max-h-[600px] overflow-y-auto border rounded-xl">
+          <table className="w-full border-collapse bg-white text-sm">
+            <thead className="sticky top-0 bg-gray-100 shadow z-10">
+              <tr className="text-left">
+                <th className="p-4">
                   <input
                     type="checkbox"
-                    checked={selectedIds.includes(user.id)}
-                    onChange={() => toggleSelect(user.id)}
+                    checked={selectedIds.length === users.length}
+                    onChange={handleSelectAll}
                   />
-                </td>
-                <td className="p-4">{user.name || '-'}</td>
-                <td className="p-4">{user.email}</td>
-                <td className="p-4">
-                  <SelectStatus id={user.id} status={user.status} />
-                </td>
-                <td className="p-4">
-                  {isMaster ? (
-                    <SelectRole id={user.id} role={user.role} />
-                  ) : (
-                    <span className="text-zinc-600 capitalize">
-                      {user.role}
-                    </span>
-                  )}
-                </td>
-                <td className="p-4">
-                  {new Date(user.createdAt).toLocaleDateString('pt-BR')}
-                </td>
-                <td className="p-4">{user.admin?.name || '—'}</td>
-
-                <td className="p-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <EditarUsuarioModal
-                      user={{ ...user, name: user.name || '' }}
-                    />
-                    {isMaster && (
-                      <Button
-                        onClick={() => handleDeleteUser(user.id)}
-                        variant="ghost"
-                        className="text-red-600 text-xs px-0 hover:underline flex items-center gap-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Excluir
-                      </Button>
-                    )}
-                  </div>
-                </td>
+                </th>
+                <th className="p-4">Nome</th>
+                <th className="p-4">Email</th>
+                <th className="p-4">Situação</th>
+                <th className="p-4">Cargo</th>
+                <th className="p-4">Criado em</th>
+                <th className="p-4">Responsável</th>
+                <th className="p-4 text-right">Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="border-t">
+                  <td className="p-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(user.id)}
+                      onChange={() => toggleSelect(user.id)}
+                    />
+                  </td>
+                  <td className="p-4">{user.name || '-'}</td>
+                  <td className="p-4">{user.email}</td>
+                  <td className="p-4">
+                    <SelectStatus id={user.id} status={user.status} />
+                  </td>
+                  <td className="p-4">
+                    {isMaster ? (
+                      <SelectRole id={user.id} role={user.role} />
+                    ) : (
+                      <span className="text-zinc-600 capitalize">
+                        {user.role}
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                  </td>
+                  <td className="p-4">{user.admin?.name || '—'}</td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <EditarUsuarioModal
+                        user={{ ...user, name: user.name || '' }}
+                      />
+                      {isMaster && (
+                        <Button
+                          onClick={() => handleDeleteUser(user.id)}
+                          variant="ghost"
+                          className="text-red-600 text-xs px-0 hover:underline flex items-center gap-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Excluir
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <ExportarUsuarios
         data={users.map((user) => ({

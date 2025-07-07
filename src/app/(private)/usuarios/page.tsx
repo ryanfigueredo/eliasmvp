@@ -5,10 +5,6 @@ import { prisma } from '@/lib/prisma'
 import UsuariosContent from '@/components/UsuariosContent'
 import { headers } from 'next/headers'
 
-type PageProps = {
-  searchParams: { [key: string]: string | string[] | undefined }
-}
-
 export default async function UsuariosPage() {
   const session = await getServerSession(authOptions)
 
@@ -20,41 +16,41 @@ export default async function UsuariosPage() {
     return redirect('/login')
   }
 
-  // Recupera a URL com os parâmetros da request
   const headersList = await headers()
   const url = headersList.get('x-url') || ''
   const host = headersList.get('host') || 'localhost:3000'
   const protocol = host.includes('localhost') ? 'http' : 'https'
-
   const searchParams = new URL(url, `${protocol}://${host}`).searchParams
 
-  const busca = searchParams.get('busca') || ''
-  const role = searchParams.get('role') || ''
-  const status = searchParams.get('status') || ''
+  const busca = searchParams.get('busca')?.trim() || ''
+  const role = searchParams.get('role')?.trim() || ''
+  const status = searchParams.get('status')?.trim() || ''
+  const adminId = searchParams.get('adminId')?.trim() || ''
 
   const isMaster = session.user.role === 'master'
   const userId = session.user.id
 
+  // Montagem dinâmica dos filtros
+  const filters: any = {}
+
+  if (busca) {
+    filters.OR = [
+      { name: { contains: busca, mode: 'insensitive' } },
+      { email: { contains: busca, mode: 'insensitive' } },
+    ]
+  }
+
+  if (role) filters.role = role
+  if (status) filters.status = status
+  if (adminId) filters.adminId = adminId
+
+  // Se não for master, restringe à própria conta e seus consultores
+  if (!isMaster) {
+    filters.OR = [{ id: userId }, { adminId: userId, role: 'consultor' }]
+  }
+
   const users = await prisma.user.findMany({
-    where: {
-      AND: [
-        busca
-          ? {
-              OR: [
-                { name: { contains: busca, mode: 'insensitive' } },
-                { email: { contains: busca, mode: 'insensitive' } },
-              ],
-            }
-          : {},
-        role ? { role } : {},
-        status ? { status } : {},
-        !isMaster
-          ? {
-              OR: [{ id: userId }, { adminId: userId, role: 'consultor' }],
-            }
-          : {},
-      ],
-    },
+    where: filters,
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -64,22 +60,24 @@ export default async function UsuariosPage() {
       role: true,
       status: true,
       createdAt: true,
-      admin: {
-        select: {
-          name: true,
-        },
-      },
+      admin: { select: { name: true } },
     },
   })
 
-  return (
-    <UsuariosContent
-      users={users.map((user) => ({
-        ...user,
-        createdAt: user.createdAt.toISOString(),
-        admin: user.admin === null ? undefined : user.admin,
-      }))}
-      isMaster={isMaster}
-    />
-  )
+  const admins = await prisma.user.findMany({
+    where: { role: 'admin' },
+    select: {
+      id: true,
+      name: true,
+    },
+  })
+
+  const safeAdmins = admins
+    .filter((admin) => admin.name)
+    .map((admin) => ({
+      id: admin.id,
+      name: admin.name as string,
+    }))
+
+  return <UsuariosContent isMaster={isMaster} admins={safeAdmins} />
 }

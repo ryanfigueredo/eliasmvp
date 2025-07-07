@@ -12,8 +12,17 @@ import { Button } from '@/components/ui/button'
 import { Filter, X } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
-export default function UsuarioFiltroModal() {
+export default function UsuarioFiltroModal({
+  admins,
+}: {
+  admins: { id: string; name: string }[]
+}) {
   const params = useSearchParams() ?? new URLSearchParams()
+
+  const busca = params.get('busca') || ''
+  const role = params.get('role') || ''
+  const status = params.get('status') || ''
+  const adminId = params.get('adminId') || ''
 
   return (
     <Dialog>
@@ -30,22 +39,24 @@ export default function UsuarioFiltroModal() {
         </DialogHeader>
 
         <form method="GET" className="space-y-4 mt-4">
+          {/* Nome ou email */}
           <div className="space-y-1">
             <label className="text-sm font-medium text-zinc-700">
               Nome ou E-mail
             </label>
             <Input
-              name="search"
+              name="busca"
               placeholder="Buscar por nome ou e-mail"
-              defaultValue={params.get('search') || ''}
+              defaultValue={busca}
             />
           </div>
 
+          {/* Cargo */}
           <div className="space-y-1">
             <label className="text-sm font-medium text-zinc-700">Cargo</label>
             <select
               name="role"
-              defaultValue={params.get('role') || ''}
+              defaultValue={role}
               className="w-full border rounded px-3 py-2 text-sm bg-white"
             >
               <option value="">Todos os cargos</option>
@@ -54,11 +65,12 @@ export default function UsuarioFiltroModal() {
             </select>
           </div>
 
+          {/* Status */}
           <div className="space-y-1">
             <label className="text-sm font-medium text-zinc-700">Status</label>
             <select
               name="status"
-              defaultValue={params.get('status') || ''}
+              defaultValue={status}
               className="w-full border rounded px-3 py-2 text-sm bg-white"
             >
               <option value="">Todos os status</option>
@@ -68,6 +80,26 @@ export default function UsuarioFiltroModal() {
             </select>
           </div>
 
+          {/* Admin responsável */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-zinc-700">
+              Responsável (adminId)
+            </label>
+            <select
+              name="adminId"
+              defaultValue={adminId}
+              className="w-full border rounded px-3 py-2 text-sm bg-white"
+            >
+              <option value="">Todos os responsáveis</option>
+              {admins.map((admin) => (
+                <option key={admin.id} value={admin.id}>
+                  {admin.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Botões */}
           <div className="flex justify-end gap-2 pt-2">
             <a
               href="/dashboard/master/usuarios"
