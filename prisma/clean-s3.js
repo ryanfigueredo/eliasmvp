@@ -24,8 +24,6 @@ async function deleteAllS3Objects() {
       Delete: { Objects: objectsToDelete },
     })
     .promise()
-
-  console.log(`🧼 ${objectsToDelete.length} arquivos apagados do S3`)
 }
 
 deleteAllS3Objects().catch(console.error)

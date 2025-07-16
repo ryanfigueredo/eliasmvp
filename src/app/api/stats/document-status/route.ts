@@ -56,8 +56,6 @@ export async function GET(req: NextRequest) {
       if (status === 'FINALIZADO') contagem.finalizado++
     }
 
-    console.log('[AGRUPADO STATUS]', contagem)
-
     return NextResponse.json(contagem)
   } catch (error) {
     console.error('Erro ao buscar status dos documentos agrupados:', error)

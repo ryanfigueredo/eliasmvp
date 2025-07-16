@@ -29,8 +29,6 @@ async function main() {
       },
     })
   }
-
-  console.log('✅ Usuários criados com sucesso.')
 }
 
 main()

@@ -5,8 +5,6 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
 
-  console.log('[🔐 TOKEN LOGS]', token)
-
   if (!token || token.role !== 'master') {
     return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
   }
