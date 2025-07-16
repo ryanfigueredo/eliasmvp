@@ -13,6 +13,25 @@ export async function GET(req: NextRequest) {
     )
   }
 
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, ownerId: true },
+  })
+
+  const ownerId = currentUser?.role === 'master' ? userId : currentUser?.ownerId
+
+  if (!ownerId) {
+    return NextResponse.json(
+      { message: 'Usuário sem master vinculado.' },
+      { status: 400 },
+    )
+  }
+
+  const baseWhere = {
+    loteId: { not: null },
+    ownerId,
+  }
+
   let userIds: string[] | undefined
 
   if (role === 'consultor') {
@@ -23,11 +42,6 @@ export async function GET(req: NextRequest) {
       select: { id: true },
     })
     userIds = [userId, ...consultores.map((c) => c.id)]
-  }
-
-  // 🔒 Só considera documentos com lote atribuído
-  const baseWhere = {
-    loteId: { not: null },
   }
 
   const where = userIds ? { ...baseWhere, userId: { in: userIds } } : baseWhere
@@ -47,7 +61,6 @@ export async function GET(req: NextRequest) {
 
   const finalizados = agrupadoresFinalizados.size
 
-  // 🔥 Corrigido: soma única por agrupador
   const documentosUnicos = await prisma.document.findMany({
     where,
     distinct: ['agrupadorId'],

@@ -10,7 +10,6 @@ export const config = {
   api: { bodyParser: false },
 }
 
-// Conversão do NextRequest para formato compatível com Formidable
 async function nextRequestToNodeRequest(req: NextRequest) {
   const reader = req.body?.getReader()
   const stream = new Readable({
@@ -60,6 +59,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, ownerId: true },
+    })
+
+    const ownerId =
+      currentUser?.role === 'master' ? userId : currentUser?.ownerId
+
+    if (!ownerId) {
+      return NextResponse.json(
+        { message: 'Usuário sem master vinculado.' },
+        { status: 400 },
+      )
+    }
+
     const rg = (files.rg as File[] | undefined)?.[0]
     const consulta = (files.consulta as File[] | undefined)?.[0]
     const contrato = (files.contrato as File[] | undefined)?.[0]
@@ -90,6 +104,7 @@ export async function POST(req: NextRequest) {
           orgao: Orgao.SERASA,
           status: DocumentoStatus.INICIADO,
           fileUrl,
+          ownerId,
         },
       })
     }
@@ -112,26 +127,36 @@ export async function GET(req: NextRequest) {
     const where: any = {}
     const { searchParams } = new URL(req.url)
     const clienteId = searchParams.get('clienteId')
-    if (clienteId) {
-      where.clienteId = clienteId
-    }
     const userId = searchParams.get('userId')
     const loteId = searchParams.get('loteId')
     const role = searchParams.get('role')
 
-    // Se for consultor, filtra apenas os documentos dele
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId || '' },
+      select: { role: true, ownerId: true },
+    })
+
+    const ownerId =
+      currentUser?.role === 'master' ? userId : currentUser?.ownerId
+
+    if (!ownerId) {
+      return NextResponse.json(
+        { message: 'Usuário sem owner vinculado.' },
+        { status: 400 },
+      )
+    }
+
+    where.ownerId = ownerId
+
+    if (clienteId) where.clienteId = clienteId
+    if (loteId) where.loteId = loteId
+
     if (role === 'consultor' && userId) {
       where.userId = userId
     }
 
-    // Se for admin, filtra os documentos dos consultores vinculados E os dele mesmo
     if (role === 'admin' && userId) {
       where.OR = [{ userId: userId }, { user: { adminId: userId } }]
-    }
-
-    // Se houver filtro por lote
-    if (loteId) {
-      where.loteId = loteId
     }
 
     const documentos = await prisma.document.findMany({

@@ -9,9 +9,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: 'userId inválido' }, { status: 400 })
   }
 
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, ownerId: true },
+  })
+
+  const ownerId = currentUser?.role === 'master' ? userId : currentUser?.ownerId
+
+  if (!ownerId) {
+    return NextResponse.json(
+      { message: 'Usuário sem master vinculado.' },
+      { status: 400 },
+    )
+  }
+
   try {
     const documentos = await prisma.document.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ownerId,
+      },
       select: { loteId: true },
     })
 
@@ -24,7 +41,10 @@ export async function GET(req: NextRequest) {
     }
 
     const lotes = await prisma.lote.findMany({
-      where: { id: { in: loteIds as string[] } },
+      where: {
+        id: { in: loteIds as string[] },
+        ownerId,
+      },
       orderBy: { inicio: 'desc' },
       include: {
         documentos: {

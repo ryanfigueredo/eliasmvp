@@ -12,17 +12,20 @@ declare module 'next-auth' {
     user?: {
       id: string
       role: string
+      image?: string
     } & DefaultSession['user']
   }
 
   interface User {
     id: string
     role: string
+    image?: string
   }
 
   interface JWT {
     id: string
     role: string
+    image?: string
   }
 }
 
@@ -39,10 +42,18 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({ where: { email } })
 
+        console.log('[AUTH] email:', email)
+        console.log('[AUTH] user:', user)
+
         if (!user) return null
-        if (user.status !== 'aprovado') return null
+        if (user.status !== 'aprovado') {
+          console.log('[AUTH] Usuário com status não aprovado:', user.status)
+          return null
+        }
 
         const isPasswordCorrect = await bcrypt.compare(password, user.password)
+
+        console.log('[AUTH] bcrypt.compare:', isPasswordCorrect)
 
         if (!isPasswordCorrect) return null
 
@@ -51,6 +62,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          image: user.image ?? undefined,
         }
       },
     }),
@@ -63,6 +75,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.image = user.image
       }
       return token
     },
@@ -71,6 +84,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.image = token.image as string
       }
       return session
     },

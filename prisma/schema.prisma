@@ -14,28 +14,47 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String?
-  email     String     @unique
-  cpf       String     @unique
+  email     String   @unique
+  cpf       String   @unique
   password  String
-  role      String     @default("consultor")
-  status    String     @default("aguardando")
-  createdAt DateTime   @default(now())
-  documents Document[]
+  role      String   @default("consultor")
+  status    String   @default("aguardando")
+  createdAt DateTime @default(now())
   image     String?
 
+  // Relações
   adminId     String?
   admin       User?   @relation("AdminToConsultores", fields: [adminId], references: [id])
   consultores User[]  @relation("AdminToConsultores")
 
+  documentosEnviados Document[] @relation("DocumentoUsuario")
+  documentosDonos    Document[] @relation("DocumentoOwner")
+
+  clientesCriados Cliente[] @relation("CriadorCliente")
+  clientesDonos   Cliente[] @relation("DonoWhiteLabel")
+
+  lotesCriados Lote[] @relation("CriadorLotes")
+  lotesDonos   Lote[] @relation("DonoLotes")
+
+  logs   Log[]
+  config Config?
+
+  // ownerId para white label
+  ownerId  String?
+  owner    User?   @relation("MasterOwner", fields: [ownerId], references: [id])
+  subUsers User[]  @relation("MasterOwner")
+
   resetToken       String?   @unique
   resetTokenExpiry DateTime?
+}
 
-  Cliente Cliente[]
-  logs    Log[]
-
-  lotesCriados Lote[] @relation("CriadorLotes") // <--- ok
+model Config {
+  id     String  @id @default(uuid())
+  logo   String?
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Lote {
@@ -47,7 +66,10 @@ model Lote {
   createdAt DateTime @default(now())
 
   criadoPorId String?
-  criadoPor   User?   @relation("CriadorLotes", fields: [criadoPorId], references: [id]) // <--- ok
+  criadoPor   User?   @relation("CriadorLotes", fields: [criadoPorId], references: [id])
+
+  ownerId String?
+  owner   User?   @relation("DonoLotes", fields: [ownerId], references: [id])
 
   documentos Document[]
 }
@@ -65,7 +87,11 @@ model Document {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   valor       Float
-  user    User     @relation(fields: [userId], references: [id])
+
+  user    User    @relation("DocumentoUsuario", fields: [userId], references: [id])
+  ownerId String?
+  owner   User?   @relation("DocumentoOwner", fields: [ownerId], references: [id])
+
   cliente Cliente? @relation("ClienteDocumentos", fields: [clienteId], references: [id])
   lote    Lote?    @relation(fields: [loteId], references: [id])
 }
@@ -74,7 +100,7 @@ model DocumentoCliente {
   id        String   @id @default(uuid())
   clienteId String
   cliente   Cliente  @relation(fields: [clienteId], references: [id])
-  tipo      String // RG, CNH, Contrato...
+  tipo      String
   fileUrl   String
   createdAt DateTime @default(now())
 }
@@ -93,18 +119,22 @@ enum DocumentoStatus {
 }
 
 model Cliente {
-  id         String             @id @default(uuid())
-  nome       String
-  cpfCnpj    String             @unique
-  valor      Float
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  documentos DocumentoCliente[]
+  id      String @id @default(uuid())
+  nome    String
+  cpfCnpj String @unique
+  valor   Float
 
-  documentosRecebidos Document[] @relation("ClienteDocumentos")
+  userId String
+  user   User   @relation("CriadorCliente", fields: [userId], references: [id], onDelete: Cascade)
 
+  ownerId String?
+  owner   User?   @relation("DonoWhiteLabel", fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documentos          DocumentoCliente[]
+  documentosRecebidos Document[]         @relation("ClienteDocumentos")
 }
 
 model Log {

@@ -19,6 +19,7 @@ type Usuario = {
   cpf: string
   role: string
   status: string
+
   createdAt: string
   admin?: { name: string | null }
 }
@@ -26,12 +27,14 @@ type Usuario = {
 export default function UsuariosContent({
   isMaster,
   admins,
+  users,
 }: {
   isMaster: boolean
   admins: { id: string; name: string }[]
+  users: Usuario[]
 }) {
   const searchParams = useSearchParams()!
-  const [users, setUsers] = useState<Usuario[]>([])
+  const [usersState, setUsers] = useState<Usuario[]>(users)
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 

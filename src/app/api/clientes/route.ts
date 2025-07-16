@@ -29,15 +29,31 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const currentUser = await prisma.user.findUnique({
+      where: { id: responsavelId },
+      select: { role: true, ownerId: true },
+    })
+
+    const ownerId =
+      currentUser?.role === 'master' ? responsavelId : currentUser?.ownerId
+
+    if (!ownerId) {
+      return NextResponse.json(
+        { message: 'Usuário sem master vinculado.' },
+        { status: 400 },
+      )
+    }
+
     const cliente = await prisma.cliente.create({
       data: {
         nome,
         cpfCnpj,
         valor: parsedValor,
         user: {
-          connect: {
-            id: responsavelId,
-          },
+          connect: { id: responsavelId },
+        },
+        owner: {
+          connect: { id: ownerId },
         },
       },
     })
@@ -65,9 +81,34 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const busca = searchParams.get('busca') || ''
 
+  const userId = req.headers.get('x-user-id')
+  const role = req.headers.get('x-user-role')
+
+  if (!userId || !role) {
+    return NextResponse.json(
+      { message: 'Cabeçalhos ausentes.' },
+      { status: 400 },
+    )
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, ownerId: true },
+  })
+
+  const ownerId = currentUser?.role === 'master' ? userId : currentUser?.ownerId
+
+  if (!ownerId) {
+    return NextResponse.json(
+      { message: 'Usuário sem owner vinculado.' },
+      { status: 400 },
+    )
+  }
+
   try {
     const clientes = await prisma.cliente.findMany({
       where: {
+        ownerId,
         OR: [
           { nome: { contains: busca, mode: 'insensitive' } },
           { cpfCnpj: { contains: busca, mode: 'insensitive' } },

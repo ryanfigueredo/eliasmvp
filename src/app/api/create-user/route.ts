@@ -1,16 +1,37 @@
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user) {
+      return NextResponse.json({ message: 'Não autenticado.' }, { status: 401 })
+    }
+
     const body = await req.json()
-    const { name, cpf, email, password, role, status, adminId } = body
+    const { name, cpf, email, password, role, status, adminId, ownerId } = body
 
     if (!email || !password || !cpf) {
       return NextResponse.json(
         { message: 'Campos obrigatórios.' },
         { status: 400 },
+      )
+    }
+
+    // ❌ Bloqueia criação de master por usuários não autorizados
+    const isCreatingMaster = role === 'master'
+    const isAuthorized =
+      session.user.email === 'master@elias.com' ||
+      session.user.email === 'master2@elias.com'
+
+    if (isCreatingMaster && !isAuthorized) {
+      return NextResponse.json(
+        { message: 'Apenas o master original pode criar novos masters.' },
+        { status: 403 },
       )
     }
 
@@ -36,6 +57,7 @@ export async function POST(req: Request) {
         role,
         status,
         adminId: role === 'consultor' ? adminId : null,
+        ownerId,
       },
     })
 

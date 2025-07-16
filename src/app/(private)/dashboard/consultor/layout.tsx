@@ -1,9 +1,7 @@
-// src/app/dashboard/consultor/layout.tsx
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import SidebarLayout from '@/components/SidebarLayout'
 import type { ReactNode } from 'react'
 
 export default async function ConsultorLayout({

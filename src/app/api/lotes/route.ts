@@ -1,5 +1,3 @@
-// src/app/api/lotes/route.ts
-
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -7,38 +5,53 @@ export async function GET(req: NextRequest) {
   const role = req.headers.get('x-user-role')
   const userId = req.headers.get('x-user-id')
 
+  if (!role || !userId) {
+    return NextResponse.json(
+      { message: 'Cabeçalhos ausentes.' },
+      { status: 400 },
+    )
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, ownerId: true },
+  })
+
+  const ownerId = currentUser?.role === 'master' ? userId : currentUser?.ownerId
+
+  if (!ownerId) {
+    return NextResponse.json(
+      { message: 'Usuário sem master vinculado.' },
+      { status: 400 },
+    )
+  }
+
   let userIds: string[] = []
 
   if (role === 'master') {
-    userIds = []
+    userIds = [] // master vê todos os seus
   } else if (role === 'admin') {
     const consultores = await prisma.user.findMany({
-      where: { role: 'consultor', adminId: userId! },
+      where: { role: 'consultor', adminId: userId },
       select: { id: true },
     })
-    userIds = [userId!, ...consultores.map((c) => c.id)]
+    userIds = [userId, ...consultores.map((c) => c.id)]
   } else if (role === 'consultor') {
-    userIds = [userId!]
+    userIds = [userId]
   }
 
   const lotes = await prisma.lote.findMany({
-    where:
-      userIds.length > 0
+    where: {
+      ownerId,
+      ...(userIds.length > 0
         ? {
             OR: [
-              {
-                documentos: {
-                  some: {
-                    userId: { in: userIds },
-                  },
-                },
-              },
-              {
-                criadoPorId: { in: userIds },
-              },
+              { documentos: { some: { userId: { in: userIds } } } },
+              { criadoPorId: { in: userIds } },
             ],
           }
-        : {},
+        : {}),
+    },
     orderBy: { inicio: 'desc' },
   })
 
@@ -56,6 +69,20 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, ownerId: true },
+  })
+
+  const ownerId = currentUser?.role === 'master' ? userId : currentUser?.ownerId
+
+  if (!ownerId) {
+    return NextResponse.json(
+      { message: 'Usuário sem master vinculado.' },
+      { status: 400 },
+    )
+  }
+
   try {
     const novoLote = await prisma.lote.create({
       data: {
@@ -63,6 +90,7 @@ export async function POST(req: NextRequest) {
         inicio: new Date(inicio),
         fim: new Date(fim),
         criadoPorId: userId,
+        ownerId,
       },
     })
     return NextResponse.json(novoLote, { status: 201 })

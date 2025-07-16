@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
       if (status === 'FINALIZADO') contagem.finalizado++
     }
 
-    console.log('[📊 AGRUPADO STATUS]', contagem)
+    console.log('[AGRUPADO STATUS]', contagem)
 
     return NextResponse.json(contagem)
   } catch (error) {

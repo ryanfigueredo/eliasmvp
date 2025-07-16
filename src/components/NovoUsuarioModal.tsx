@@ -15,14 +15,14 @@ import { useTransition, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { getSession } from 'next-auth/react'
+import { getSession, useSession } from 'next-auth/react'
 
 const schema = z.object({
   name: z.string().min(2, 'Nome obrigatório'),
   cpf: z.string().min(11, 'CPF inválido'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
-  role: z.enum(['consultor', 'admin']),
+  role: z.enum(['consultor', 'admin', 'master']),
   status: z.enum(['aprovado', 'aguardando', 'inativo']),
 })
 
@@ -31,6 +31,11 @@ type FormData = z.infer<typeof schema>
 export default function NovoUsuarioModal() {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  const { data: session } = useSession()
+  const userEmail = session?.user?.email
+  const podeCriarMaster =
+    userEmail === 'master@elias.com' || userEmail === 'master2@elias.com'
 
   const {
     register,
@@ -58,6 +63,10 @@ export default function NovoUsuarioModal() {
         session?.user?.role === 'admin' && data.role === 'consultor'
           ? session.user.id
           : null,
+      ownerId:
+        session?.user?.role === 'master'
+          ? session.user.id
+          : (session?.user as any)?.ownerId || null, // fallback no front
     }
 
     startTransition(async () => {
@@ -152,6 +161,7 @@ export default function NovoUsuarioModal() {
               >
                 <option value="consultor">Consultor</option>
                 <option value="admin">Admin</option>
+                {podeCriarMaster && <option value="master">Master</option>}
               </select>
             </div>
 

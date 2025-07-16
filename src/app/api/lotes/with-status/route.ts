@@ -6,11 +6,32 @@ export async function GET(req: NextRequest) {
   const role = req.headers.get('x-user-role')
   const userId = req.headers.get('x-user-id')
 
+  if (!role || !userId) {
+    return NextResponse.json(
+      { message: 'Cabeçalhos ausentes' },
+      { status: 400 },
+    )
+  }
+
   const { searchParams } = new URL(req.url)
   const statusFiltro = searchParams.get('status')
-  const userIdFiltro = searchParams.get('userId') // usado para cliente selecionado
+  const userIdFiltro = searchParams.get('userId')
   const adminIdFiltro = searchParams.get('adminId')
   const consultorIdFiltro = searchParams.get('consultorId')
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, ownerId: true },
+  })
+
+  const ownerId = currentUser?.role === 'master' ? userId : currentUser?.ownerId
+
+  if (!ownerId) {
+    return NextResponse.json(
+      { message: 'Usuário sem master vinculado.' },
+      { status: 400 },
+    )
+  }
 
   let userIds: string[] = []
 
@@ -34,23 +55,17 @@ export async function GET(req: NextRequest) {
 
   try {
     const lotes = await prisma.lote.findMany({
-      where:
-        role === 'master' && !adminIdFiltro && !consultorIdFiltro
-          ? {}
-          : {
+      where: {
+        ownerId,
+        ...(userIds.length > 0
+          ? {
               OR: [
-                {
-                  documentos: {
-                    some: {
-                      userId: { in: userIds },
-                    },
-                  },
-                },
-                {
-                  criadoPorId: { in: userIds },
-                },
+                { documentos: { some: { userId: { in: userIds } } } },
+                { criadoPorId: { in: userIds } },
               ],
-            },
+            }
+          : {}),
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         documentos: {
@@ -66,7 +81,6 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    // ... (status aggregation permanece igual)
     const lotesComStatus = lotes.map((lote) => {
       const statusList = lote.documentos.map((doc) => doc.status)
       const total = statusList.length

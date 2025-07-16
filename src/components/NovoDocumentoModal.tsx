@@ -45,10 +45,26 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
   const [showSuggestions, setShowSuggestions] = useState(false)
 
   useEffect(() => {
-    fetch('/api/lotes')
+    fetch('/api/lotes', {
+      headers: {
+        'x-user-id': userId,
+        'x-user-role': 'master', // ou admin/consultor, se quiser passar por prop
+      },
+    })
       .then((res) => res.json())
-      .then((data) => setLotes(data))
-  }, [])
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setLotes(data)
+        } else {
+          console.error('Resposta inválida da API de lotes:', data)
+          setLotes([])
+        }
+      })
+      .catch((err) => {
+        console.error('Erro ao buscar lotes:', err)
+        setLotes([])
+      })
+  }, [userId])
 
   useEffect(() => {
     const delayDebounce = setTimeout(async () => {
@@ -238,12 +254,13 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
               required
             >
               <option value="">Selecione um lote</option>
-              {lotes.map((lote) => (
-                <option key={lote.id} value={lote.id}>
-                  {lote.nome} ({new Date(lote.inicio).toLocaleDateString()} até{' '}
-                  {new Date(lote.fim).toLocaleDateString()})
-                </option>
-              ))}
+              {Array.isArray(lotes) &&
+                lotes.map((lote) => (
+                  <option key={lote.id} value={lote.id}>
+                    {lote.nome} ({new Date(lote.inicio).toLocaleDateString()}{' '}
+                    até {new Date(lote.fim).toLocaleDateString()})
+                  </option>
+                ))}
             </select>
           </div>
 

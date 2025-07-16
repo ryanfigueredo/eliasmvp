@@ -8,6 +8,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { signOut } from 'next-auth/react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog'
+import { Input } from './ui/input'
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -40,19 +48,31 @@ export function ClientLayout({
   const [imageKey, setImageKey] = useState<string | null>(null)
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
 
+  const [logoKey, setLogoKey] = useState<string | null>(null)
+  const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null)
+
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch('/api/user/me')
-        const data = await res.json()
-        setImageKey(data.image)
+        const [userRes, logoRes] = await Promise.all([
+          fetch('/api/user/me'),
+          fetch(`/api/config/logo?userId=${sessionUser.id}`),
+        ])
+
+        const userData = await userRes.json()
+        const logoData = await logoRes.json()
+
+        setImageKey(userData.image)
+        if (logoData.url) {
+          setSignedLogoUrl(logoData.url)
+        }
       } catch (err) {
-        console.error('[SIDEBAR] Erro ao buscar /me:', err)
+        console.error('[SIDEBAR] Erro ao buscar dados:', err)
       }
     }
 
     loadUser()
-  }, [])
+  }, [sessionUser.id])
 
   useEffect(() => {
     async function fetchSignedUrl() {
@@ -94,13 +114,73 @@ export function ClientLayout({
           </Button>
 
           <div className="flex justify-center">
-            <Image
-              src="/logo.jpeg"
-              alt="Logo"
-              width={isCollapsed ? 40 : 100}
-              height={isCollapsed ? 40 : 100}
-              className="rounded"
-            />
+            {signedLogoUrl ? (
+              <Image
+                src={signedLogoUrl}
+                alt="Logo"
+                width={isCollapsed ? 40 : 100}
+                height={isCollapsed ? 40 : 100}
+                className="rounded"
+              />
+            ) : (
+              <Image
+                src="/logo.jpeg"
+                alt="Logo padrão"
+                width={isCollapsed ? 40 : 100}
+                height={isCollapsed ? 40 : 100}
+                className="rounded"
+              />
+            )}
+          </div>
+
+          <div>
+            {user.role === 'master' && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="text-xs text-zinc-400 px-0 py-1 w-full text-left"
+                  >
+                    {!isCollapsed ? 'Personalize sua Logo' : ''}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-white">
+                  <DialogHeader>
+                    <DialogTitle>Editar Logo da Plataforma</DialogTitle>
+                  </DialogHeader>
+
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const formData = new FormData()
+                      formData.append('file', file)
+                      formData.append('userId', sessionUser.id)
+
+                      fetch('/api/config/logo', {
+                        method: 'POST',
+                        body: formData,
+                      })
+                        .then((res) => res.json())
+                        .then(async (data) => {
+                          if (data.config?.logo) {
+                            const logoUrl = await fetch(
+                              `/api/config/logo?userId=${sessionUser.id}`,
+                            )
+                            const { url } = await logoUrl.json()
+                            window.location.reload()
+                          }
+                        })
+                        .catch((err) => {
+                          console.error('[Upload Logo Error]', err)
+                        })
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
 
           <SidebarContent role={user.role as any} collapsed={isCollapsed} />

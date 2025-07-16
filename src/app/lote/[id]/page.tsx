@@ -1,4 +1,3 @@
-// src/app/lote/[id]/page.tsx
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import PreviewDocumentoModal from '@/components/PreviewDocumentoModal'

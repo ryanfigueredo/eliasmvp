@@ -11,6 +11,7 @@ declare module 'next-auth' {
     user?: {
       id: string
       role: string
+      image?: string
     } & DefaultSession['user']
   }
 }
@@ -22,28 +23,43 @@ export default async function AdminDashboardPage() {
     return redirect('/login')
   }
 
+  // 🔎 Busca o usuário para descobrir o ownerId (master da árvore)
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, ownerId: true },
+  })
+
+  if (!user?.ownerId) {
+    return redirect('/login')
+  }
+
+  const ownerId = user.ownerId
   const adminId = session.user.id
 
   const [total, aprovados, aguardando, consultores] = await Promise.all([
     prisma.user.count({
       where: {
+        ownerId,
         OR: [{ id: adminId }, { adminId }],
       },
     }),
     prisma.user.count({
       where: {
+        ownerId,
         status: 'aprovado',
         OR: [{ id: adminId }, { adminId }],
       },
     }),
     prisma.user.count({
       where: {
+        ownerId,
         status: 'aguardando',
         adminId,
       },
     }),
     prisma.user.count({
       where: {
+        ownerId,
         role: 'consultor',
         adminId,
       },

@@ -27,11 +27,24 @@ export default async function UsuariosPage() {
   const status = searchParams.get('status')?.trim() || ''
   const adminId = searchParams.get('adminId')?.trim() || ''
 
-  const isMaster = session.user.role === 'master'
   const userId = session.user.id
+  const isMaster = session.user.role === 'master'
 
-  // Montagem dinâmica dos filtros
-  const filters: any = {}
+  // 🔍 Buscar ownerId para filtrar a árvore do white label
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { ownerId: true, role: true },
+  })
+
+  const ownerId = user?.role === 'master' ? userId : user?.ownerId
+
+  if (!ownerId) {
+    return redirect('/login')
+  }
+
+  const filters: any = {
+    ownerId,
+  }
 
   if (busca) {
     filters.OR = [
@@ -44,7 +57,7 @@ export default async function UsuariosPage() {
   if (status) filters.status = status
   if (adminId) filters.adminId = adminId
 
-  // Se não for master, restringe à própria conta e seus consultores
+  // Admin só vê ele mesmo + consultores dele
   if (!isMaster) {
     filters.OR = [{ id: userId }, { adminId: userId, role: 'consultor' }]
   }
@@ -64,8 +77,18 @@ export default async function UsuariosPage() {
     },
   })
 
+  // ✅ Corrigir tipos: converter createdAt de Date para string
+  const safeUsers = users.map((user) => ({
+    ...user,
+    createdAt: user.createdAt.toISOString(),
+    admin: user.admin ?? undefined,
+  }))
+
   const admins = await prisma.user.findMany({
-    where: { role: 'admin' },
+    where: {
+      role: 'admin',
+      ownerId,
+    },
     select: {
       id: true,
       name: true,
@@ -79,5 +102,11 @@ export default async function UsuariosPage() {
       name: admin.name as string,
     }))
 
-  return <UsuariosContent isMaster={isMaster} admins={safeAdmins} />
+  return (
+    <UsuariosContent
+      isMaster={isMaster}
+      admins={safeAdmins}
+      users={safeUsers}
+    />
+  )
 }
