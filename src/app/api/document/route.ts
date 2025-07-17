@@ -5,6 +5,7 @@ import { readFile } from 'fs/promises'
 import { DocumentoStatus, Orgao } from '@prisma/client'
 import { Readable } from 'stream'
 import { uploadToS3 } from '@/lib/s3'
+import { v4 as uuid } from 'uuid' // ✅ Importa o uuid para o agrupadorId
 
 export const config = {
   api: { bodyParser: false },
@@ -86,6 +87,8 @@ export async function POST(req: NextRequest) {
       comprovante && { tipo: 'COMPROVANTE', file: comprovante },
     ].filter(Boolean) as { tipo: string; file: File }[]
 
+    const agrupadorId = uuid() // ✅ mesmo ID para todos os arquivos enviados juntos
+
     for (const item of uploads) {
       const fileBuffer = await readFile(item.file.filepath)
       const fileUrl = await uploadToS3({
@@ -105,6 +108,7 @@ export async function POST(req: NextRequest) {
           status: DocumentoStatus.INICIADO,
           fileUrl,
           ownerId,
+          agrupadorId, // ✅ salva o mesmo agrupador para todos
         },
       })
     }
