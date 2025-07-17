@@ -16,6 +16,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { Lote } from '@prisma/client'
 import { useCpfCnpjMask } from '@/hooks/useCpfCnpjMask'
 import { formatCurrency } from '@/hooks/useCurrencyMask'
+import { v4 as uuid } from 'uuid'
 
 type Cliente = {
   id: string
@@ -150,6 +151,8 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
             }
           }
 
+          const agrupadorId = uuid()
+
           const formData = new FormData()
           if (finalClienteId) formData.append('clienteId', finalClienteId)
           formData.append(
@@ -158,6 +161,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
           )
           formData.append('responsavelId', userId)
           formData.append('loteId', loteId)
+          formData.append('agrupadorId', agrupadorId)
           if (rg) formData.append('rg', rg)
           if (consulta) formData.append('consulta', consulta)
           if (contrato) formData.append('contrato', contrato)

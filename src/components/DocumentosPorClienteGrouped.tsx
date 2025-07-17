@@ -64,7 +64,7 @@ export default function DocumentosPorClienteGrouped({
   const documentosPorEnvio = documentosFiltrados.reduce<
     Record<string, { documentos: DocumentoComLote[] }>
   >((acc, doc) => {
-    const chave = doc.agrupadorId ?? `sem-grupo-${doc.id}`
+    const chave = doc.agrupadorId ?? doc.id
     if (!acc[chave]) {
       acc[chave] = { documentos: [] }
     }
@@ -83,6 +83,7 @@ export default function DocumentosPorClienteGrouped({
         `/api/document/delete?agrupadorId=${agrupadorId}`,
         {
           method: 'DELETE',
+          credentials: 'include',
         },
       )
 
@@ -158,7 +159,11 @@ export default function DocumentosPorClienteGrouped({
                     variant="ghost"
                     size="icon"
                     className="text-red-600"
-                    onClick={() => handleExcluirGrupo(grupoId)}
+                    onClick={() => {
+                      const idOuGrupo =
+                        documentos[0].agrupadorId || documentos[0].id
+                      handleExcluirGrupo(idOuGrupo)
+                    }}
                   >
                     <Trash2 className="w-5 h-5" />
                   </Button>

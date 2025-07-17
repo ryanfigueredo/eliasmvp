@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       comprovante && { tipo: 'COMPROVANTE', file: comprovante },
     ].filter(Boolean) as { tipo: string; file: File }[]
 
-    const agrupadorId = uuid() // ✅ mesmo ID para todos os arquivos enviados juntos
+    const agrupadorId = fields.agrupadorId?.[0] || uuid()
 
     for (const item of uploads) {
       const fileBuffer = await readFile(item.file.filepath)
