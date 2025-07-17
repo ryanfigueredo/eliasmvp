@@ -130,11 +130,13 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get('userId')
     const loteId = searchParams.get('loteId')
     const role = searchParams.get('role')
+    console.log('Params:', { userId, role, clienteId, loteId })
 
     const currentUser = await prisma.user.findUnique({
       where: { id: userId || '' },
       select: { role: true, ownerId: true },
     })
+    console.log('🧑‍💻 currentUser:', currentUser)
 
     const ownerId =
       currentUser?.role === 'master' ? userId : currentUser?.ownerId
@@ -161,17 +163,7 @@ export async function GET(req: NextRequest) {
 
     const documentos = await prisma.document.findMany({
       where,
-      select: {
-        id: true,
-        tipo: true,
-        agrupadorId: true,
-        userId: true,
-        loteId: true,
-        clienteId: true,
-        fileUrl: true,
-        updatedAt: true,
-        status: true,
-        orgao: true,
+      include: {
         user: {
           select: {
             name: true,
@@ -199,6 +191,7 @@ export async function GET(req: NextRequest) {
       orderBy: { updatedAt: 'desc' },
     })
 
+    console.log(' Documentos retornados:', documentos)
     return NextResponse.json(documentos)
   } catch (error) {
     console.error('Erro ao buscar documentos:', error)

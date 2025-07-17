@@ -62,6 +62,19 @@ export default async function handler(
           }),
         )
 
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: true, ownerId: true },
+        })
+
+        const ownerId = user?.role === 'master' ? userId : user?.ownerId
+
+        if (!ownerId) {
+          return res
+            .status(400)
+            .json({ message: 'Usuário sem owner vinculado.' })
+        }
+
         await prisma.document.create({
           data: {
             clienteId,
@@ -73,6 +86,7 @@ export default async function handler(
             fileUrl,
             orgao: 'SERASA',
             status: 'INICIADO',
+            ownerId,
           },
         })
       })(),

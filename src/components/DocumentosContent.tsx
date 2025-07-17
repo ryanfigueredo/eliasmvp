@@ -57,21 +57,25 @@ export default function DocumentosContent({ role, userId }: Props) {
   const isGestor = role === 'master'
 
   const fetchDocumentos = useCallback(async () => {
-    const url = loteSelecionado
-      ? `/api/document?role=${role}&userId=${userId}&loteId=${loteSelecionado}`
-      : `/api/document`
+    const query = new URLSearchParams({
+      userId,
+      role,
+      ...(loteSelecionado ? { loteId: loteSelecionado } : {}),
+    }).toString()
+
+    const url = `/api/document?${query}`
 
     try {
-      const res = await fetch(url, {
-        headers: {
-          'x-user-role': role,
-          'x-user-id': userId,
-        },
-      })
+      const res = await fetch(url)
 
       if (!res.ok) throw new Error('Erro na resposta da API')
       const data = await res.json()
-      if (!Array.isArray(data)) throw new Error('Resposta inválida')
+      console.log('-- DATA:', data)
+      if (!Array.isArray(data)) {
+        console.error('❌ Dados inválidos:', data)
+        toast.error('Formato inesperado da resposta.')
+        return
+      }
 
       setDocumentos(data)
     } catch (err) {
