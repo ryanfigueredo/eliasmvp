@@ -102,7 +102,7 @@ export default function UsuarioFiltroModal({
           {/* Botões */}
           <div className="flex justify-end gap-2 pt-2">
             <a
-              href="/dashboard/master/usuarios"
+              href="/usuarios"
               className="flex items-center gap-1 text-sm px-4 py-2 rounded border border-zinc-300 text-zinc-600 hover:bg-zinc-100"
             >
               <X className="w-4 h-4" /> Limpar
