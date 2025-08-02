@@ -29,7 +29,7 @@ export default async function PrivateLayout({
     id: session.user.id,
     email: user.email,
     name: user.name,
-    image: user.image, // 🔥 Aqui está o segredo
+    image: user.image,
     role: user.role,
   }
 

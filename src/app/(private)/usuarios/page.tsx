@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import UsuariosContent from '@/components/UsuariosContent'
-import { headers } from 'next/headers'
+import { cookies } from 'next/headers'
 
 export default async function UsuariosPage() {
   const session = await getServerSession(authOptions)
@@ -16,11 +16,10 @@ export default async function UsuariosPage() {
     return redirect('/login')
   }
 
-  const headersList = await headers()
-  const url = headersList.get('x-url') || ''
-  const host = headersList.get('host') || 'localhost:3000'
-  const protocol = host.includes('localhost') ? 'http' : 'https'
-  const searchParams = new URL(url, `${protocol}://${host}`).searchParams
+  const cookieStore = await cookies()
+  const rawQuery = cookieStore.get('next-url')?.value || ''
+
+  const searchParams = new URLSearchParams(rawQuery)
 
   const busca = searchParams.get('busca')?.trim() || ''
   const role = searchParams.get('role')?.trim() || ''
@@ -30,7 +29,6 @@ export default async function UsuariosPage() {
   const userId = session.user.id
   const isMaster = session.user.role === 'master'
 
-  // 🔍 Buscar ownerId para filtrar a árvore do white label
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { ownerId: true, role: true },
@@ -57,9 +55,14 @@ export default async function UsuariosPage() {
   if (status) filters.status = status
   if (adminId) filters.adminId = adminId
 
-  // Admin só vê ele mesmo + consultores dele
   if (!isMaster) {
-    filters.OR = [{ id: userId }, { adminId: userId, role: 'consultor' }]
+    filters.AND = [
+      {
+        OR: [{ id: userId }, { adminId: userId, role: 'consultor' }],
+      },
+      ...(filters.OR ? [{ OR: filters.OR }] : []),
+    ]
+    delete filters.OR
   }
 
   const users = await prisma.user.findMany({
@@ -77,7 +80,6 @@ export default async function UsuariosPage() {
     },
   })
 
-  // ✅ Corrigir tipos: converter createdAt de Date para string
   const safeUsers = users.map((user) => ({
     ...user,
     createdAt: user.createdAt.toISOString(),

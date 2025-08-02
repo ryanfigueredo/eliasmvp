@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 const protectedRoutes: Record<string, string[]> = {
@@ -13,6 +12,8 @@ const protectedRoutes: Record<string, string[]> = {
 }
 
 export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
@@ -20,18 +21,20 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Liberar rotas públicas
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
     pathname === '/'
   ) {
-    return NextResponse.next()
+    return response
   }
 
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
+
+  const query = request.nextUrl.search
+  response.cookies.set('next-url', query)
 
   const role = token.role as string
 
@@ -51,13 +54,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next()
+  return response
 }
 
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/usuarios',
+    '/usuarios/:path*',
     '/logs',
     '/clientes',
     '/documentos',

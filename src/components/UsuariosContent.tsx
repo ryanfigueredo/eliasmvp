@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import SelectRole from '@/components/SelectRole'
@@ -19,7 +18,6 @@ type Usuario = {
   cpf: string
   role: string
   status: string
-
   createdAt: string
   admin?: { name: string | null }
 }
@@ -33,28 +31,9 @@ export default function UsuariosContent({
   admins: { id: string; name: string }[]
   users: Usuario[]
 }) {
-  const searchParams = useSearchParams()!
   const [usersState, setUsers] = useState<Usuario[]>(users)
-  const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true)
-        const query = searchParams.toString()
-        const res = await fetch(`/api/users?${query}`)
-        const data = await res.json()
-        setUsers(data)
-      } catch (error) {
-        toast.error('Erro ao carregar usuários.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchUsers()
-  }, [searchParams])
+  const loading = false
 
   const handleDeleteUser = async (userId: string) => {
     const res = await fetch(`/api/users/${userId}`, {
@@ -77,10 +56,10 @@ export default function UsuariosContent({
   }
 
   const handleSelectAll = () => {
-    if (selectedIds.length === users.length) {
+    if (selectedIds.length === usersState.length) {
       setSelectedIds([])
     } else {
-      setSelectedIds(users.map((u) => u.id))
+      setSelectedIds(usersState.map((u) => u.id))
     }
   }
 
@@ -137,7 +116,7 @@ export default function UsuariosContent({
                 <th className="p-4">
                   <input
                     type="checkbox"
-                    checked={selectedIds.length === users.length}
+                    checked={selectedIds.length === usersState.length}
                     onChange={handleSelectAll}
                   />
                 </th>
@@ -151,7 +130,7 @@ export default function UsuariosContent({
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {usersState.map((user) => (
                 <tr key={user.id} className="border-t">
                   <td className="p-4">
                     <input
@@ -203,7 +182,7 @@ export default function UsuariosContent({
       )}
 
       <ExportarUsuarios
-        data={users.map((user) => ({
+        data={usersState.map((user) => ({
           ...user,
           createdAt: new Date(user.createdAt),
         }))}
