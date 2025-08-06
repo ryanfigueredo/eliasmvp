@@ -48,6 +48,24 @@ export async function POST(req: Request) {
 
     const hashed = await bcrypt.hash(password, 10)
 
+    let finalOwnerId = session.user.id
+
+    if (session.user.role === 'admin') {
+      const admin = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { ownerId: true },
+      })
+
+      if (!admin?.ownerId) {
+        return NextResponse.json(
+          { message: 'OwnerId não encontrado.' },
+          { status: 400 },
+        )
+      }
+
+      finalOwnerId = admin.ownerId
+    }
+
     await prisma.user.create({
       data: {
         name,
@@ -56,8 +74,8 @@ export async function POST(req: Request) {
         password: hashed,
         role,
         status,
-        adminId: role === 'consultor' ? adminId : null,
-        ownerId,
+        adminId: role === 'consultor' ? session.user.id : null,
+        ownerId: finalOwnerId,
       },
     })
 
