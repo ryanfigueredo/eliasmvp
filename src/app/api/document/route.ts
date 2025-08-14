@@ -6,6 +6,7 @@ import { DocumentoStatus, Orgao } from '@prisma/client'
 import { Readable } from 'stream'
 import { uploadToS3 } from '@/lib/s3'
 import { v4 as uuid } from 'uuid' // ✅ Importa o uuid para o agrupadorId
+import { assertLoteAceitaNovosDocs } from '@/lib/guards/lotes'
 
 export const config = {
   api: { bodyParser: false },
@@ -57,6 +58,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { message: 'Campos obrigatórios ausentes.' },
         { status: 400 },
+      )
+    }
+
+    try {
+      await assertLoteAceitaNovosDocs(loteId)
+    } catch (e: any) {
+      return NextResponse.json(
+        { message: e?.message ?? 'Erro ao validar lote.' },
+        { status: e?.statusCode ?? 500 }
       )
     }
 

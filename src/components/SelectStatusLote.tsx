@@ -48,6 +48,11 @@ export default function SelectStatusLote({
         toast.success(
           `Status alterado para "${statusOptions.find((s) => s.value === value)?.label}"`,
         )
+
+        // Mostra toast adicional quando bloquear novos documentos
+        if (value === 'EM_ANDAMENTO' || value === 'FINALIZADO') {
+          toast.info('Novos documentos foram bloqueados para este lote.')
+        }
       } else {
         toast.error('Erro ao alterar status do lote.')
       }

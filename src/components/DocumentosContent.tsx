@@ -56,6 +56,15 @@ export default function DocumentosContent({ role, userId }: Props) {
   const isConsultor = role === 'consultor'
   const isGestor = role === 'master'
 
+  // Deriva o lote atual e se está bloqueado
+  const loteAtual = loteSelecionado
+    ? lotesComStatus.find((l) => l.id === loteSelecionado)
+    : null
+
+  const loteBloqueado = !!(
+    loteAtual && !['INICIADO', 'Iniciado'].includes(loteAtual.status)
+  )
+
   const fetchDocumentos = useCallback(async () => {
     const query = new URLSearchParams({
       userId,
@@ -289,6 +298,15 @@ export default function DocumentosContent({ role, userId }: Props) {
             <ArrowLeft size={16} />
             Voltar para lista de lotes
           </Button>
+
+          <div className="mb-3">
+            <NovoDocumentoModal
+              userId={userId}
+              loteId={loteSelecionado}
+              disabled={loteBloqueado}
+              disabledReason="Este lote está em andamento/finalizado e não aceita novos documentos."
+            />
+          </div>
 
           <DocumentosPorClienteGrouped
             documentos={documentos as any}

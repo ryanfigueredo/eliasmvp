@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { v4 as uuid } from 'uuid'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import busboy from 'busboy'
+import { assertLoteAceitaNovosDocs } from '@/lib/guards/lotes'
 
 export const config = {
   api: { bodyParser: false },
@@ -94,6 +95,14 @@ export default async function handler(
   })
 
   bb.on('close', async () => {
+    try {
+      await assertLoteAceitaNovosDocs(loteId)
+    } catch (e: any) {
+      return res.status(e?.statusCode ?? 500).json({
+        message: e?.message ?? 'Erro ao validar lote.',
+      })
+    }
+
     try {
       await Promise.all(uploads)
       return res

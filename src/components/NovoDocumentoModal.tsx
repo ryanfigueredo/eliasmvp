@@ -24,7 +24,19 @@ type Cliente = {
   cpfCnpj: string
 }
 
-export default function NovoDocumentoModal({ userId }: { userId: string }) {
+type Props = {
+  userId: string
+  loteId?: string | null
+  disabled?: boolean
+  disabledReason?: string
+}
+
+export default function NovoDocumentoModal({
+  userId,
+  loteId,
+  disabled = false,
+  disabledReason,
+}: Props) {
   const formatCpfCnpj = useCpfCnpjMask()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -37,7 +49,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
   const [contrato, setContrato] = useState<File | null>(null)
   const [comprovante, setComprovante] = useState<File | null>(null)
 
-  const [loteId, setLoteId] = useState('')
+  const [loteIdState, setLoteIdState] = useState(loteId || '')
   const [lotes, setLotes] = useState<Lote[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteSelecionadoId, setClienteSelecionadoId] = useState<
@@ -66,6 +78,13 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
         setLotes([])
       })
   }, [userId])
+
+  // Atualiza o loteId quando a prop mudar
+  useEffect(() => {
+    if (loteId) {
+      setLoteIdState(loteId)
+    }
+  }, [loteId])
 
   useEffect(() => {
     const delayDebounce = setTimeout(async () => {
@@ -101,7 +120,12 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!nome || !cpfCnpj || !valor || !loteId) {
+    if (disabled) {
+      toast.error(disabledReason || 'Este lote não aceita novos documentos.')
+      return
+    }
+
+    if (!nome || !cpfCnpj || !valor || !loteIdState) {
       return toast.error('Preencha todos os campos obrigatórios.')
     }
 
@@ -160,7 +184,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
             valor.replace(/[^\d,.-]/g, '').replace(',', '.'),
           )
           formData.append('responsavelId', userId)
-          formData.append('loteId', loteId)
+          formData.append('loteId', loteIdState)
           formData.append('agrupadorId', agrupadorId)
           if (rg) formData.append('rg', rg)
           if (consulta) formData.append('consulta', consulta)
@@ -190,7 +214,11 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#9C66FF] hover:bg-[#8450e6] text-white">
+        <Button
+          className="bg-[#9C66FF] hover:bg-[#8450e6] text-white"
+          disabled={disabled}
+          title={disabled ? disabledReason || 'Ação indisponível' : undefined}
+        >
           + Novo Documento
         </Button>
       </DialogTrigger>
@@ -253,9 +281,10 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
             <label className="text-sm font-medium">Lote</label>
             <select
               className="w-full border rounded px-3 py-2 text-sm"
-              value={loteId}
-              onChange={(e) => setLoteId(e.target.value)}
+              value={loteIdState}
+              onChange={(e) => setLoteIdState(e.target.value)}
               required
+              disabled={!!loteId}
             >
               <option value="">Selecione um lote</option>
               {Array.isArray(lotes) &&
@@ -324,7 +353,7 @@ export default function NovoDocumentoModal({ userId }: { userId: string }) {
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending || disabled}>
               {isPending ? 'Enviando...' : 'Criar'}
             </Button>
           </div>

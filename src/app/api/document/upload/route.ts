@@ -6,6 +6,7 @@ import path from 'path'
 import { v4 as uuid } from 'uuid'
 import busboy from 'busboy'
 import { Orgao, DocumentoStatus } from '@prisma/client'
+import { assertLoteAceitaNovosDocs } from '@/lib/guards/lotes'
 
 export const config = {
   api: {
@@ -61,6 +62,14 @@ export default async function handler(
   bb.on('close', async () => {
     if (!userId || !orgao || !status || !fileUrl || !loteId) {
       return res.status(400).json({ message: 'Campos obrigatórios ausentes.' })
+    }
+
+    try {
+      await assertLoteAceitaNovosDocs(loteId)
+    } catch (e: any) {
+      return res.status(e?.statusCode ?? 500).json({ 
+        message: e?.message ?? 'Erro ao validar lote.' 
+      })
     }
 
     try {
