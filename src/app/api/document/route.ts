@@ -5,7 +5,7 @@ import { readFile } from 'fs/promises'
 import { DocumentoStatus, Orgao } from '@prisma/client'
 import { Readable } from 'stream'
 import { uploadToS3 } from '@/lib/s3'
-import { v4 as uuid } from 'uuid' // ✅ Importa o uuid para o agrupadorId
+import { v4 as uuid } from 'uuid'
 import { assertLoteAceitaNovosDocs } from '@/lib/guards/lotes'
 
 export const config = {
@@ -47,14 +47,43 @@ async function parseForm(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('📥 Iniciando processamento de upload...')
+
+    // Verificar variáveis de ambiente do S3
+    console.log('🔧 Verificando configurações S3...')
+    const s3Config = {
+      region: process.env.AWS_REGION,
+      accessKey: process.env.AWS_ACCESS_KEY_ID
+        ? '✅ Configurado'
+        : '❌ Não configurado',
+      secretKey: process.env.AWS_SECRET_ACCESS_KEY
+        ? '✅ Configurado'
+        : '❌ Não configurado',
+      bucket: process.env.AWS_S3_BUCKET
+        ? '✅ Configurado'
+        : '❌ Não configurado',
+    }
+    console.log('🔧 Configurações S3:', s3Config)
+
     const { fields, files } = await parseForm(req)
+
+    console.log('📋 Campos recebidos:', Object.keys(fields))
+    console.log('📁 Arquivos recebidos:', Object.keys(files))
 
     const clienteId = fields.clienteId?.[0]
     const loteId = fields.loteId?.[0]
     const valor = fields.valor?.[0]
     const userId = fields.responsavelId?.[0]
 
+    console.log('🔍 Dados extraídos:', { clienteId, loteId, valor, userId })
+
     if (!clienteId || !loteId || !valor || !userId) {
+      console.error('❌ Campos obrigatórios ausentes:', {
+        clienteId,
+        loteId,
+        valor,
+        userId,
+      })
       return NextResponse.json(
         { message: 'Campos obrigatórios ausentes.' },
         { status: 400 },
@@ -62,33 +91,49 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      console.log('🔒 Validando lote...')
       await assertLoteAceitaNovosDocs(loteId)
+      console.log('✅ Lote validado com sucesso')
     } catch (e: any) {
+      console.error('❌ Erro na validação do lote:', e)
       return NextResponse.json(
         { message: e?.message ?? 'Erro ao validar lote.' },
-        { status: e?.statusCode ?? 500 }
+        { status: e?.statusCode ?? 500 },
       )
     }
 
+    console.log('👤 Buscando usuário atual...')
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { role: true, ownerId: true },
     })
 
+    console.log('👤 Usuário encontrado:', currentUser)
+
     const ownerId =
       currentUser?.role === 'master' ? userId : currentUser?.ownerId
 
     if (!ownerId) {
+      console.error('❌ Usuário sem master vinculado:', { userId, currentUser })
       return NextResponse.json(
         { message: 'Usuário sem master vinculado.' },
         { status: 400 },
       )
     }
 
+    console.log('🏢 Owner ID:', ownerId)
+
     const rg = (files.rg as File[] | undefined)?.[0]
     const consulta = (files.consulta as File[] | undefined)?.[0]
     const contrato = (files.contrato as File[] | undefined)?.[0]
     const comprovante = (files.comprovante as File[] | undefined)?.[0]
+
+    console.log('📄 Arquivos processados:', {
+      rg: !!rg,
+      consulta: !!consulta,
+      contrato: !!contrato,
+      comprovante: !!comprovante,
+    })
 
     const uploads = [
       rg && { tipo: 'RG', file: rg },
@@ -97,38 +142,57 @@ export async function POST(req: NextRequest) {
       comprovante && { tipo: 'COMPROVANTE', file: comprovante },
     ].filter(Boolean) as { tipo: string; file: File }[]
 
+    console.log('📤 Arquivos para upload:', uploads.length)
+
     const agrupadorId = fields.agrupadorId?.[0] || uuid()
+    console.log('🆔 Agrupador ID:', agrupadorId)
 
     for (const item of uploads) {
-      const fileBuffer = await readFile(item.file.filepath)
-      const fileUrl = await uploadToS3({
-        fileBuffer,
-        fileName: `${Date.now()}-${item.tipo.toLowerCase()}-${item.file.originalFilename}`,
-        contentType: item.file.mimetype || 'application/pdf',
-      })
+      try {
+        console.log(`📤 Processando ${item.tipo}...`)
+        const fileBuffer = await readFile(item.file.filepath)
+        console.log(`📏 Tamanho do arquivo ${item.tipo}:`, fileBuffer.length)
 
-      await prisma.document.create({
-        data: {
-          userId,
-          clienteId,
-          loteId,
-          valor: parseFloat(valor),
-          tipo: item.tipo,
-          orgao: Orgao.SERASA,
-          status: DocumentoStatus.INICIADO,
-          fileUrl,
-          ownerId,
-          agrupadorId, // ✅ salva o mesmo agrupador para todos
-        },
-      })
+        const fileName = `${Date.now()}-${item.tipo.toLowerCase()}-${item.file.originalFilename}`
+        console.log(`📝 Nome do arquivo ${item.tipo}:`, fileName)
+
+        const fileUrl = await uploadToS3({
+          fileBuffer,
+          fileName,
+          contentType: item.file.mimetype || 'application/pdf',
+        })
+
+        console.log(`☁️ Arquivo ${item.tipo} enviado para S3:`, fileUrl)
+
+        await prisma.document.create({
+          data: {
+            userId,
+            clienteId,
+            loteId,
+            valor: parseFloat(valor),
+            tipo: item.tipo,
+            orgao: Orgao.SERASA,
+            status: DocumentoStatus.INICIADO,
+            fileUrl,
+            ownerId,
+            agrupadorId,
+          },
+        })
+
+        console.log(`✅ Documento ${item.tipo} salvo no banco`)
+      } catch (error) {
+        console.error(`❌ Erro ao processar ${item.tipo}:`, error)
+        throw error
+      }
     }
 
+    console.log('🎉 Todos os documentos processados com sucesso!')
     return NextResponse.json(
       { message: 'Documentos enviados com sucesso.' },
       { status: 201 },
     )
   } catch (error) {
-    console.error('❌ Erro ao processar upload:', error)
+    console.error('💥 Erro ao processar upload:', error)
     return NextResponse.json(
       { message: 'Erro ao enviar documentos.' },
       { status: 500 },

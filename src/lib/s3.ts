@@ -22,19 +22,32 @@ export async function uploadToS3({
   fileName: string
   contentType: string
 }) {
+  console.log('☁️ Iniciando upload para S3...')
+  console.log('📝 Nome do arquivo:', fileName)
+  console.log('📏 Tamanho do buffer:', fileBuffer.length)
+  console.log('📄 Content-Type:', contentType)
+
   const bucketName = process.env.AWS_S3_BUCKET!
+  console.log('🪣 Bucket:', bucketName)
 
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: fileName,
-    Body: fileBuffer,
-    ContentType: contentType,
-  })
+  try {
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: fileName,
+      Body: fileBuffer,
+      ContentType: contentType,
+    })
 
-  await s3.send(command)
+    console.log('📤 Enviando comando para S3...')
+    await s3.send(command)
+    console.log('✅ Upload para S3 concluído com sucesso')
 
-  // Salva APENAS o caminho da key
-  return fileName
+    // Salva APENAS o caminho da key
+    return fileName
+  } catch (error) {
+    console.error('❌ Erro no upload para S3:', error)
+    throw error
+  }
 }
 
 export async function getS3SignedUrl(key: string) {

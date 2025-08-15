@@ -94,10 +94,23 @@ export default function NovoDocumentoModal({
         return
       }
 
-      const res = await fetch(`/api/clientes?busca=${busca}`)
-      const data = await res.json()
-      setClientes(data)
-      setShowSuggestions(true)
+      try {
+        const res = await fetch(`/api/clientes?busca=${busca}`)
+        if (!res.ok) {
+          console.error(
+            'Erro na busca de clientes:',
+            res.status,
+            res.statusText,
+          )
+          return
+        }
+        const data = await res.json()
+        setClientes(data)
+        setShowSuggestions(true)
+      } catch (err) {
+        console.error('Erro ao buscar clientes:', err)
+        setClientes([])
+      }
     }, 300)
 
     return () => clearTimeout(delayDebounce)
@@ -143,9 +156,19 @@ export default function NovoDocumentoModal({
     startTransition(() => {
       ;(async () => {
         try {
+          console.log('🚀 Iniciando upload de documentos...')
+          console.log('📋 Dados:', {
+            nome,
+            cpfCnpj,
+            valor,
+            loteIdState,
+            userId,
+          })
+
           let finalClienteId = clienteSelecionadoId
 
           if (!finalClienteId) {
+            console.log('👤 Cliente não selecionado, criando novo...')
             const clienteRes = await fetch('/api/clientes', {
               method: 'POST',
               body: JSON.stringify({
@@ -157,25 +180,32 @@ export default function NovoDocumentoModal({
               headers: { 'Content-Type': 'application/json' },
             })
 
+            console.log('📡 Resposta criação cliente:', clienteRes.status)
+
             if (clienteRes.status === 400) {
+              console.log('🔄 Cliente já existe, buscando ID...')
               // cliente já existe → buscar o ID
               const buscaRes = await fetch(
                 `/api/clientes?busca=${cpfCnpj.replace(/\D/g, '')}`,
               )
               const clientes = await buscaRes.json()
               finalClienteId = clientes?.[0]?.id
+              console.log('🔍 Cliente encontrado:', finalClienteId)
             } else {
               const clienteData = await clienteRes.json()
               if (!clienteRes.ok || !clienteData.id) {
+                console.error('❌ Erro ao criar cliente:', clienteData)
                 return toast.error(
                   clienteData.message || 'Erro ao criar cliente.',
                 )
               }
               finalClienteId = clienteData.id
+              console.log('✅ Cliente criado:', finalClienteId)
             }
           }
 
           const agrupadorId = uuid()
+          console.log('🆔 Agrupador ID:', agrupadorId)
 
           const formData = new FormData()
           if (finalClienteId) formData.append('clienteId', finalClienteId)
@@ -191,21 +221,29 @@ export default function NovoDocumentoModal({
           if (contrato) formData.append('contrato', contrato)
           if (comprovante) formData.append('comprovante', comprovante)
 
+          console.log('📤 Enviando documentos para API...')
           const res = await fetch('/api/document', {
             method: 'POST',
             body: formData,
           })
 
+          console.log('📡 Resposta da API:', res.status, res.statusText)
+
           if (res.ok) {
+            const responseData = await res.json()
+            console.log('✅ Sucesso:', responseData)
             toast.success('Documentos enviados com sucesso!')
             window.location.reload()
           } else {
-            const data = await res.json()
-            toast.error(data.message ?? 'Erro ao enviar documento.')
+            const errorData = await res
+              .json()
+              .catch(() => ({ message: 'Erro desconhecido' }))
+            console.error('❌ Erro na API:', errorData)
+            toast.error(errorData.message ?? 'Erro ao enviar documento.')
           }
         } catch (error) {
-          console.error(error)
-          toast.error('Erro inesperado.')
+          console.error('💥 Erro inesperado:', error)
+          toast.error('Erro inesperado ao processar documentos.')
         }
       })()
     })
@@ -296,22 +334,6 @@ export default function NovoDocumentoModal({
                 ))}
             </select>
           </div>
-
-          {/* <div className="space-y-1">
-            <label className="text-sm font-medium">Órgão</label>
-            <select
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={orgao}
-              onChange={(e) => setOrgao(e.target.value)}
-              required
-            >
-              <option value="">Selecione um órgão</option>
-              <option value="SERASA">SERASA</option>
-              <option value="SPC">SPC</option>
-              <option value="CENPROT">CENPROT</option>
-              <option value="BOA_VISTA">BOA VISTA</option>
-            </select>
-          </div> */}
 
           <div className="space-y-1">
             <label className="text-sm font-medium">Documento: RG</label>
