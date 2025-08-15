@@ -191,16 +191,18 @@ export default function DocumentosContent({ role, userId }: Props) {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Documentos</h1>
 
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-        <NovoDocumentoModal userId={userId} />
-        {role === 'master' && <NovoLoteModal userId={userId} />}
-        <ClienteFiltroModal
-          admins={admins}
-          consultores={consultores}
-          userId={userId}
-          role={role}
-        />
-      </div>
+      {!loteSelecionado && (
+        <div className="flex flex-wrap items-center gap-4 mb-4">
+          <NovoDocumentoModal userId={userId} />
+          {role === 'master' && <NovoLoteModal userId={userId} />}
+          <ClienteFiltroModal
+            admins={admins}
+            consultores={consultores}
+            userId={userId}
+            role={role}
+          />
+        </div>
+      )}
 
       {!loteSelecionado && (
         <table className="w-full text-sm mt-4 bg-white border rounded-xl overflow-hidden shadow">
