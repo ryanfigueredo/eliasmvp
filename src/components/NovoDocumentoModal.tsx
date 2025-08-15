@@ -130,6 +130,16 @@ export default function NovoDocumentoModal({
     return false
   }
 
+  const validateFileSize = (file: File | null, maxSizeMB: number = 10) => {
+    if (!file) return true
+    const maxSizeBytes = maxSizeMB * 1024 * 1024 // 10MB em bytes
+    if (file.size > maxSizeBytes) {
+      toast.error(`Arquivo ${file.name} é muito grande. Tamanho máximo: ${maxSizeMB}MB`)
+      return false
+    }
+    return true
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -149,6 +159,12 @@ export default function NovoDocumentoModal({
     if (!rg || !contrato) {
       return toast.error('Envie pelo menos RG e Contrato.')
     }
+
+    // Validar tamanho dos arquivos
+    if (!validateFileSize(rg, 10)) return
+    if (!validateFileSize(consulta, 10)) return
+    if (!validateFileSize(contrato, 10)) return
+    if (!validateFileSize(comprovante, 10)) return
 
     toast.success('Documentos sendo enviados...')
     setOpen(false)
@@ -239,7 +255,13 @@ export default function NovoDocumentoModal({
               .json()
               .catch(() => ({ message: 'Erro desconhecido' }))
             console.error('❌ Erro na API:', errorData)
-            toast.error(errorData.message ?? 'Erro ao enviar documento.')
+            
+            // Tratamento específico para erro 413
+            if (res.status === 413) {
+              toast.error('Arquivo muito grande. Tamanho máximo permitido: 10MB por arquivo.')
+            } else {
+              toast.error(errorData.message ?? 'Erro ao enviar documento.')
+            }
           }
         } catch (error) {
           console.error('💥 Erro inesperado:', error)
