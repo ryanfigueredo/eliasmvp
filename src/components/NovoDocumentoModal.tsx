@@ -134,7 +134,9 @@ export default function NovoDocumentoModal({
     if (!file) return true
     const maxSizeBytes = maxSizeMB * 1024 * 1024 // 10MB em bytes
     if (file.size > maxSizeBytes) {
-      toast.error(`Arquivo ${file.name} é muito grande. Tamanho máximo: ${maxSizeMB}MB`)
+      toast.error(
+        `Arquivo ${file.name} é muito grande. Tamanho máximo: ${maxSizeMB}MB`,
+      )
       return false
     }
     return true
@@ -255,10 +257,12 @@ export default function NovoDocumentoModal({
               .json()
               .catch(() => ({ message: 'Erro desconhecido' }))
             console.error('❌ Erro na API:', errorData)
-            
+
             // Tratamento específico para erro 413
             if (res.status === 413) {
-              toast.error('Arquivo muito grande. Tamanho máximo permitido: 10MB por arquivo.')
+              toast.error(
+                'Arquivo muito grande. Tamanho máximo permitido: 10MB por arquivo.',
+              )
             } else {
               toast.error(errorData.message ?? 'Erro ao enviar documento.')
             }
