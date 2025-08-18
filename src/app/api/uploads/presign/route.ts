@@ -17,7 +17,7 @@ async function presignUpload(req: Request) {
   try {
     console.log('🔑 Iniciando presign upload...')
     console.log('🔑 Headers:', Object.fromEntries(req.headers.entries()))
-    
+
     // Rate limiting
     const clientIP = getClientIP(req)
     console.log('🔑 Client IP:', clientIP)
@@ -40,7 +40,7 @@ async function presignUpload(req: Request) {
 
     const body = await req.json()
     console.log('🔑 Request body:', body)
-    
+
     const { key, contentType, fileSize } = body
 
     if (!key || !contentType) {
