@@ -17,6 +17,7 @@ import { Lote } from '@prisma/client'
 import { useCpfCnpjMask } from '@/hooks/useCpfCnpjMask'
 import { formatCurrency } from '@/hooks/useCurrencyMask'
 import { v4 as uuid } from 'uuid'
+import { prisma } from '@/lib/prisma'
 
 type Cliente = {
   id: string
@@ -225,48 +226,133 @@ export default function NovoDocumentoModal({
           const agrupadorId = uuid()
           console.log('🆔 Agrupador ID:', agrupadorId)
 
-          const formData = new FormData()
-          if (finalClienteId) formData.append('clienteId', finalClienteId)
-          formData.append(
-            'valor',
-            valor.replace(/[^\d,.-]/g, '').replace(',', '.'),
-          )
-          formData.append('responsavelId', userId)
-          formData.append('loteId', loteIdState)
-          formData.append('agrupadorId', agrupadorId)
-          if (rg) formData.append('rg', rg)
-          if (consulta) formData.append('consulta', consulta)
-          if (contrato) formData.append('contrato', contrato)
-          if (comprovante) formData.append('comprovante', comprovante)
-
-          console.log('📤 Enviando documentos para API...')
-          const res = await fetch('/api/document', {
-            method: 'POST',
-            body: formData,
-          })
-
-          console.log('📡 Resposta da API:', res.status, res.statusText)
-
-          if (res.ok) {
-            const responseData = await res.json()
-            console.log('✅ Sucesso:', responseData)
-            toast.success('Documentos enviados com sucesso!')
-            window.location.reload()
+          // Verificar se deve usar upload direto ao S3
+          const usePresignedUpload = process.env.NEXT_PUBLIC_ENABLE_PRESIGNED_UPLOADS === '1'
+          
+          if (usePresignedUpload) {
+            console.log('☁️ Usando upload direto ao S3...')
+            await uploadWithPresignedUrls()
           } else {
-            const errorData = await res
-              .json()
-              .catch(() => ({ message: 'Erro desconhecido' }))
-            console.error('❌ Erro na API:', errorData)
+            console.log('📤 Usando upload tradicional...')
+            await uploadWithFormData()
+          }
 
-            // Tratamento específico para erro 413
-            if (res.status === 413) {
-              toast.error(
-                'Arquivo muito grande. Tamanho máximo permitido: 50MB por arquivo.',
-              )
-            } else {
-              toast.error(errorData.message ?? 'Erro ao enviar documento.')
+          async function uploadWithPresignedUrls() {
+            const files = [
+              { file: rg, tipo: 'RG' },
+              { file: consulta, tipo: 'CONSULTA' },
+              { file: contrato, tipo: 'CONTRATO' },
+              { file: comprovante, tipo: 'COMPROVANTE' },
+            ].filter(({ file }) => file)
+
+            const uploadedFiles = []
+
+            for (const { file, tipo } of files) {
+              if (!file) continue
+
+              const key = `${Date.now()}-${tipo.toLowerCase()}-${file.name}`
+              
+              // Gerar URL pré-assinada
+              const presignRes = await fetch('/api/uploads/presign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  key,
+                  contentType: file.type,
+                  fileSize: file.size,
+                }),
+              })
+
+              if (!presignRes.ok) {
+                const error = await presignRes.json()
+                throw new Error(error.error || 'Erro ao gerar URL de upload')
+              }
+
+              const { url } = await presignRes.json()
+
+              // Upload direto ao S3
+              const uploadRes = await fetch(url, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                  'Content-Type': file.type,
+                },
+              })
+
+              if (!uploadRes.ok) {
+                throw new Error(`Erro no upload do arquivo ${tipo}`)
+              }
+
+              uploadedFiles.push({ key, tipo })
+              console.log(`✅ ${tipo} enviado para S3:`, key)
+            }
+
+            // Salvar documentos no banco
+            for (const { key, tipo } of uploadedFiles) {
+              await prisma.document.create({
+                data: {
+                  userId,
+                  clienteId: finalClienteId!,
+                  loteId: loteIdState,
+                  valor: parseFloat(valor.replace(/[^\d,.-]/g, '').replace(',', '.')),
+                  tipo,
+                  orgao: 'SERASA',
+                  status: 'INICIADO',
+                  fileUrl: key,
+                  ownerId: userId, // Assumindo que o usuário atual é o owner
+                  agrupadorId,
+                },
+              })
             }
           }
+
+          async function uploadWithFormData() {
+            const formData = new FormData()
+            if (finalClienteId) formData.append('clienteId', finalClienteId)
+            formData.append(
+              'valor',
+              valor.replace(/[^\d,.-]/g, '').replace(',', '.'),
+            )
+            formData.append('responsavelId', userId)
+            formData.append('loteId', loteIdState)
+            formData.append('agrupadorId', agrupadorId)
+            if (rg) formData.append('rg', rg)
+            if (consulta) formData.append('consulta', consulta)
+            if (contrato) formData.append('contrato', contrato)
+            if (comprovante) formData.append('comprovante', comprovante)
+
+            console.log('📤 Enviando documentos para API...')
+            const res = await fetch('/api/document', {
+              method: 'POST',
+              body: formData,
+            })
+
+            console.log('📡 Resposta da API:', res.status, res.statusText)
+
+            if (res.ok) {
+              const responseData = await res.json()
+              console.log('✅ Sucesso:', responseData)
+              toast.success('Documentos enviados com sucesso!')
+              window.location.reload()
+            } else {
+              const errorData = await res
+                .json()
+                .catch(() => ({ message: 'Erro desconhecido' }))
+              console.error('❌ Erro na API:', errorData)
+
+              // Tratamento específico para erro 413
+              if (res.status === 413) {
+                toast.error(
+                  'Arquivo muito grande. Tamanho máximo permitido: 50MB por arquivo.',
+                )
+              } else {
+                toast.error(errorData.message ?? 'Erro ao enviar documento.')
+              }
+            }
+          }
+
+          toast.success('Documentos enviados com sucesso!')
+          window.location.reload()
         } catch (error) {
           console.error('💥 Erro inesperado:', error)
           toast.error('Erro inesperado ao processar documentos.')
