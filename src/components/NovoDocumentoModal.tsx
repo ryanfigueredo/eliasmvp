@@ -246,7 +246,8 @@ export default function NovoDocumentoModal({
           console.log('🆔 Agrupador ID:', agrupadorId)
 
           // Verificar se deve usar upload direto ao S3
-          const usePresignedUpload = false // Temporariamente desabilitado para debug
+          const usePresignedUpload =
+            process.env.NEXT_PUBLIC_ENABLE_PRESIGNED_UPLOADS === '1'
           console.log('🔧 Presigned uploads enabled:', usePresignedUpload)
 
           if (usePresignedUpload) {
