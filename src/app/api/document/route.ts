@@ -9,7 +9,10 @@ import { v4 as uuid } from 'uuid'
 import { assertLoteAceitaNovosDocs } from '@/lib/guards/lotes'
 
 export const config = {
-  api: { bodyParser: false },
+  api: { 
+    bodyParser: false,
+    responseLimit: '100mb',
+  },
 }
 
 async function nextRequestToNodeRequest(req: NextRequest) {
@@ -35,7 +38,13 @@ async function nextRequestToNodeRequest(req: NextRequest) {
 
 async function parseForm(req: NextRequest) {
   const nodeReq = await nextRequestToNodeRequest(req)
-  const form = new IncomingForm({ multiples: true, keepExtensions: true })
+  const form = new IncomingForm({ 
+    multiples: true, 
+    keepExtensions: true,
+    maxFileSize: 100 * 1024 * 1024, // 100MB
+    maxFields: 100,
+    maxFieldsSize: 100 * 1024 * 1024, // 100MB
+  })
 
   return new Promise<{ fields: Fields; files: Files }>((resolve, reject) => {
     form.parse(nodeReq, (err, fields, files) => {
