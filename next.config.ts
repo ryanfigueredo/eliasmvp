@@ -11,9 +11,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true, // 🚨 Permite build com erros ESLint
   },
-  experimental: {
-    serverComponentsExternalPackages: ['formidable'],
-  },
+  serverExternalPackages: ['formidable'],
   async headers() {
     return [
       {

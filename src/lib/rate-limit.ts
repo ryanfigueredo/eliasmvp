@@ -1,6 +1,6 @@
-import LRU from 'lru-cache'
+import { LRUCache } from 'lru-cache'
 
-const hits = new LRU<string, { count: number; resetAt: number }>({ 
+const hits = new LRUCache<string, { count: number; resetAt: number }>({ 
   max: 5000,
   ttl: 1000 * 60 * 5, // 5 minutos
 })

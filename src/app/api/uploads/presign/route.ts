@@ -22,7 +22,12 @@ async function presignUpload(req: Request) {
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'Rate limit exceeded', retryAfter: rateLimitResult.retryAfter },
-        { status: 429, headers: { 'Retry-After': rateLimitResult.retryAfter.toString() } }
+        { 
+          status: 429, 
+          headers: { 
+            'Retry-After': (rateLimitResult.retryAfter || 60).toString() 
+          } 
+        }
       )
     }
 
