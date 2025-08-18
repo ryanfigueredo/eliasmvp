@@ -13,7 +13,8 @@
     "analyze": "ANALYZE=true next build",
     "verify": "npm run typecheck && npm run lint",
     "audit:routes": "node scripts/route-sizes.mjs",
-    "audit:health": "curl -f http://localhost:3000/api/health || echo 'Health check failed'"
+    "audit:health": "curl -f http://localhost:3000/api/health || echo 'Health check failed'",
+    "s3:configure-cors": "node scripts/configure-s3-cors.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.810.0",

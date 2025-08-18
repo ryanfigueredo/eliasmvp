@@ -96,13 +96,14 @@ export default function NovoDocumentoModal({
       }
 
       try {
-        const res = await fetch(`/api/clientes?busca=${busca}`)
+        const res = await fetch(`/api/clientes?busca=${busca}`, {
+          headers: {
+            'x-user-id': userId,
+            'x-user-role': 'master', // ou pegar do contexto de autenticação
+          },
+        })
         if (!res.ok) {
-          console.error(
-            'Erro na busca de clientes:',
-            res.status,
-            res.statusText,
-          )
+          console.error('Erro na busca de clientes:', res.status, res.statusText)
           return
         }
         const data = await res.json()
@@ -232,7 +233,13 @@ export default function NovoDocumentoModal({
 
           if (usePresignedUpload) {
             console.log('☁️ Usando upload direto ao S3...')
-            await uploadWithPresignedUrls()
+            try {
+              await uploadWithPresignedUrls()
+            } catch (error) {
+              console.error('❌ Erro no upload direto, tentando upload tradicional:', error)
+              toast.error('Erro no upload direto. Tentando método alternativo...')
+              await uploadWithFormData()
+            }
           } else {
             console.log('📤 Usando upload tradicional...')
             await uploadWithFormData()
