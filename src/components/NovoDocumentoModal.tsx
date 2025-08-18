@@ -227,8 +227,9 @@ export default function NovoDocumentoModal({
           console.log('🆔 Agrupador ID:', agrupadorId)
 
           // Verificar se deve usar upload direto ao S3
-          const usePresignedUpload = process.env.NEXT_PUBLIC_ENABLE_PRESIGNED_UPLOADS === '1'
-          
+          const usePresignedUpload =
+            process.env.NEXT_PUBLIC_ENABLE_PRESIGNED_UPLOADS === '1'
+
           if (usePresignedUpload) {
             console.log('☁️ Usando upload direto ao S3...')
             await uploadWithPresignedUrls()
@@ -251,7 +252,7 @@ export default function NovoDocumentoModal({
               if (!file) continue
 
               const key = `${Date.now()}-${tipo.toLowerCase()}-${file.name}`
-              
+
               // Gerar URL pré-assinada
               const presignRes = await fetch('/api/uploads/presign', {
                 method: 'POST',
@@ -294,7 +295,9 @@ export default function NovoDocumentoModal({
                   userId,
                   clienteId: finalClienteId!,
                   loteId: loteIdState,
-                  valor: parseFloat(valor.replace(/[^\d,.-]/g, '').replace(',', '.')),
+                  valor: parseFloat(
+                    valor.replace(/[^\d,.-]/g, '').replace(',', '.'),
+                  ),
                   tipo,
                   orgao: 'SERASA',
                   status: 'INICIADO',
