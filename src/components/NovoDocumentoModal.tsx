@@ -187,8 +187,31 @@ export default function NovoDocumentoModal({
 
           let finalClienteId = clienteSelecionadoId
 
+          // Buscar cliente existente primeiro
           if (!finalClienteId) {
-            console.log('👤 Cliente não selecionado, criando novo...')
+            console.log('🔍 Buscando cliente existente...')
+            const buscaRes = await fetch(
+              `/api/clientes?busca=${cpfCnpj.replace(/\D/g, '')}`,
+              {
+                headers: {
+                  'x-user-id': userId,
+                  'x-user-role': 'master',
+                },
+              }
+            )
+            
+            if (buscaRes.ok) {
+              const clientes = await buscaRes.json()
+              if (clientes.length > 0) {
+                finalClienteId = clientes[0].id
+                console.log('✅ Cliente existente encontrado:', finalClienteId)
+              }
+            }
+          }
+
+          // Se não encontrou cliente existente, criar novo
+          if (!finalClienteId) {
+            console.log('👤 Cliente não encontrado, criando novo...')
             const clienteRes = await fetch('/api/clientes', {
               method: 'POST',
               body: JSON.stringify({
@@ -197,30 +220,25 @@ export default function NovoDocumentoModal({
                 responsavelId: userId,
                 valor: Number(valor.replace(/[^\d,.-]/g, '').replace(',', '.')),
               }),
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-user-id': userId,
+                'x-user-role': 'master',
+              },
             })
 
             console.log('📡 Resposta criação cliente:', clienteRes.status)
 
-            if (clienteRes.status === 400) {
-              console.log('🔄 Cliente já existe, buscando ID...')
-              // cliente já existe → buscar o ID
-              const buscaRes = await fetch(
-                `/api/clientes?busca=${cpfCnpj.replace(/\D/g, '')}`,
-              )
-              const clientes = await buscaRes.json()
-              finalClienteId = clientes?.[0]?.id
-              console.log('🔍 Cliente encontrado:', finalClienteId)
-            } else {
+            if (clienteRes.ok) {
               const clienteData = await clienteRes.json()
-              if (!clienteRes.ok || !clienteData.id) {
-                console.error('❌ Erro ao criar cliente:', clienteData)
-                return toast.error(
-                  clienteData.message || 'Erro ao criar cliente.',
-                )
-              }
               finalClienteId = clienteData.id
               console.log('✅ Cliente criado:', finalClienteId)
+            } else {
+              const errorData = await clienteRes.json()
+              console.error('❌ Erro ao criar cliente:', errorData)
+              return toast.error(
+                errorData.message || 'Erro ao criar cliente.',
+              )
             }
           }
 
@@ -228,8 +246,8 @@ export default function NovoDocumentoModal({
           console.log('🆔 Agrupador ID:', agrupadorId)
 
           // Verificar se deve usar upload direto ao S3
-          const usePresignedUpload =
-            process.env.NEXT_PUBLIC_ENABLE_PRESIGNED_UPLOADS === '1'
+          const usePresignedUpload = false // Temporariamente desabilitado para debug
+          console.log('🔧 Presigned uploads enabled:', usePresignedUpload)
 
           if (usePresignedUpload) {
             console.log('☁️ Usando upload direto ao S3...')

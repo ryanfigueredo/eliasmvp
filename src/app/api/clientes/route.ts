@@ -4,7 +4,11 @@ import { prisma } from '@/lib/prisma'
 // 👉 POST: criar novo cliente
 export async function POST(req: NextRequest) {
   try {
+    console.log('📝 POST /api/clientes - Headers:', Object.fromEntries(req.headers.entries()))
+    
     const body = await req.json()
+    console.log('📝 POST /api/clientes - Body:', body)
+    
     const { nome, cpfCnpj, responsavelId, valor } = body
 
     if (
@@ -78,11 +82,15 @@ export async function POST(req: NextRequest) {
 
 // 👉 GET: buscar clientes por nome ou CPF/CNPJ
 export async function GET(req: NextRequest) {
+  console.log('🔍 GET /api/clientes - Headers:', Object.fromEntries(req.headers.entries()))
+  
   const { searchParams } = new URL(req.url)
   const busca = searchParams.get('busca') || ''
+  console.log('🔍 GET /api/clientes - Busca:', busca)
 
   const userId = req.headers.get('x-user-id')
   const role = req.headers.get('x-user-role')
+  console.log('🔍 GET /api/clientes - User ID:', userId, 'Role:', role)
 
   if (!userId || !role) {
     return NextResponse.json(
