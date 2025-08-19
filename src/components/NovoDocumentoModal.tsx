@@ -41,6 +41,7 @@ export default function NovoDocumentoModal({
   const formatCpfCnpj = useCpfCnpjMask()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [uploadProgress, setUploadProgress] = useState<string>('')
 
   const [nome, setNome] = useState('')
   const [cpfCnpj, setCpfCnpj] = useState('')
@@ -170,6 +171,7 @@ export default function NovoDocumentoModal({
     if (!validateFileSize(contrato, 50)) return
     if (!validateFileSize(comprovante, 50)) return
 
+    setUploadProgress('🚀 Iniciando upload...')
     toast.success('Documentos sendo enviados...')
     setOpen(false)
 
@@ -349,13 +351,61 @@ export default function NovoDocumentoModal({
             if (contrato) formData.append('contrato', contrato)
             if (comprovante) formData.append('comprovante', comprovante)
 
-            console.log('📤 Enviando documentos para API...')
-            const res = await fetch('/api/document', {
-              method: 'POST',
-              body: formData,
-            })
+                    console.log('📤 Enviando documentos para API...')
+        
+        // Função para tentar upload com retry
+        const uploadWithRetry = async (attempts = 3) => {
+          for (let i = 0; i < attempts; i++) {
+            try {
+              const attemptText = `📤 Tentativa ${i + 1} de ${attempts}...`
+              console.log(attemptText)
+              setUploadProgress(attemptText)
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos
+              
+              const res = await fetch('/api/document', {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
+              })
+              
+              clearTimeout(timeoutId)
+              
+              if (res.ok) {
+                setUploadProgress('✅ Upload concluído com sucesso!')
+                return res
+              }
+              
+              const errorData = await res.json()
+              console.error(`❌ Erro na tentativa ${i + 1}:`, errorData)
+              
+              if (i === attempts - 1) {
+                throw new Error(errorData.message || 'Erro no upload')
+              }
+              
+              // Aguarda antes da próxima tentativa
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+              
+            } catch (error) {
+              console.error(`❌ Erro de rede na tentativa ${i + 1}:`, error)
+              
+              if (i === attempts - 1) {
+                throw error
+              }
+              
+              // Aguarda antes da próxima tentativa
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+            }
+          }
+        }
+        
+                const res = await uploadWithRetry()
 
-            console.log('📡 Resposta da API:', res.status, res.statusText)
+        if (!res) {
+          throw new Error('Falha em todas as tentativas de upload')
+        }
+
+        console.log('📡 Resposta da API:', res.status, res.statusText)
 
             if (res.ok) {
               const responseData = await res.json()
@@ -508,6 +558,12 @@ export default function NovoDocumentoModal({
               onChange={(e) => setComprovante(e.target.files?.[0] ?? null)}
             />
           </div>
+
+          {uploadProgress && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">{uploadProgress}</p>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <DialogClose asChild>
