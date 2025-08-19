@@ -20,12 +20,14 @@ interface Props {
   loteId: string
   statusAtual: 'INICIADO' | 'EM_ANDAMENTO' | 'FINALIZADO'
   onChangeStatus: (novo: string) => void
+  onRefresh?: () => void
 }
 
 export default function SelectStatusLote({
   loteId,
   statusAtual,
   onChangeStatus,
+  onRefresh,
 }: Props) {
   const [currentStatus, setCurrentStatus] = useState(statusAtual)
   const [isPending, startTransition] = useTransition()
@@ -45,6 +47,12 @@ export default function SelectStatusLote({
       if (res.ok) {
         setCurrentStatus(value as Props['statusAtual'])
         onChangeStatus(value)
+        
+        // Força refresh dos dados
+        if (onRefresh) {
+          setTimeout(() => onRefresh(), 100)
+        }
+        
         toast.success(
           `Status alterado para "${statusOptions.find((s) => s.value === value)?.label}"`,
         )

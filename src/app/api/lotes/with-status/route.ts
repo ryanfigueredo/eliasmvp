@@ -114,7 +114,13 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    return NextResponse.json(lotesComStatus)
+    return NextResponse.json(lotesComStatus, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   } catch (error) {
     console.error('[lotes/with-status] erro:', error)
     return NextResponse.json(

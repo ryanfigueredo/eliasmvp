@@ -115,42 +115,44 @@ export default function DocumentosContent({ role, userId }: Props) {
       })
   }, [])
 
-  useEffect(() => {
-    async function fetchLotes() {
-      try {
-        if (!searchParams) return
-        const clienteId = searchParams.get('clienteId')
-        const adminId = searchParams.get('adminId')
-        const consultorId = searchParams.get('consultorId')
+  const fetchLotes = useCallback(async () => {
+    try {
+      if (!searchParams) return
+      const clienteId = searchParams.get('clienteId')
+      const adminId = searchParams.get('adminId')
+      const consultorId = searchParams.get('consultorId')
 
-        const queryParams = new URLSearchParams()
-        if (clienteId) queryParams.append('clienteId', clienteId)
-        if (consultorId) queryParams.append('userId', consultorId)
-        if (adminId) queryParams.append('adminId', adminId)
+      const queryParams = new URLSearchParams()
+      if (clienteId) queryParams.append('clienteId', clienteId)
+      if (consultorId) queryParams.append('userId', consultorId)
+      if (adminId) queryParams.append('adminId', adminId)
 
-        const url = isConsultor
-          ? `/api/lotes/por-consultor?userId=${userId}`
-          : `/api/lotes/with-status?${queryParams.toString()}`
+      const url = isConsultor
+        ? `/api/lotes/por-consultor?userId=${userId}`
+        : `/api/lotes/with-status?${queryParams.toString()}`
 
-        const res = await fetch(url, {
-          headers: {
-            'x-user-role': role,
-            'x-user-id': userId,
-          },
-        })
+      const res = await fetch(url, {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userId,
+          'Cache-Control': 'no-cache'
+        },
+      })
 
-        if (!res.ok) throw new Error('Erro na resposta da API')
+      if (!res.ok) throw new Error('Erro na resposta da API')
 
-        const data = await res.json()
-        setLotesComStatus(data)
-      } catch (err) {
-        console.error('Erro ao buscar lotes:', err)
-        toast.error('Erro ao buscar lotes')
-      }
+      const data = await res.json()
+      console.log('📋 Lotes carregados:', data)
+      setLotesComStatus(data)
+    } catch (err) {
+      console.error('Erro ao buscar lotes:', err)
+      toast.error('Erro ao buscar lotes')
     }
-
-    fetchLotes()
   }, [role, userId, isConsultor, searchParams])
+
+  useEffect(() => {
+    fetchLotes()
+  }, [fetchLotes])
 
   const documentosPorLote = Array.isArray(documentos)
     ? documentos.reduce<
@@ -257,6 +259,7 @@ export default function DocumentosContent({ role, userId }: Props) {
                             ),
                           )
                         }}
+                        onRefresh={fetchLotes}
                       />
                     ) : (
                       <span className="text-sm text-zinc-600">
