@@ -202,8 +202,12 @@ export async function POST(req: NextRequest) {
     )
   } catch (error) {
     console.error('💥 Erro ao processar upload:', error)
+    console.error('💥 Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { message: 'Erro ao enviar documentos.' },
+      { 
+        message: 'Erro ao enviar documentos.',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      },
       { status: 500 },
     )
   }
