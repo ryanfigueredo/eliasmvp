@@ -30,17 +30,14 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    // Atualiza o status do lote
-    await prisma.lote.update({
+    // Atualiza apenas o status do lote
+    const loteAtualizado = await prisma.lote.update({
       where: { id: loteId },
       data: { status },
+      select: { id: true, nome: true, status: true }
     })
 
-    // Atualiza os documentos que pertencem a esse lote
-    await prisma.document.updateMany({
-      where: { loteId },
-      data: { status },
-    })
+    console.log('✅ Status do lote atualizado:', loteAtualizado)
 
     return NextResponse.json({ message: 'Status atualizado com sucesso.' })
   } catch (error) {

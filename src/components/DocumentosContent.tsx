@@ -62,7 +62,7 @@ export default function DocumentosContent({ role, userId }: Props) {
     : null
 
   const loteBloqueado = !!(
-    loteAtual && !['INICIADO', 'Iniciado'].includes(loteAtual.status)
+    loteAtual && !['INICIADO', 'Iniciado', 'iniciado'].includes(loteAtual.status?.toLowerCase())
   )
 
   const fetchDocumentos = useCallback(async () => {

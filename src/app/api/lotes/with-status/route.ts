@@ -82,35 +82,12 @@ export async function GET(req: NextRequest) {
     })
 
     const lotesComStatus = lotes.map((lote) => {
-      const statusList = lote.documentos.map((doc) => doc.status)
-      const total = statusList.length
-
-      let status: DocumentoStatus | 'SEM_DOCUMENTOS' = 'SEM_DOCUMENTOS'
-
-      if (total > 0) {
-        const count: Record<DocumentoStatus, number> = {
-          INICIADO: 0,
-          EM_ANDAMENTO: 0,
-          FINALIZADO: 0,
-        }
-
-        for (const s of statusList) {
-          if (s in count) {
-            count[s]++
-          }
-        }
-
-        if (count.FINALIZADO === total) status = 'FINALIZADO'
-        else if (count.EM_ANDAMENTO > 0) status = 'EM_ANDAMENTO'
-        else if (count.INICIADO > 0) status = 'INICIADO'
-      }
-
       return {
         id: lote.id,
         nome: lote.nome,
         inicio: lote.inicio,
         fim: lote.fim,
-        status,
+        status: lote.status || 'INICIADO',
       }
     })
 
