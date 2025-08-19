@@ -1,59 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  if (!token?.id) {
+    return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 })
+  }
+
+  const url = new URL(req.url)
+  const pathname = url.pathname
+  const loteId = pathname.split('/')[3] // corrigido
+
+  const { status } = await req.json()
+
+  if (!loteId || !status) {
+    return NextResponse.json({ message: 'Campos inválidos.' }, { status: 400 })
+  }
+
   try {
-    const lote = await prisma.lote.findUnique({
-      where: { id: params.id },
-      select: { id: true, nome: true, status: true },
+    const loteExiste = await prisma.lote.findUnique({
+      where: { id: loteId },
     })
 
-    if (!lote) {
+    if (!loteExiste) {
       return NextResponse.json(
-        { error: 'Lote não encontrado' },
+        { message: 'Lote não encontrado.' },
         { status: 404 },
       )
     }
 
-    return NextResponse.json(lote)
-  } catch (error) {
-    console.error('Erro ao buscar lote:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 },
-    )
-  }
-}
-
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  try {
-    const { status } = await req.json()
-
-    if (!status) {
-      return NextResponse.json(
-        { error: 'Status é obrigatório' },
-        { status: 400 },
-      )
-    }
-
-    const lote = await prisma.lote.update({
-      where: { id: params.id },
+    // Atualiza o status do lote
+    await prisma.lote.update({
+      where: { id: loteId },
       data: { status },
-      select: { id: true, nome: true, status: true },
     })
 
-    return NextResponse.json(lote)
+    // Atualiza os documentos que pertencem a esse lote
+    await prisma.document.updateMany({
+      where: { loteId },
+      data: { status },
+    })
+
+    return NextResponse.json({ message: 'Status atualizado com sucesso.' })
   } catch (error) {
-    console.error('Erro ao atualizar lote:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 },
-    )
+    console.error('Erro ao atualizar status do lote:', error)
+    return NextResponse.json({ message: 'Erro interno.' }, { status: 500 })
   }
 }
