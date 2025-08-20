@@ -381,7 +381,14 @@ export default function NovoDocumentoModal({
                     return res
                   }
 
-                  const errorData = await res.json()
+                  // Pode vir HTML/texto (ex.: 413). Evita erro de parse JSON
+                  const raw = await res.text()
+                  let errorData: any
+                  try {
+                    errorData = JSON.parse(raw)
+                  } catch {
+                    errorData = { message: raw }
+                  }
                   console.error(`❌ Erro na tentativa ${i + 1}:`, errorData)
 
                   if (i === attempts - 1) {
