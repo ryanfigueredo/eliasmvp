@@ -9,7 +9,7 @@ import { v4 as uuid } from 'uuid'
 import { assertLoteAceitaNovosDocs } from '@/lib/guards/lotes'
 
 export const config = {
-  api: { 
+  api: {
     bodyParser: false,
     responseLimit: '100mb',
   },
@@ -38,8 +38,8 @@ async function nextRequestToNodeRequest(req: NextRequest) {
 
 async function parseForm(req: NextRequest) {
   const nodeReq = await nextRequestToNodeRequest(req)
-  const form = new IncomingForm({ 
-    multiples: true, 
+  const form = new IncomingForm({
+    multiples: true,
     keepExtensions: true,
     maxFileSize: 100 * 1024 * 1024, // 100MB
     maxFields: 100,
@@ -57,6 +57,84 @@ async function parseForm(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     console.log('📥 Iniciando processamento de upload...')
+
+    // Rota suporta dois modos:
+    // 1) JSON com chaves S3 (presigned upload já realizado no client)
+    // 2) multipart/form-data com arquivos (fallback)
+
+    const contentType = req.headers.get('content-type') || ''
+
+    // MODO 1: JSON com uploads já no S3
+    if (contentType.includes('application/json')) {
+      const body = await req.json()
+      const {
+        clienteId,
+        loteId,
+        valor,
+        responsavelId: userId,
+        agrupadorId = uuid(),
+        uploads,
+      } = body || {}
+
+      if (
+        !clienteId ||
+        !loteId ||
+        !valor ||
+        !userId ||
+        !Array.isArray(uploads) ||
+        uploads.length === 0
+      ) {
+        return NextResponse.json(
+          { message: 'Campos obrigatórios ausentes.' },
+          { status: 400 },
+        )
+      }
+
+      try {
+        await assertLoteAceitaNovosDocs(loteId)
+      } catch (e: any) {
+        return NextResponse.json(
+          { message: e?.message ?? 'Erro ao validar lote.' },
+          { status: e?.statusCode ?? 500 },
+        )
+      }
+
+      const currentUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true, ownerId: true },
+      })
+
+      const ownerId =
+        currentUser?.role === 'master' ? userId : currentUser?.ownerId
+      if (!ownerId) {
+        return NextResponse.json(
+          { message: 'Usuário sem master vinculado.' },
+          { status: 400 },
+        )
+      }
+
+      for (const item of uploads as Array<{ key: string; tipo: string }>) {
+        await prisma.document.create({
+          data: {
+            userId,
+            clienteId,
+            loteId,
+            valor: parseFloat(String(valor)),
+            tipo: item.tipo,
+            orgao: Orgao.SERASA,
+            status: DocumentoStatus.INICIADO,
+            fileUrl: item.key,
+            ownerId,
+            agrupadorId,
+          },
+        })
+      }
+
+      return NextResponse.json(
+        { message: 'Documentos enviados com sucesso.' },
+        { status: 201 },
+      )
+    }
 
     // Verificar variáveis de ambiente do S3
     console.log('🔧 Verificando configurações S3...')
@@ -202,11 +280,14 @@ export async function POST(req: NextRequest) {
     )
   } catch (error) {
     console.error('💥 Erro ao processar upload:', error)
-    console.error('💥 Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error(
+      '💥 Stack trace:',
+      error instanceof Error ? error.stack : 'No stack trace',
+    )
     return NextResponse.json(
-      { 
+      {
         message: 'Erro ao enviar documentos.',
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
       },
       { status: 500 },
     )

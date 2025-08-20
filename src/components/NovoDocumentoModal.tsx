@@ -17,7 +17,6 @@ import { Lote } from '@prisma/client'
 import { useCpfCnpjMask } from '@/hooks/useCpfCnpjMask'
 import { formatCurrency } from '@/hooks/useCurrencyMask'
 import { v4 as uuid } from 'uuid'
-import { prisma } from '@/lib/prisma'
 
 type Cliente = {
   id: string
@@ -104,7 +103,11 @@ export default function NovoDocumentoModal({
           },
         })
         if (!res.ok) {
-          console.error('Erro na busca de clientes:', res.status, res.statusText)
+          console.error(
+            'Erro na busca de clientes:',
+            res.status,
+            res.statusText,
+          )
           return
         }
         const data = await res.json()
@@ -199,9 +202,9 @@ export default function NovoDocumentoModal({
                   'x-user-id': userId,
                   'x-user-role': 'master',
                 },
-              }
+              },
             )
-            
+
             if (buscaRes.ok) {
               const clientes = await buscaRes.json()
               if (clientes.length > 0) {
@@ -222,7 +225,7 @@ export default function NovoDocumentoModal({
                 responsavelId: userId,
                 valor: Number(valor.replace(/[^\d,.-]/g, '').replace(',', '.')),
               }),
-              headers: { 
+              headers: {
                 'Content-Type': 'application/json',
                 'x-user-id': userId,
                 'x-user-role': 'master',
@@ -238,9 +241,7 @@ export default function NovoDocumentoModal({
             } else {
               const errorData = await clienteRes.json()
               console.error('❌ Erro ao criar cliente:', errorData)
-              return toast.error(
-                errorData.message || 'Erro ao criar cliente.',
-              )
+              return toast.error(errorData.message || 'Erro ao criar cliente.')
             }
           }
 
@@ -248,7 +249,7 @@ export default function NovoDocumentoModal({
           console.log('🆔 Agrupador ID:', agrupadorId)
 
           // Verificar se deve usar upload direto ao S3
-          const usePresignedUpload = false // Temporariamente desabilitado por causa do CORS
+          const usePresignedUpload = true
           console.log('🔧 Presigned uploads enabled:', usePresignedUpload)
 
           if (usePresignedUpload) {
@@ -256,8 +257,13 @@ export default function NovoDocumentoModal({
             try {
               await uploadWithPresignedUrls()
             } catch (error) {
-              console.error('❌ Erro no upload direto, tentando upload tradicional:', error)
-              toast.error('Erro no upload direto. Tentando método alternativo...')
+              console.error(
+                '❌ Erro no upload direto, tentando upload tradicional:',
+                error,
+              )
+              toast.error(
+                'Erro no upload direto. Tentando método alternativo...',
+              )
               await uploadWithFormData()
             }
           } else {
@@ -315,24 +321,23 @@ export default function NovoDocumentoModal({
               console.log(`✅ ${tipo} enviado para S3:`, key)
             }
 
-            // Salvar documentos no banco
-            for (const { key, tipo } of uploadedFiles) {
-              await prisma.document.create({
-                data: {
-                  userId,
-                  clienteId: finalClienteId!,
-                  loteId: loteIdState,
-                  valor: parseFloat(
-                    valor.replace(/[^\d,.-]/g, '').replace(',', '.'),
-                  ),
-                  tipo,
-                  orgao: 'SERASA',
-                  status: 'INICIADO',
-                  fileUrl: key,
-                  ownerId: userId, // Assumindo que o usuário atual é o owner
-                  agrupadorId,
-                },
-              })
+            // Salvar documentos no banco via API
+            const saveRes = await fetch('/api/document', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                clienteId: finalClienteId!,
+                loteId: loteIdState,
+                valor: valor.replace(/[^\d,.-]/g, '').replace(',', '.'),
+                responsavelId: userId,
+                agrupadorId,
+                uploads: uploadedFiles, // [{ key, tipo }]
+              }),
+            })
+
+            if (!saveRes.ok) {
+              const error = await saveRes.json().catch(() => ({}))
+              throw new Error(error.message || 'Erro ao salvar documentos')
             }
           }
 
@@ -351,61 +356,64 @@ export default function NovoDocumentoModal({
             if (contrato) formData.append('contrato', contrato)
             if (comprovante) formData.append('comprovante', comprovante)
 
-                    console.log('📤 Enviando documentos para API...')
-        
-        // Função para tentar upload com retry
-        const uploadWithRetry = async (attempts = 3) => {
-          for (let i = 0; i < attempts; i++) {
-            try {
-              const attemptText = `📤 Tentativa ${i + 1} de ${attempts}...`
-              console.log(attemptText)
-              setUploadProgress(attemptText)
-              const controller = new AbortController()
-              const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos
-              
-              const res = await fetch('/api/document', {
-                method: 'POST',
-                body: formData,
-                signal: controller.signal,
-              })
-              
-              clearTimeout(timeoutId)
-              
-              if (res.ok) {
-                setUploadProgress('✅ Upload concluído com sucesso!')
-                return res
+            console.log('📤 Enviando documentos para API...')
+
+            // Função para tentar upload com retry
+            const uploadWithRetry = async (attempts = 3) => {
+              for (let i = 0; i < attempts; i++) {
+                try {
+                  const attemptText = `📤 Tentativa ${i + 1} de ${attempts}...`
+                  console.log(attemptText)
+                  setUploadProgress(attemptText)
+                  const controller = new AbortController()
+                  const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos
+
+                  const res = await fetch('/api/document', {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal,
+                  })
+
+                  clearTimeout(timeoutId)
+
+                  if (res.ok) {
+                    setUploadProgress('✅ Upload concluído com sucesso!')
+                    return res
+                  }
+
+                  const errorData = await res.json()
+                  console.error(`❌ Erro na tentativa ${i + 1}:`, errorData)
+
+                  if (i === attempts - 1) {
+                    throw new Error(errorData.message || 'Erro no upload')
+                  }
+
+                  // Aguarda antes da próxima tentativa
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, 1000 * (i + 1)),
+                  )
+                } catch (error) {
+                  console.error(`❌ Erro de rede na tentativa ${i + 1}:`, error)
+
+                  if (i === attempts - 1) {
+                    throw error
+                  }
+
+                  // Aguarda antes da próxima tentativa
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, 1000 * (i + 1)),
+                  )
+                }
               }
-              
-              const errorData = await res.json()
-              console.error(`❌ Erro na tentativa ${i + 1}:`, errorData)
-              
-              if (i === attempts - 1) {
-                throw new Error(errorData.message || 'Erro no upload')
-              }
-              
-              // Aguarda antes da próxima tentativa
-              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
-              
-            } catch (error) {
-              console.error(`❌ Erro de rede na tentativa ${i + 1}:`, error)
-              
-              if (i === attempts - 1) {
-                throw error
-              }
-              
-              // Aguarda antes da próxima tentativa
-              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
             }
-          }
-        }
-        
-                const res = await uploadWithRetry()
 
-        if (!res) {
-          throw new Error('Falha em todas as tentativas de upload')
-        }
+            const res = await uploadWithRetry()
 
-        console.log('📡 Resposta da API:', res.status, res.statusText)
+            if (!res) {
+              throw new Error('Falha em todas as tentativas de upload')
+            }
+
+            console.log('📡 Resposta da API:', res.status, res.statusText)
 
             if (res.ok) {
               const responseData = await res.json()
@@ -429,8 +437,7 @@ export default function NovoDocumentoModal({
             }
           }
 
-          toast.success('Documentos enviados com sucesso!')
-          window.location.reload()
+          // Mensagem final de sucesso é disparada nas funções de upload quando apropriado
         } catch (error) {
           console.error('💥 Erro inesperado:', error)
           toast.error('Erro inesperado ao processar documentos.')
