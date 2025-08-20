@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { loteId: string } },
+  { params }: { params: { id: string } },
 ) {
-  const { loteId } = params
+  const { id: loteId } = params
 
   if (!loteId) {
     return NextResponse.json({ message: 'ID inválido.' }, { status: 400 })
@@ -28,9 +28,9 @@ export async function DELETE(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { loteId: string } },
+  { params }: { params: { id: string } },
 ) {
-  const { loteId } = params
+  const { id: loteId } = params
   const body = await req.json()
 
   if (!loteId || !body?.nome || !body?.inicio || !body?.fim) {
