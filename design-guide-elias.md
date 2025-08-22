@@ -1,16 +1,15 @@
-
-# 🎨 Design Guide – Sistema Elias
+# 🎨 Design Guide – Evans Proc
 
 ## 🟦 1. Paleta de Cores
 
-| Elemento         | Cor         | Classe Tailwind                     |
-|------------------|-------------|-------------------------------------|
-| **Primária**     | #333333     | `bg-[#333333]` ou `text-[#333333]` |
-| **Secundária**   | #9C66FF     | `bg-[#9C66FF]` ou `text-[#9C66FF]` |
-| **Sucesso**      | #22C55E     | `text-green-500`                    |
-| **Aviso**        | #FACC15     | `text-yellow-400`                   |
-| **Erro**         | #EF4444     | `text-red-500`                      |
-| **Plano de fundo** | #F9FAFB   | `bg-gray-50`                        |
+| Elemento           | Cor     | Classe Tailwind                    |
+| ------------------ | ------- | ---------------------------------- |
+| **Primária**       | #333333 | `bg-[#333333]` ou `text-[#333333]` |
+| **Secundária**     | #9C66FF | `bg-[#9C66FF]` ou `text-[#9C66FF]` |
+| **Sucesso**        | #22C55E | `text-green-500`                   |
+| **Aviso**          | #FACC15 | `text-yellow-400`                  |
+| **Erro**           | #EF4444 | `text-red-500`                     |
+| **Plano de fundo** | #F9FAFB | `bg-gray-50`                       |
 
 ---
 
@@ -27,23 +26,24 @@
 ## 📦 3. Componentes Padrão (Shadcn)
 
 ### ✅ Botão primário
+
 ```tsx
 <Button className="bg-[#9C66FF] text-white hover:bg-[#8450e6]">Salvar</Button>
 ```
 
 ### ✅ Card
+
 ```tsx
 <Card>
   <CardHeader>
     <CardTitle>Status de Baixas</CardTitle>
   </CardHeader>
-  <CardContent>
-    {/* Tabela ou conteúdo */}
-  </CardContent>
+  <CardContent>{/* Tabela ou conteúdo */}</CardContent>
 </Card>
 ```
 
 ### ✅ Tabela (Exemplo inicial)
+
 ```tsx
 <Table>
   <TableHeader>
@@ -66,7 +66,9 @@
       <TableCell>?</TableCell>
       <TableCell>Baixado 12/04</TableCell>
       <TableCell>
-        <Badge variant="outline" className="text-yellow-400 border-yellow-400">Parcial</Badge>
+        <Badge variant="outline" className="text-yellow-400 border-yellow-400">
+          Parcial
+        </Badge>
       </TableCell>
     </TableRow>
   </TableBody>
@@ -77,11 +79,11 @@
 
 ## 🚦 4. Faróis de Status (Componentes)
 
-| Status       | Cor Tailwind         | Exibição UI                    |
-|--------------|----------------------|--------------------------------|
-| Iniciado     | `bg-yellow-400`      | 🟡 Badge “Iniciado”            |
-| Em Andamento | `bg-blue-500`        | 🔵 Badge “Em andamento”        |
-| Finalizado   | `bg-green-500`       | 🟢 Badge “Finalizado”          |
+| Status       | Cor Tailwind    | Exibição UI             |
+| ------------ | --------------- | ----------------------- |
+| Iniciado     | `bg-yellow-400` | 🟡 Badge “Iniciado”     |
+| Em Andamento | `bg-blue-500`   | 🔵 Badge “Em andamento” |
+| Finalizado   | `bg-green-500`  | 🟢 Badge “Finalizado”   |
 
 ```tsx
 <Badge className="bg-yellow-400 text-white">Iniciado</Badge>

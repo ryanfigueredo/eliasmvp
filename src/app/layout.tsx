@@ -6,7 +6,7 @@ import SessionProviderWrapper from '@/components/SessionProviderWrapper'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Sistema Elias',
+  title: 'Evans Proc',
   description: 'Plataforma de gestão - White Label',
 }
 

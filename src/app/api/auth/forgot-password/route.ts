@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     await resend.emails.send({
       from: 'onboarding@resend.dev',
       to: email,
-      subject: 'Recuperação de Senha - Sistema Elias',
+      subject: 'Recuperação de Senha - Evans Proc',
       html: `
         <p>Olá ${user.name},</p>
         <p>Recebemos uma solicitação para redefinir sua senha. Clique no link abaixo para continuar:</p>
