@@ -12,6 +12,7 @@ interface Documento {
     nome: string
     cpfCnpj?: string
     valor?: number
+    limite?: number | null
   }
   user?: {
     name: string
@@ -45,6 +46,14 @@ export default function ExportarDocumentos({ documentos }: Props) {
               })
             : '—'
 
+        const limiteFormatado =
+          typeof doc.cliente?.limite === 'number' && !isNaN(doc.cliente.limite)
+            ? doc.cliente.limite.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })
+            : '—'
+
         agrupado.set(key, {
           Cliente: doc.cliente?.nome ?? '—',
           CPF_CNPJ: doc.cliente?.cpfCnpj ?? '—',
@@ -54,6 +63,7 @@ export default function ExportarDocumentos({ documentos }: Props) {
             doc.createdAt ?? doc.updatedAt,
           ).toLocaleDateString('pt-BR'),
           Valor: valorFormatado,
+          Limite: limiteFormatado,
         })
       }
     })
@@ -85,6 +95,14 @@ export default function ExportarDocumentos({ documentos }: Props) {
               })
             : '—'
 
+        const limiteFormatado =
+          typeof doc.cliente?.limite === 'number' && !isNaN(doc.cliente.limite)
+            ? doc.cliente.limite.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })
+            : '—'
+
         agrupado.set(key, [
           doc.cliente?.nome ?? '—',
           doc.cliente?.cpfCnpj ?? '—',
@@ -92,6 +110,7 @@ export default function ExportarDocumentos({ documentos }: Props) {
           doc.user?.name ?? '—',
           new Date(doc.createdAt ?? doc.updatedAt).toLocaleDateString('pt-BR'),
           valorFormatado,
+          limiteFormatado,
         ])
       }
     })
@@ -108,6 +127,7 @@ export default function ExportarDocumentos({ documentos }: Props) {
           'Inputado por',
           'Enviado em',
           'Valor',
+          'Limite',
         ],
       ],
       body: data,

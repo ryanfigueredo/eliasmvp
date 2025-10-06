@@ -45,6 +45,7 @@ export default function NovoDocumentoModal({
   const [nome, setNome] = useState('')
   const [cpfCnpj, setCpfCnpj] = useState('')
   const [valor, setValor] = useState('')
+  const [limite, setLimite] = useState('')
   const [rg, setRg] = useState<File | null>(null)
   const [consulta, setConsulta] = useState<File | null>(null)
   const [contrato, setContrato] = useState<File | null>(null)
@@ -127,6 +128,7 @@ export default function NovoDocumentoModal({
     setCpfCnpj(formatCpfCnpj(cliente.cpfCnpj))
     setClienteSelecionadoId(cliente.id)
     setShowSuggestions(false)
+    // Não resetamos o limite pois o usuário pode querer definir um novo
   }
 
   const isValidCpfCnpj = (input: string) => {
@@ -162,6 +164,16 @@ export default function NovoDocumentoModal({
 
     if (!isValidCpfCnpj(cpfCnpj)) {
       return toast.error('CPF ou CNPJ inválido.')
+    }
+
+    // Validar limite se preenchido
+    if (limite) {
+      const limiteNumerico = Number(
+        limite.replace(/[^\d,.-]/g, '').replace(',', '.'),
+      )
+      if (limiteNumerico < 500) {
+        return toast.error('O limite mínimo é de R$ 500,00.')
+      }
     }
 
     if (!rg || !contrato) {
@@ -214,17 +226,45 @@ export default function NovoDocumentoModal({
             }
           }
 
+          // Se cliente existe e usuário preencheu limite, atualizar o limite
+          if (finalClienteId && limite) {
+            console.log('🔄 Atualizando limite do cliente...')
+            const limiteNumerico = Number(
+              limite.replace(/[^\d,.-]/g, '').replace(',', '.'),
+            )
+
+            await fetch(`/api/clientes/${finalClienteId}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-user-id': userId,
+                'x-user-role': 'master',
+              },
+              body: JSON.stringify({ limite: limiteNumerico }),
+            })
+            console.log('✅ Limite atualizado')
+          }
+
           // Se não encontrou cliente existente, criar novo
           if (!finalClienteId) {
             console.log('👤 Cliente não encontrado, criando novo...')
+            const clienteData: any = {
+              nome,
+              cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+              responsavelId: userId,
+              valor: Number(valor.replace(/[^\d,.-]/g, '').replace(',', '.')),
+            }
+
+            // Adicionar limite apenas se preenchido
+            if (limite) {
+              clienteData.limite = Number(
+                limite.replace(/[^\d,.-]/g, '').replace(',', '.'),
+              )
+            }
+
             const clienteRes = await fetch('/api/clientes', {
               method: 'POST',
-              body: JSON.stringify({
-                nome,
-                cpfCnpj: cpfCnpj.replace(/\D/g, ''),
-                responsavelId: userId,
-                valor: Number(valor.replace(/[^\d,.-]/g, '').replace(',', '.')),
-              }),
+              body: JSON.stringify(clienteData),
               headers: {
                 'Content-Type': 'application/json',
                 'x-user-id': userId,
@@ -518,6 +558,21 @@ export default function NovoDocumentoModal({
             onChange={(e) => setValor(formatCurrency(e.target.value))}
             required
           />
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-zinc-700">
+              Limite de Crédito{' '}
+              <span className="text-xs text-zinc-500">
+                (opcional, mín. R$ 500)
+              </span>
+            </label>
+            <Input
+              type="text"
+              placeholder="R$ 0,00"
+              value={limite}
+              onChange={(e) => setLimite(formatCurrency(e.target.value))}
+            />
+          </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium">Lote</label>

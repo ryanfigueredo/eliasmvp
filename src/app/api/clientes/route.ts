@@ -4,12 +4,15 @@ import { prisma } from '@/lib/prisma'
 // 👉 POST: criar novo cliente
 export async function POST(req: NextRequest) {
   try {
-    console.log('📝 POST /api/clientes - Headers:', Object.fromEntries(req.headers.entries()))
-    
+    console.log(
+      '📝 POST /api/clientes - Headers:',
+      Object.fromEntries(req.headers.entries()),
+    )
+
     const body = await req.json()
     console.log('📝 POST /api/clientes - Body:', body)
-    
-    const { nome, cpfCnpj, responsavelId, valor } = body
+
+    const { nome, cpfCnpj, responsavelId, valor, limite } = body
 
     if (
       !nome ||
@@ -25,12 +28,31 @@ export async function POST(req: NextRequest) {
     }
 
     const parsedValor = Number(String(valor).replace(',', '.'))
+    const parsedLimite = limite
+      ? Number(String(limite).replace(',', '.'))
+      : null
 
     if (isNaN(parsedValor)) {
       return NextResponse.json(
         { message: 'Valor inválido enviado.' },
         { status: 400 },
       )
+    }
+
+    // Validar limite se fornecido
+    if (parsedLimite !== null) {
+      if (isNaN(parsedLimite)) {
+        return NextResponse.json(
+          { message: 'Limite inválido enviado.' },
+          { status: 400 },
+        )
+      }
+      if (parsedLimite < 500) {
+        return NextResponse.json(
+          { message: 'O limite mínimo é de R$ 500,00.' },
+          { status: 400 },
+        )
+      }
     }
 
     const currentUser = await prisma.user.findUnique({
@@ -53,6 +75,7 @@ export async function POST(req: NextRequest) {
         nome,
         cpfCnpj,
         valor: parsedValor,
+        limite: parsedLimite,
         user: {
           connect: { id: responsavelId },
         },
@@ -82,8 +105,11 @@ export async function POST(req: NextRequest) {
 
 // 👉 GET: buscar clientes por nome ou CPF/CNPJ
 export async function GET(req: NextRequest) {
-  console.log('🔍 GET /api/clientes - Headers:', Object.fromEntries(req.headers.entries()))
-  
+  console.log(
+    '🔍 GET /api/clientes - Headers:',
+    Object.fromEntries(req.headers.entries()),
+  )
+
   const { searchParams } = new URL(req.url)
   const busca = searchParams.get('busca') || ''
   console.log('🔍 GET /api/clientes - Busca:', busca)

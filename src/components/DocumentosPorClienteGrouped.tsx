@@ -28,6 +28,8 @@ interface DocumentoComLote {
     id: string
     nome: string
     cpfCnpj: string
+    valor?: number
+    limite?: number | null
     user?: { name: string }
   }
   lote?: {
@@ -125,6 +127,7 @@ export default function DocumentosPorClienteGrouped({
             documentos[0].cliente?.nome ?? 'Cliente não identificado'
           const responsavel = documentos[0].user?.admin?.name ?? '—'
           const inputado = documentos[0].user?.name ?? '—'
+          const limite = documentos[0].cliente?.limite
 
           const docsOrdenados = documentos.sort(
             (a, b) =>
@@ -152,6 +155,15 @@ export default function DocumentosPorClienteGrouped({
                     <span className="font-medium">Inputado por: </span>
                     {inputado}
                   </div>
+                  {limite && (
+                    <div className="text-sm text-zinc-500">
+                      <span className="font-medium">Limite de Crédito: </span>
+                      {limite.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">

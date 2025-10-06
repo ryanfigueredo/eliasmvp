@@ -123,6 +123,7 @@ model Cliente {
   nome    String
   cpfCnpj String @unique
   valor   Float
+  limite  Float?
 
   userId String
   user   User   @relation("CriadorCliente", fields: [userId], references: [id], onDelete: Cascade)

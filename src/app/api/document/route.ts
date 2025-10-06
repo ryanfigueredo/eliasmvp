@@ -348,6 +348,7 @@ export async function GET(req: NextRequest) {
             nome: true,
             cpfCnpj: true,
             valor: true,
+            limite: true,
             user: { select: { name: true } },
           },
         },
