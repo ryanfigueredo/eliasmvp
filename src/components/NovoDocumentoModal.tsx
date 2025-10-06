@@ -46,6 +46,7 @@ export default function NovoDocumentoModal({
   const [cpfCnpj, setCpfCnpj] = useState('')
   const [valor, setValor] = useState('')
   const [limite, setLimite] = useState('')
+  const [usarLimite, setUsarLimite] = useState(false)
   const [rg, setRg] = useState<File | null>(null)
   const [consulta, setConsulta] = useState<File | null>(null)
   const [contrato, setContrato] = useState<File | null>(null)
@@ -166,8 +167,8 @@ export default function NovoDocumentoModal({
       return toast.error('CPF ou CNPJ inválido.')
     }
 
-    // Validar limite se preenchido
-    if (limite) {
+    // Validar limite se checkbox marcada e campo preenchido
+    if (usarLimite && limite) {
       const limiteNumerico = Number(
         limite.replace(/[^\d,.-]/g, '').replace(',', '.'),
       )
@@ -226,8 +227,8 @@ export default function NovoDocumentoModal({
             }
           }
 
-          // Se cliente existe e usuário preencheu limite, atualizar o limite
-          if (finalClienteId && limite) {
+          // Se cliente existe e usuário marcou para usar limite, atualizar o limite
+          if (finalClienteId && usarLimite && limite) {
             console.log('🔄 Atualizando limite do cliente...')
             const limiteNumerico = Number(
               limite.replace(/[^\d,.-]/g, '').replace(',', '.'),
@@ -255,8 +256,8 @@ export default function NovoDocumentoModal({
               valor: Number(valor.replace(/[^\d,.-]/g, '').replace(',', '.')),
             }
 
-            // Adicionar limite apenas se preenchido
-            if (limite) {
+            // Adicionar limite apenas se checkbox marcada e campo preenchido
+            if (usarLimite && limite) {
               clienteData.limite = Number(
                 limite.replace(/[^\d,.-]/g, '').replace(',', '.'),
               )
@@ -559,19 +560,38 @@ export default function NovoDocumentoModal({
             required
           />
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-zinc-700">
-              Limite de Crédito{' '}
-              <span className="text-xs text-zinc-500">
-                (opcional, mín. R$ 500)
-              </span>
-            </label>
-            <Input
-              type="text"
-              placeholder="R$ 0,00"
-              value={limite}
-              onChange={(e) => setLimite(formatCurrency(e.target.value))}
-            />
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="usarLimite"
+                checked={usarLimite}
+                onChange={(e) => {
+                  setUsarLimite(e.target.checked)
+                  if (!e.target.checked) {
+                    setLimite('')
+                  }
+                }}
+                className="h-4 w-4 text-[#9C66FF] focus:ring-[#9C66FF] border-gray-300 rounded"
+              />
+              <label
+                htmlFor="usarLimite"
+                className="text-sm font-medium text-zinc-700"
+              >
+                Definir limite de crédito
+                <span className="text-xs text-zinc-500 ml-1">
+                  (mín. R$ 500)
+                </span>
+              </label>
+            </div>
+            {usarLimite && (
+              <Input
+                type="text"
+                placeholder="R$ 0,00"
+                value={limite}
+                onChange={(e) => setLimite(formatCurrency(e.target.value))}
+              />
+            )}
           </div>
 
           <div className="space-y-1">
