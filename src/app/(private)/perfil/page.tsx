@@ -4,8 +4,10 @@ import { useState, useEffect, useTransition } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { User, Mail, Lock, Camera } from 'lucide-react'
 
 const THEMES = ['light', 'dark'] as const
 const COLORS = ['roxo', 'azul', 'verde', 'vermelho'] as const
@@ -107,50 +109,125 @@ export default function PerfilPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Perfil</h1>
-
-      <div className="flex items-center gap-6 mb-6">
-        <Avatar className="w-20 h-20">
-          <AvatarImage
-            src={signedAvatarUrl || ''}
-            alt="Avatar"
-            className="rounded-full object-cover"
-          />
-          <AvatarFallback>{nome?.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
-
-        <input
-          name="foto"
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFoto(e.target.files?.[0] || null)}
-          className="text-sm"
-        />
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-zinc-900">Perfil</h1>
+        <p className="text-zinc-600 mt-1">Gerencie suas informações pessoais e credenciais</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input
-          placeholder="Nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-        />
-        <Input
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Input
-          placeholder="Nova senha"
-          type="password"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-        />
-      </div>
+      {/* Foto do Perfil */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
+                <AvatarImage
+                  src={signedAvatarUrl || ''}
+                  alt="Avatar"
+                  className="rounded-full object-cover"
+                />
+                <AvatarFallback className="bg-[#9C66FF] text-white text-2xl font-bold">
+                  {nome?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <label className="absolute bottom-0 right-0 bg-[#9C66FF] text-white rounded-full p-2 cursor-pointer hover:bg-[#8450e6] transition-colors shadow-md">
+                <Camera className="w-4 h-4" />
+                <input
+                  name="foto"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFoto(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-zinc-900">{nome || 'Usuário'}</h3>
+              <p className="text-sm text-zinc-600">{email}</p>
+              <p className="text-xs text-zinc-500 mt-1">Clique no ícone da câmera para alterar sua foto</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="mt-8 flex justify-end">
-        <Button onClick={handleSubmit} disabled={isPending}>
-          {isPending ? 'Salvando...' : 'Salvar'}
+      {/* Informações Pessoais */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5 text-[#9C66FF]" />
+            Informações Pessoais
+          </CardTitle>
+          <CardDescription>
+            Atualize seu nome e e-mail
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-700">Nome completo</label>
+            <Input
+              placeholder="Digite seu nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className="h-11"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-700">E-mail</label>
+            <Input
+              type="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-11"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Segurança */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="w-5 h-5 text-[#9C66FF]" />
+            Segurança
+          </CardTitle>
+          <CardDescription>
+            Altere sua senha de acesso
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-700">Nova senha</label>
+            <Input
+              type="password"
+              placeholder="Deixe em branco para manter a senha atual"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              className="h-11"
+            />
+            <p className="text-xs text-zinc-500">
+              Use no mínimo 8 caracteres com letras e números
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Botão de Salvar */}
+      <div className="flex justify-end gap-3">
+        <Button 
+          variant="outline" 
+          onClick={() => router.back()}
+          disabled={isPending}
+        >
+          Cancelar
+        </Button>
+        <Button 
+          onClick={handleSubmit} 
+          disabled={isPending}
+          className="bg-[#9C66FF] hover:bg-[#8450e6] text-white"
+        >
+          {isPending ? 'Salvando...' : 'Salvar alterações'}
         </Button>
       </div>
     </div>
