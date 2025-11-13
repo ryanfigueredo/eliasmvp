@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
       const {
         clienteId,
         loteId,
+        categoriaServicoId,
         valor,
         responsavelId: userId,
         agrupadorId = uuid(),
@@ -119,6 +120,7 @@ export async function POST(req: NextRequest) {
             userId,
             clienteId,
             loteId,
+            categoriaServicoId: categoriaServicoId || null,
             valor: parseFloat(String(valor)),
             tipo: item.tipo,
             orgao: Orgao.SERASA,
@@ -159,10 +161,11 @@ export async function POST(req: NextRequest) {
 
     const clienteId = fields.clienteId?.[0]
     const loteId = fields.loteId?.[0]
+    const categoriaServicoId = fields.categoriaServicoId?.[0]
     const valor = fields.valor?.[0]
     const userId = fields.responsavelId?.[0]
 
-    console.log('🔍 Dados extraídos:', { clienteId, loteId, valor, userId })
+    console.log('🔍 Dados extraídos:', { clienteId, loteId, categoriaServicoId, valor, userId })
 
     if (!clienteId || !loteId || !valor || !userId) {
       console.error('❌ Campos obrigatórios ausentes:', {
@@ -215,11 +218,24 @@ export async function POST(req: NextRequest) {
     const contrato = (files.contrato as File[] | undefined)?.[0]
     const comprovante = (files.comprovante as File[] | undefined)?.[0]
 
+    // Processar documentos adicionais
+    const documentosAdicionais: Array<{ tipo: string; file: File }> = []
+    for (let i = 1; i <= 6; i++) {
+      const file = (files[`adicional_${i}`] as File[] | undefined)?.[0]
+      if (file) {
+        documentosAdicionais.push({
+          tipo: `ADICIONAL_${i}`,
+          file,
+        })
+      }
+    }
+
     console.log('📄 Arquivos processados:', {
       rg: !!rg,
       consulta: !!consulta,
       contrato: !!contrato,
       comprovante: !!comprovante,
+      adicionais: documentosAdicionais.length,
     })
 
     const uploads = [
@@ -227,6 +243,7 @@ export async function POST(req: NextRequest) {
       consulta && { tipo: 'CONSULTA', file: consulta },
       contrato && { tipo: 'CONTRATO', file: contrato },
       comprovante && { tipo: 'COMPROVANTE', file: comprovante },
+      ...documentosAdicionais,
     ].filter(Boolean) as { tipo: string; file: File }[]
 
     console.log('📤 Arquivos para upload:', uploads.length)
@@ -256,6 +273,7 @@ export async function POST(req: NextRequest) {
             userId,
             clienteId,
             loteId,
+            categoriaServicoId: categoriaServicoId || null,
             valor: parseFloat(valor),
             tipo: item.tipo,
             orgao: Orgao.SERASA,

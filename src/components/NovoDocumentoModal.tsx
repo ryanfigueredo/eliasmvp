@@ -51,6 +51,18 @@ export default function NovoDocumentoModal({
   const [consulta, setConsulta] = useState<File | null>(null)
   const [contrato, setContrato] = useState<File | null>(null)
   const [comprovante, setComprovante] = useState<File | null>(null)
+  const [documentosAdicionais, setDocumentosAdicionais] = useState<
+    Array<{ file: File | null; descricao: string }>
+  >(
+    Array.from({ length: 6 }, () => ({
+      file: null,
+      descricao: '',
+    })),
+  )
+  const [categoriaId, setCategoriaId] = useState<string>('')
+  const [categorias, setCategorias] = useState<
+    Array<{ id: string; nome: string; descricao: string | null }>
+  >([])
 
   const [loteIdState, setLoteIdState] = useState(loteId || '')
   const [lotes, setLotes] = useState<Lote[]>([])
@@ -79,6 +91,19 @@ export default function NovoDocumentoModal({
       .catch((err) => {
         console.error('Erro ao buscar lotes:', err)
         setLotes([])
+      })
+
+    // Buscar categorias de serviços
+    fetch('/api/categorias-servico')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategorias(data)
+        }
+      })
+      .catch((err) => {
+        console.error('Erro ao buscar categorias:', err)
+        setCategorias([])
       })
   }, [userId])
 
@@ -159,7 +184,7 @@ export default function NovoDocumentoModal({
       return
     }
 
-    if (!nome || !cpfCnpj || !valor || !loteIdState) {
+    if (!nome || !cpfCnpj || !valor || !loteIdState || !categoriaId) {
       return toast.error('Preencha todos os campos obrigatórios.')
     }
 
@@ -314,10 +339,17 @@ export default function NovoDocumentoModal({
 
           async function uploadWithPresignedUrls() {
             const files = [
-              { file: rg, tipo: 'RG' },
-              { file: consulta, tipo: 'CONSULTA' },
-              { file: contrato, tipo: 'CONTRATO' },
-              { file: comprovante, tipo: 'COMPROVANTE' },
+              { file: rg, tipo: 'RG', descricao: 'RG' },
+              { file: consulta, tipo: 'CONSULTA', descricao: 'Consulta' },
+              { file: contrato, tipo: 'CONTRATO', descricao: 'Contrato' },
+              { file: comprovante, tipo: 'COMPROVANTE', descricao: 'Comprovante de Pagamento' },
+              ...documentosAdicionais
+                .filter((doc) => doc.file)
+                .map((doc, index) => ({
+                  file: doc.file!,
+                  tipo: `ADICIONAL_${index + 1}`,
+                  descricao: doc.descricao || `Documento Adicional ${index + 1}`,
+                })),
             ].filter(({ file }) => file)
 
             const uploadedFiles = []
@@ -369,6 +401,7 @@ export default function NovoDocumentoModal({
               body: JSON.stringify({
                 clienteId: finalClienteId!,
                 loteId: loteIdState,
+                categoriaServicoId: categoriaId,
                 valor: valor.replace(/[^\d,.-]/g, '').replace(',', '.'),
                 responsavelId: userId,
                 agrupadorId,
@@ -391,11 +424,20 @@ export default function NovoDocumentoModal({
             )
             formData.append('responsavelId', userId)
             formData.append('loteId', loteIdState)
+            formData.append('categoriaServicoId', categoriaId)
             formData.append('agrupadorId', agrupadorId)
             if (rg) formData.append('rg', rg)
             if (consulta) formData.append('consulta', consulta)
             if (contrato) formData.append('contrato', contrato)
             if (comprovante) formData.append('comprovante', comprovante)
+            
+            // Adicionar documentos adicionais
+            documentosAdicionais.forEach((doc, index) => {
+              if (doc.file) {
+                formData.append(`adicional_${index + 1}`, doc.file)
+                formData.append(`adicional_${index + 1}_descricao`, doc.descricao || `Documento Adicional ${index + 1}`)
+              }
+            })
 
             console.log('📤 Enviando documentos para API...')
 
@@ -595,6 +637,30 @@ export default function NovoDocumentoModal({
           </div>
 
           <div className="space-y-1">
+            <label className="text-sm font-medium">
+              Categoria de Serviço <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={categoriaId}
+              onChange={(e) => setCategoriaId(e.target.value)}
+              required
+            >
+              <option value="">Selecione uma categoria</option>
+              {categorias.map((categoria) => (
+                <option key={categoria.id} value={categoria.id}>
+                  {categoria.nome}
+                </option>
+              ))}
+            </select>
+            {categorias.length === 0 && (
+              <p className="text-xs text-zinc-500">
+                Nenhuma categoria cadastrada. Crie uma na página de configurações.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1">
             <label className="text-sm font-medium">Lote</label>
             <select
               className="w-full border rounded px-3 py-2 text-sm"
@@ -646,6 +712,35 @@ export default function NovoDocumentoModal({
               type="file"
               onChange={(e) => setComprovante(e.target.files?.[0] ?? null)}
             />
+          </div>
+
+          <div className="space-y-3 pt-2 border-t">
+            <label className="text-sm font-medium text-zinc-700">
+              Documentos Adicionais
+            </label>
+            {documentosAdicionais.map((doc, index) => (
+              <div key={index} className="space-y-1">
+                <Input
+                  type="text"
+                  placeholder={`Descrição do documento ${index + 1} (opcional)`}
+                  value={doc.descricao}
+                  onChange={(e) => {
+                    const novos = [...documentosAdicionais]
+                    novos[index].descricao = e.target.value
+                    setDocumentosAdicionais(novos)
+                  }}
+                  className="text-sm"
+                />
+                <Input
+                  type="file"
+                  onChange={(e) => {
+                    const novos = [...documentosAdicionais]
+                    novos[index].file = e.target.files?.[0] ?? null
+                    setDocumentosAdicionais(novos)
+                  }}
+                />
+              </div>
+            ))}
           </div>
 
           {uploadProgress && (

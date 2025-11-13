@@ -38,6 +38,8 @@ model User {
   lotesCriados Lote[] @relation("CriadorLotes")
   lotesDonos   Lote[] @relation("DonoLotes")
 
+  categoriasServico CategoriaServico[] @relation("CategoriaOwner")
+
   logs   Log[]
   config Config?
 
@@ -75,25 +77,27 @@ model Lote {
 }
 
 model Document {
-  id          String          @id @default(uuid())
-  tipo        String?
-  userId      String
-  agrupadorId String?
-  clienteId   String?
-  loteId      String?
-  orgao       Orgao
-  status      DocumentoStatus @default(INICIADO)
-  fileUrl     String
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  valor       Float
+  id                 String          @id @default(uuid())
+  tipo               String?
+  userId             String
+  agrupadorId        String?
+  clienteId          String?
+  loteId             String?
+  categoriaServicoId String?
+  orgao              Orgao
+  status             DocumentoStatus @default(INICIADO)
+  fileUrl            String
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  valor              Float
 
   user    User    @relation("DocumentoUsuario", fields: [userId], references: [id])
   ownerId String?
   owner   User?   @relation("DocumentoOwner", fields: [ownerId], references: [id])
 
-  cliente Cliente? @relation("ClienteDocumentos", fields: [clienteId], references: [id])
-  lote    Lote?    @relation(fields: [loteId], references: [id])
+  cliente          Cliente?          @relation("ClienteDocumentos", fields: [clienteId], references: [id])
+  lote             Lote?             @relation(fields: [loteId], references: [id])
+  categoriaServico CategoriaServico? @relation(fields: [categoriaServicoId], references: [id])
 }
 
 model DocumentoCliente {
@@ -145,4 +149,20 @@ model Log {
   acao      String
   detalhes  String
   createdAt DateTime @default(now())
+}
+
+model CategoriaServico {
+  id        String   @id @default(uuid())
+  nome      String
+  descricao String?
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId String?
+  owner   User?   @relation("CategoriaOwner", fields: [ownerId], references: [id])
+
+  documentos Document[]
+
+  @@unique([nome, ownerId])
 }
