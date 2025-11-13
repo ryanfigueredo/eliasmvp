@@ -115,20 +115,27 @@ export async function POST(req: NextRequest) {
       }
 
       for (const item of uploads as Array<{ key: string; tipo: string }>) {
+        // Criar documento com ou sem categoriaServicoId dependendo se a coluna existe
+        const documentData: any = {
+          userId,
+          clienteId,
+          loteId,
+          valor: parseFloat(String(valor)),
+          tipo: item.tipo,
+          orgao: Orgao.SERASA,
+          status: DocumentoStatus.INICIADO,
+          fileUrl: item.key,
+          ownerId,
+          agrupadorId,
+        }
+
+        // Só adiciona categoriaServicoId se existir no schema
+        if (categoriaServicoId) {
+          documentData.categoriaServicoId = categoriaServicoId
+        }
+
         await prisma.document.create({
-          data: {
-            userId,
-            clienteId,
-            loteId,
-            categoriaServicoId: categoriaServicoId || null,
-            valor: parseFloat(String(valor)),
-            tipo: item.tipo,
-            orgao: Orgao.SERASA,
-            status: DocumentoStatus.INICIADO,
-            fileUrl: item.key,
-            ownerId,
-            agrupadorId,
-          },
+          data: documentData,
         })
       }
 
@@ -268,21 +275,46 @@ export async function POST(req: NextRequest) {
 
         console.log(`☁️ Arquivo ${item.tipo} enviado para S3:`, fileUrl)
 
-        await prisma.document.create({
-          data: {
-            userId,
-            clienteId,
-            loteId,
-            categoriaServicoId: categoriaServicoId || null,
-            valor: parseFloat(valor),
-            tipo: item.tipo,
-            orgao: Orgao.SERASA,
-            status: DocumentoStatus.INICIADO,
-            fileUrl,
-            ownerId,
-            agrupadorId,
-          },
-        })
+        // Criar documento com ou sem categoriaServicoId dependendo se a coluna existe
+        const documentData: any = {
+          userId,
+          clienteId,
+          loteId,
+          valor: parseFloat(valor),
+          tipo: item.tipo,
+          orgao: Orgao.SERASA,
+          status: DocumentoStatus.INICIADO,
+          fileUrl,
+          ownerId,
+          agrupadorId,
+        }
+
+        // Só adiciona categoriaServicoId se existir no schema
+        if (categoriaServicoId) {
+          documentData.categoriaServicoId = categoriaServicoId
+        }
+
+        try {
+          await prisma.document.create({
+            data: documentData,
+          })
+        } catch (createError: any) {
+          // Se a coluna não existir, tentar criar sem ela
+          if (
+            createError?.code === 'P2022' ||
+            createError?.message?.includes('categoriaServicoId')
+          ) {
+            console.log(
+              '⚠️ Coluna categoriaServicoId não existe, criando sem ela...',
+            )
+            delete documentData.categoriaServicoId
+            await prisma.document.create({
+              data: documentData,
+            })
+          } else {
+            throw createError
+          }
+        }
 
         console.log(`✅ Documento ${item.tipo} salvo no banco`)
       } catch (error) {
@@ -351,42 +383,88 @@ export async function GET(req: NextRequest) {
       where.OR = [{ userId: userId }, { user: { adminId: userId } }]
     }
 
-    const documentos = await prisma.document.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            name: true,
-            admin: { select: { name: true } },
+    // Tentar buscar com categoriaServico primeiro, se falhar, buscar sem ela
+    let documentos
+    try {
+      documentos = await prisma.document.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              name: true,
+              admin: { select: { name: true } },
+            },
+          },
+          cliente: {
+            select: {
+              id: true,
+              nome: true,
+              cpfCnpj: true,
+              valor: true,
+              limite: true,
+              user: { select: { name: true } },
+            },
+          },
+          lote: {
+            select: {
+              id: true,
+              nome: true,
+              inicio: true,
+              fim: true,
+            },
+          },
+          categoriaServico: {
+            select: {
+              id: true,
+              nome: true,
+            },
           },
         },
-        cliente: {
-          select: {
-            id: true,
-            nome: true,
-            cpfCnpj: true,
-            valor: true,
-            limite: true,
-            user: { select: { name: true } },
+        orderBy: { updatedAt: 'desc' },
+      })
+    } catch (error: any) {
+      // Se a coluna categoriaServicoId não existir, buscar sem ela
+      if (
+        error?.code === 'P2022' ||
+        error?.message?.includes('categoriaServicoId')
+      ) {
+        console.log(
+          '⚠️ Coluna categoriaServicoId não existe, buscando sem ela...',
+        )
+        documentos = await prisma.document.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                name: true,
+                admin: { select: { name: true } },
+              },
+            },
+            cliente: {
+              select: {
+                id: true,
+                nome: true,
+                cpfCnpj: true,
+                valor: true,
+                limite: true,
+                user: { select: { name: true } },
+              },
+            },
+            lote: {
+              select: {
+                id: true,
+                nome: true,
+                inicio: true,
+                fim: true,
+              },
+            },
           },
-        },
-        lote: {
-          select: {
-            id: true,
-            nome: true,
-            inicio: true,
-            fim: true,
-          },
-        },
-        categoriaServico: {
-          select: {
-            id: true,
-            nome: true,
-          },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-    })
+          orderBy: { updatedAt: 'desc' },
+        })
+      } else {
+        throw error
+      }
+    }
 
     console.log(' Documentos retornados:', documentos)
     return NextResponse.json(documentos)
