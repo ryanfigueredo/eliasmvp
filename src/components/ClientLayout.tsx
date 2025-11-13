@@ -8,14 +8,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { signOut } from 'next-auth/react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from './ui/dialog'
-import { Input } from './ui/input'
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -95,139 +87,95 @@ export function ClientLayout({
       {/* Sidebar */}
       <aside
         className={`h-screen bg-[#242424] text-white border-r flex flex-col justify-between transition-all duration-300 ${
-          isCollapsed ? 'w-20 items-center' : 'w-64 items-start'
+          isCollapsed ? 'w-20 items-center' : 'w-72 items-start'
         }`}
       >
         {/* Topo da sidebar */}
-        <div className="flex flex-col gap-6 px-4 py-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white   mb-2"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            {isCollapsed ? (
-              <Menu className="w-5 h-5" />
-            ) : (
-              <X className="w-5 h-5" />
-            )}
-          </Button>
+        <div className="flex flex-col gap-6 px-5 py-6">
+          <div className="flex items-center justify-between mb-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-zinc-800/50"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+            >
+              {isCollapsed ? (
+                <Menu className="w-5 h-5" />
+              ) : (
+                <X className="w-5 h-5" />
+              )}
+            </Button>
+          </div>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center py-2">
             {signedLogoUrl ? (
               <Image
                 src={signedLogoUrl}
                 alt="Logo"
-                width={isCollapsed ? 40 : 100}
-                height={isCollapsed ? 40 : 100}
-                className="rounded"
+                width={isCollapsed ? 48 : 120}
+                height={isCollapsed ? 48 : 120}
+                className="rounded-lg shadow-lg object-contain"
               />
             ) : (
               <Image
                 src="/logo.jpeg"
                 alt="Logo padrão"
-                width={isCollapsed ? 40 : 100}
-                height={isCollapsed ? 40 : 100}
-                className="rounded"
+                width={isCollapsed ? 48 : 120}
+                height={isCollapsed ? 48 : 120}
+                className="rounded-lg shadow-lg object-contain"
               />
-            )}
-          </div>
-
-          <div>
-            {user.role === 'master' && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="text-xs text-zinc-400 px-0 py-1 w-full text-left"
-                  >
-                    {!isCollapsed ? 'Personalize sua Logo' : ''}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-white">
-                  <DialogHeader>
-                    <DialogTitle>Editar Logo da Plataforma</DialogTitle>
-                  </DialogHeader>
-
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (!file) return
-                      const formData = new FormData()
-                      formData.append('file', file)
-                      formData.append('userId', sessionUser.id)
-
-                      fetch('/api/config/logo', {
-                        method: 'POST',
-                        body: formData,
-                      })
-                        .then((res) => res.json())
-                        .then(async (data) => {
-                          if (data.config?.logo) {
-                            const logoUrl = await fetch(
-                              `/api/config/logo?userId=${sessionUser.id}`,
-                            )
-                            const { url } = await logoUrl.json()
-                            window.location.reload()
-                          }
-                        })
-                        .catch((err) => {
-                          console.error('[Upload Logo Error]', err)
-                        })
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
             )}
           </div>
 
           <SidebarContent role={user.role as any} collapsed={isCollapsed} />
         </div>
 
-        <div className="px-4 py-6">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="px-5 py-6 border-t border-zinc-700/50">
+          <div className="flex items-center gap-3 mb-4">
             {signedUrl === null ? (
-              <div className="w-10 h-10">
-                <div className="rounded-full  h-full bg-zinc-700 animate-pulse" />
+              <div className="w-12 h-12 flex-shrink-0">
+                <div className="rounded-full w-full h-full bg-zinc-700 animate-pulse" />
               </div>
             ) : (
-              <Avatar className="w-10 h-10">
+              <Avatar className="w-12 h-12 flex-shrink-0">
                 <AvatarImage
                   src={signedUrl}
                   alt="Avatar"
                   className="object-cover rounded-full"
                 />
-                <AvatarFallback>
+                <AvatarFallback className="bg-[#9C66FF] text-white text-lg font-semibold">
                   {user.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             )}
 
             {!isCollapsed && (
-              <div className="flex flex-col text-sm text-white">
-                <span className="font-medium">{user.name}</span>
-                <span className="text-xs text-zinc-400">{user.email}</span>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="font-semibold text-white text-sm truncate">
+                  {user.name}
+                </span>
+                <span className="text-xs text-zinc-400 truncate">
+                  {user.email}
+                </span>
               </div>
             )}
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Link
               href="/perfil"
-              className="text-sm px-0 py-1 justify-start flex items-center gap-2 text-zinc-300 hover:text-[#9C66FF]"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-200 hover:text-white hover:bg-zinc-800/50 transition-colors"
             >
-              <Settings className="w-4 h-4" />
-              {!isCollapsed && 'Configurações'}
+              <Settings className="w-5 h-5 flex-shrink-0" />
+              {!isCollapsed && <span>Configurações</span>}
             </Link>
 
             <button
               onClick={() => signOut()}
-              className="text-sm px-0 py-1 justify-start flex items-center gap-2 text-red-500 hover:underline"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
             >
-              <LogOut className="w-4 h-4" />
-              {!isCollapsed && 'Sair'}
+              <LogOut className="w-5 h-5 flex-shrink-0" />
+              {!isCollapsed && <span>Sair</span>}
             </button>
           </div>
         </div>

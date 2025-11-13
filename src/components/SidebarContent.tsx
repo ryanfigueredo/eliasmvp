@@ -12,7 +12,7 @@ export function SidebarContent({
   collapsed?: boolean
 }) {
   return (
-    <nav className="space-y-2 text-sm">
+    <nav className="space-y-1">
       <SidebarLink
         href="/dashboard"
         icon={<Home className="w-5 h-5" />}
@@ -66,10 +66,12 @@ function SidebarLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 text-white hover:text-primary px-2 py-2 rounded transition-colors"
+      className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium text-zinc-200 hover:text-white hover:bg-zinc-800/50 transition-all duration-200 group"
     >
-      {icon}
-      {!collapsed && children}
+      <span className="flex-shrink-0 group-hover:text-[#9C66FF] transition-colors">
+        {icon}
+      </span>
+      {!collapsed && <span className="flex-1">{children}</span>}
     </Link>
   )
 }

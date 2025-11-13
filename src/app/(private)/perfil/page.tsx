@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Lock, Camera } from 'lucide-react'
+import { User, Mail, Lock, Camera, Image as ImageIcon } from 'lucide-react'
+import Image from 'next/image'
 
 const THEMES = ['light', 'dark'] as const
 const COLORS = ['roxo', 'azul', 'verde', 'vermelho'] as const
@@ -22,6 +23,10 @@ export default function PerfilPage() {
   const [foto, setFoto] = useState<File | null>(null)
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
   const [signedAvatarUrl, setSignedAvatarUrl] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string>('')
+  const [userId, setUserId] = useState<string>('')
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null)
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [color, setColor] = useState<string>('roxo')
@@ -36,10 +41,25 @@ export default function PerfilPage() {
 
         setNome(user.name || '')
         setEmail(user.email || '')
+        setUserRole(user.role || '')
+        setUserId(user.id || '')
 
         if (user.image) {
           console.log('[PERFIL] imagem recebida:', user.image)
           setFotoUrl(user.image)
+        }
+
+        // Se for master, carrega logo
+        if (user.role === 'master' && user.id) {
+          try {
+            const logoRes = await fetch(`/api/config/logo?userId=${user.id}`)
+            const logoData = await logoRes.json()
+            if (logoData.url) {
+              setSignedLogoUrl(logoData.url)
+            }
+          } catch (error) {
+            console.error('[PERFIL] erro ao carregar logo:', error)
+          }
         }
       } catch (error) {
         console.error('[PERFIL] erro ao carregar usuário:', error)
@@ -184,6 +204,97 @@ export default function PerfilPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Personalização da Logo (apenas Master) */}
+      {userRole === 'master' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-[#9C66FF]" />
+              Personalizar Logo da Plataforma
+            </CardTitle>
+            <CardDescription>
+              Atualize o logo que aparece no sidebar e nas páginas públicas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                {signedLogoUrl ? (
+                  <Image
+                    src={signedLogoUrl}
+                    alt="Logo atual"
+                    width={120}
+                    height={120}
+                    className="rounded-lg shadow-lg object-contain border-2 border-zinc-200"
+                  />
+                ) : (
+                  <div className="w-[120px] h-[120px] rounded-lg border-2 border-dashed border-zinc-300 flex items-center justify-center bg-zinc-50">
+                    <ImageIcon className="w-8 h-8 text-zinc-400" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-700">
+                    Nova logo
+                  </label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                    className="h-11"
+                  />
+                  <p className="text-xs text-zinc-500">
+                    Formatos aceitos: JPG, PNG, GIF. Tamanho recomendado: 300x300px
+                  </p>
+                </div>
+                {logoFile && (
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      if (!logoFile || !userId) return
+
+                      const formData = new FormData()
+                      formData.append('file', logoFile)
+                      formData.append('userId', userId)
+
+                      try {
+                        const res = await fetch('/api/config/logo', {
+                          method: 'POST',
+                          body: formData,
+                        })
+
+                        const data = await res.json()
+                        if (data.config?.logo) {
+                          const logoUrlRes = await fetch(
+                            `/api/config/logo?userId=${userId}`,
+                          )
+                          const { url } = await logoUrlRes.json()
+                          setSignedLogoUrl(url)
+                          setLogoFile(null)
+                          toast.success('Logo atualizada com sucesso!')
+                          // Recarrega a página para atualizar o logo no sidebar
+                          setTimeout(() => window.location.reload(), 1000)
+                        } else {
+                          toast.error('Erro ao atualizar logo')
+                        }
+                      } catch (error) {
+                        console.error('[PERFIL] erro ao atualizar logo:', error)
+                        toast.error('Erro ao atualizar logo')
+                      }
+                    }}
+                    disabled={isPending}
+                    className="w-full"
+                  >
+                    {isPending ? 'Salvando...' : 'Salvar Logo'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Segurança */}
       <Card>
