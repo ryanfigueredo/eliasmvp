@@ -49,7 +49,15 @@ export async function GET(req: NextRequest) {
       include: {
         documentos: {
           where: { userId },
-          select: { status: true },
+          select: { 
+            status: true,
+            categoriaServico: {
+              select: {
+                id: true,
+                nome: true,
+              }
+            }
+          },
         },
       },
     })
@@ -70,12 +78,23 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Extrair categorias únicas dos documentos do lote
+      const categoriasUnicas = Array.from(
+        new Set(
+          lote.documentos
+            .filter((doc) => doc.categoriaServico)
+            .map((doc) => doc.categoriaServico?.nome)
+            .filter(Boolean)
+        )
+      ) as string[]
+
       return {
         id: lote.id,
         nome: lote.nome,
         inicio: lote.inicio,
         fim: lote.fim,
         status,
+        categorias: categoriasUnicas,
       }
     })
 

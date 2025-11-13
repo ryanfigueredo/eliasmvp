@@ -548,8 +548,8 @@ export default function NovoDocumentoModal({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-md bg-white border rounded-xl shadow-xl px-6 py-6">
-        <DialogHeader>
+      <DialogContent className="max-w-md bg-white border rounded-xl shadow-xl px-6 py-6 max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-lg font-semibold">
             Novo Documento
           </DialogTitle>
@@ -558,52 +558,53 @@ export default function NovoDocumentoModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="relative">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4 pr-2">
+            <div className="relative">
+              <Input
+                placeholder="Nome completo"
+                value={nome}
+                onChange={(e) => {
+                  setNome(e.target.value)
+                  setShowSuggestions(true)
+                }}
+                required
+              />
+              {showSuggestions && clientes.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border rounded mt-1 shadow max-h-40 overflow-auto">
+                  {clientes.map((cliente) => (
+                    <li
+                      key={cliente.id}
+                      className="px-3 py-2 hover:bg-zinc-100 cursor-pointer text-sm"
+                      onClick={() => handleClienteSelect(cliente)}
+                    >
+                      {cliente.nome} – {cliente.cpfCnpj}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <Input
-              placeholder="Nome completo"
-              value={nome}
+              placeholder="CPF ou CNPJ"
+              value={cpfCnpj}
               onChange={(e) => {
-                setNome(e.target.value)
+                setCpfCnpj(formatCpfCnpj(e.target.value))
                 setShowSuggestions(true)
               }}
               required
             />
-            {showSuggestions && clientes.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border rounded mt-1 shadow max-h-40 overflow-auto">
-                {clientes.map((cliente) => (
-                  <li
-                    key={cliente.id}
-                    className="px-3 py-2 hover:bg-zinc-100 cursor-pointer text-sm"
-                    onClick={() => handleClienteSelect(cliente)}
-                  >
-                    {cliente.nome} – {cliente.cpfCnpj}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
 
-          <Input
-            placeholder="CPF ou CNPJ"
-            value={cpfCnpj}
-            onChange={(e) => {
-              setCpfCnpj(formatCpfCnpj(e.target.value))
-              setShowSuggestions(true)
-            }}
-            required
-          />
+            <Input
+              type="text"
+              placeholder="Valor"
+              value={valor}
+              onChange={(e) => setValor(formatCurrency(e.target.value))}
+              required
+            />
 
-          <Input
-            type="text"
-            placeholder="Valor"
-            value={valor}
-            onChange={(e) => setValor(formatCurrency(e.target.value))}
-            required
-          />
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 id="usarLimite"
@@ -748,8 +749,9 @@ export default function NovoDocumentoModal({
               <p className="text-sm text-blue-800">{uploadProgress}</p>
             </div>
           )}
+          </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 mt-4">
             <DialogClose asChild>
               <Button type="button" variant="outline">
                 Cancelar

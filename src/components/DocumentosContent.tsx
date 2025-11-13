@@ -27,6 +27,10 @@ type DocumentoComLote = {
   status: DocumentoStatus
   fileUrl: string
   updatedAt: string
+  categoriaServico?: {
+    id: string
+    nome: string
+  } | null
   user?: {
     name: string
     admin?: { name: string }
@@ -47,7 +51,14 @@ type DocumentoComLote = {
 export default function DocumentosContent({ role, userId }: Props) {
   const [documentos, setDocumentos] = useState<DocumentoComLote[]>([])
   const [lotesComStatus, setLotesComStatus] = useState<
-    { id: string; nome: string; inicio: string; fim: string; status: string }[]
+    { 
+      id: string
+      nome: string
+      inicio: string
+      fim: string
+      status: string
+      categorias?: string[]
+    }[]
   >([])
   const [loteSelecionado, setLoteSelecionado] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -212,6 +223,7 @@ export default function DocumentosContent({ role, userId }: Props) {
             <tr>
               <th className="p-4 text-left">Lote</th>
               <th className="p-4 text-left">Período</th>
+              <th className="p-4 text-left">Categorias</th>
               <th className="p-4 text-left">Ação</th>
               <th className="p-4 text-left">Status</th>
               {isGestor && <th className="p-4 text-left"></th>}
@@ -229,6 +241,22 @@ export default function DocumentosContent({ role, userId }: Props) {
                   <td className="p-4">
                     {new Date(lote.inicio).toLocaleDateString('pt-BR')} até{' '}
                     {new Date(lote.fim).toLocaleDateString('pt-BR')}
+                  </td>
+                  <td className="p-4">
+                    {lote.categorias && lote.categorias.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {lote.categorias.map((categoria, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 text-xs bg-[#9C66FF]/10 text-[#9C66FF] rounded-full font-medium"
+                          >
+                            {categoria}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-zinc-400">Sem categorias</span>
+                    )}
                   </td>
                   <td className="p-4 flex gap-2">
                     <Button

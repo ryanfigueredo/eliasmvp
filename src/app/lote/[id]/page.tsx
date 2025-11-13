@@ -15,6 +15,12 @@ export default async function LotePage({ params }: Props) {
       documentos: {
         include: {
           user: true,
+          categoriaServico: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
         },
         orderBy: { updatedAt: 'desc' },
       },
@@ -35,6 +41,7 @@ export default async function LotePage({ params }: Props) {
         <thead className="bg-zinc-100 text-left">
           <tr>
             <th className="p-4">Arquivo</th>
+            <th className="p-4">Categoria</th>
             <th className="p-4">Órgão</th>
             <th className="p-4">Status</th>
             <th className="p-4">Usuário</th>
@@ -46,6 +53,15 @@ export default async function LotePage({ params }: Props) {
             <tr key={doc.id} className="border-t">
               <td className="p-4">
                 <PreviewDocumentoModal fileUrl={doc.fileUrl} />
+              </td>
+              <td className="p-4">
+                {doc.categoriaServico ? (
+                  <span className="px-2 py-1 text-xs bg-[#9C66FF]/10 text-[#9C66FF] rounded-full font-medium">
+                    {doc.categoriaServico.nome}
+                  </span>
+                ) : (
+                  <span className="text-xs text-zinc-400">Sem categoria</span>
+                )}
               </td>
               <td className="p-4">{doc.orgao}</td>
               <td className="p-4">{doc.status}</td>

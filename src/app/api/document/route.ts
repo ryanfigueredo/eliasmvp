@@ -378,6 +378,12 @@ export async function GET(req: NextRequest) {
             fim: true,
           },
         },
+        categoriaServico: {
+          select: {
+            id: true,
+            nome: true,
+          },
+        },
       },
       orderBy: { updatedAt: 'desc' },
     })

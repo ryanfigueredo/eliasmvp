@@ -76,18 +76,37 @@ export async function GET(req: NextRequest) {
               ) && { status: statusFiltro as DocumentoStatus }),
             ...(userIdFiltro && { userId: userIdFiltro }),
           },
-          select: { status: true },
+          select: { 
+            status: true,
+            categoriaServico: {
+              select: {
+                id: true,
+                nome: true,
+              }
+            }
+          },
         },
       },
     })
 
     const lotesComStatus = lotes.map((lote) => {
+      // Extrair categorias únicas dos documentos do lote
+      const categoriasUnicas = Array.from(
+        new Set(
+          lote.documentos
+            .filter((doc) => doc.categoriaServico)
+            .map((doc) => doc.categoriaServico?.nome)
+            .filter(Boolean)
+        )
+      ) as string[]
+
       return {
         id: lote.id,
         nome: lote.nome,
         inicio: lote.inicio,
         fim: lote.fim,
         status: lote.status || 'INICIADO',
+        categorias: categoriasUnicas,
       }
     })
 

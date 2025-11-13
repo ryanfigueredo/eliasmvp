@@ -18,6 +18,10 @@ interface DocumentoComLote {
   fileUrl: string
   updatedAt: string
   createdAt?: string
+  categoriaServico?: {
+    id: string
+    nome: string
+  } | null
   user?: {
     name: string
     admin?: {
@@ -198,6 +202,7 @@ export default function DocumentosPorClienteGrouped({
                   <thead className="bg-zinc-50">
                     <tr>
                       <th className="p-4 text-left">Tipo</th>
+                      <th className="p-4 text-left">Categoria</th>
                       <th className="p-4 text-left">Responsável</th>
                       <th className="p-4 text-left">Inputado por</th>
                       <th className="p-4 text-left">Visualizar</th>
@@ -211,6 +216,15 @@ export default function DocumentosPorClienteGrouped({
                             ? doc.tipo.charAt(0).toUpperCase() +
                               doc.tipo.slice(1).toLowerCase()
                             : 'Documento desconhecido'}
+                        </td>
+                        <td className="p-4">
+                          {doc.categoriaServico ? (
+                            <span className="px-2 py-1 text-xs bg-[#9C66FF]/10 text-[#9C66FF] rounded-full font-medium">
+                              {doc.categoriaServico.nome}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-zinc-400">Sem categoria</span>
+                          )}
                         </td>
                         <td className="p-4">{responsavel}</td>
                         <td className="p-4">{inputado}</td>
