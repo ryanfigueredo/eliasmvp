@@ -73,6 +73,9 @@ model Lote {
   ownerId String?
   owner   User?   @relation("DonoLotes", fields: [ownerId], references: [id])
 
+  categoriaServicoId String?
+  categoriaServico   CategoriaServico? @relation(fields: [categoriaServicoId], references: [id])
+
   documentos Document[]
 }
 
@@ -163,6 +166,7 @@ model CategoriaServico {
   owner   User?   @relation("CategoriaOwner", fields: [ownerId], references: [id])
 
   documentos Document[]
+  lotes     Lote[]
 
   @@unique([nome, ownerId])
 }

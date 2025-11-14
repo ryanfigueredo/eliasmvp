@@ -4,6 +4,7 @@ import { DocumentoStatus } from '@prisma/client'
 import { useState, useEffect } from 'react'
 import { Download, Eye, Trash2 } from 'lucide-react'
 import PreviewDocumentoModal from './PreviewDocumentoModal'
+import EditarCategoriaDocumentoModal from './EditarCategoriaDocumentoModal'
 import { Button } from './ui/button'
 import ExportarDocumentos from './ExportarDocumentos'
 import { toast } from 'sonner'
@@ -230,6 +231,12 @@ export default function DocumentosPorClienteGrouped({
                         <td className="p-4">{inputado}</td>
                         <td className="p-4 flex items-center gap-2">
                           <PreviewDocumentoModal fileUrl={doc.fileUrl} />
+                          <EditarCategoriaDocumentoModal
+                            documentoId={doc.id}
+                            categoriaAtualId={doc.categoriaServico?.id || null}
+                            categoriaAtualNome={doc.categoriaServico?.nome || null}
+                            onUpdated={refreshDocumentos}
+                          />
                         </td>
                       </tr>
                     ))}

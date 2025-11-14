@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Lock, Camera, Image as ImageIcon } from 'lucide-react'
+import { User, Mail, Lock, Camera, Image as ImageIcon, Tags, Plus, Edit, Trash2, X } from 'lucide-react'
 import Image from 'next/image'
 
 const THEMES = ['light', 'dark'] as const
@@ -27,6 +27,14 @@ export default function PerfilPage() {
   const [userId, setUserId] = useState<string>('')
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null)
+  
+  // Estados para categorias de serviço
+  const [categorias, setCategorias] = useState<Array<{ id: string; nome: string; descricao: string | null }>>([])
+  const [categoriaNome, setCategoriaNome] = useState('')
+  const [categoriaDescricao, setCategoriaDescricao] = useState('')
+  const [categoriaEditando, setCategoriaEditando] = useState<string | null>(null)
+  const [mostrarFormCategoria, setMostrarFormCategoria] = useState(false)
+  const [carregandoCategorias, setCarregandoCategorias] = useState(false)
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [color, setColor] = useState<string>('roxo')
@@ -49,7 +57,7 @@ export default function PerfilPage() {
           setFotoUrl(user.image)
         }
 
-        // Se for master, carrega logo
+        // Se for master, carrega logo e categorias
         if (user.role === 'master' && user.id) {
           try {
             const logoRes = await fetch(`/api/config/logo?userId=${user.id}`)
@@ -60,6 +68,9 @@ export default function PerfilPage() {
           } catch (error) {
             console.error('[PERFIL] erro ao carregar logo:', error)
           }
+          
+          // Carregar categorias
+          loadCategorias()
         }
       } catch (error) {
         console.error('[PERFIL] erro ao carregar usuário:', error)
@@ -100,6 +111,113 @@ export default function PerfilPage() {
 
     fetchAvatar()
   }, [fotoUrl])
+
+  // Função para carregar categorias
+  const loadCategorias = async () => {
+    if (userRole !== 'master') return
+    
+    setCarregandoCategorias(true)
+    try {
+      const res = await fetch('/api/categorias-servico')
+      if (res.ok) {
+        const data = await res.json()
+        setCategorias(Array.isArray(data) ? data : [])
+      }
+    } catch (error) {
+      console.error('[PERFIL] erro ao carregar categorias:', error)
+    } finally {
+      setCarregandoCategorias(false)
+    }
+  }
+
+  // Função para criar/editar categoria
+  const handleSaveCategoria = async () => {
+    if (!categoriaNome.trim()) {
+      return toast.error('O nome da categoria é obrigatório')
+    }
+
+    try {
+      if (categoriaEditando) {
+        // Editar categoria existente
+        const res = await fetch(`/api/categorias-servico/${categoriaEditando}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: categoriaNome.trim(),
+            descricao: categoriaDescricao.trim() || null,
+          }),
+        })
+
+        if (res.ok) {
+          toast.success('Categoria atualizada com sucesso!')
+          setCategoriaNome('')
+          setCategoriaDescricao('')
+          setCategoriaEditando(null)
+          setMostrarFormCategoria(false)
+          loadCategorias()
+        } else {
+          const data = await res.json()
+          toast.error(data.message || 'Erro ao atualizar categoria')
+        }
+      } else {
+        // Criar nova categoria
+        const res = await fetch('/api/categorias-servico', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: categoriaNome.trim(),
+            descricao: categoriaDescricao.trim() || null,
+          }),
+        })
+
+        if (res.ok) {
+          toast.success('Categoria criada com sucesso!')
+          setCategoriaNome('')
+          setCategoriaDescricao('')
+          setMostrarFormCategoria(false)
+          loadCategorias()
+        } else {
+          const data = await res.json()
+          toast.error(data.message || 'Erro ao criar categoria')
+        }
+      }
+    } catch (error) {
+      console.error('[PERFIL] erro ao salvar categoria:', error)
+      toast.error('Erro ao salvar categoria')
+    }
+  }
+
+  // Função para iniciar edição
+  const handleEditCategoria = (categoria: { id: string; nome: string; descricao: string | null }) => {
+    setCategoriaNome(categoria.nome)
+    setCategoriaDescricao(categoria.descricao || '')
+    setCategoriaEditando(categoria.id)
+    setMostrarFormCategoria(true)
+  }
+
+  // Função para excluir categoria
+  const handleDeleteCategoria = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta categoria?')) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/categorias-servico/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        toast.success('Categoria excluída com sucesso!')
+        loadCategorias()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Erro ao excluir categoria')
+      }
+    } catch (error) {
+      console.error('[PERFIL] erro ao excluir categoria:', error)
+      toast.error('Erro ao excluir categoria')
+    }
+  }
 
   const handleSubmit = () => {
     const formData = new FormData()
@@ -292,6 +410,161 @@ export default function PerfilPage() {
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Categorias de Serviço (apenas Master) */}
+      {userRole === 'master' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Tags className="w-5 h-5 text-[#9C66FF]" />
+                  Categorias de Serviço
+                </CardTitle>
+                <CardDescription>
+                  Gerencie as categorias de serviços prestados
+                </CardDescription>
+              </div>
+              {!mostrarFormCategoria && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setMostrarFormCategoria(true)
+                    setCategoriaEditando(null)
+                    setCategoriaNome('')
+                    setCategoriaDescricao('')
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova Categoria
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Formulário de criar/editar categoria */}
+            {mostrarFormCategoria && (
+              <div className="p-4 border rounded-lg bg-zinc-50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-zinc-900">
+                    {categoriaEditando ? 'Editar Categoria' : 'Nova Categoria'}
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setMostrarFormCategoria(false)
+                      setCategoriaEditando(null)
+                      setCategoriaNome('')
+                      setCategoriaDescricao('')
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-700">
+                    Nome da Categoria <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    placeholder="Ex: Limpa Nome, Rating/Score"
+                    value={categoriaNome}
+                    onChange={(e) => setCategoriaNome(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-700">
+                    Descrição (opcional)
+                  </label>
+                  <Input
+                    placeholder="Descrição da categoria"
+                    value={categoriaDescricao}
+                    onChange={(e) => setCategoriaDescricao(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSaveCategoria}
+                    className="bg-[#9C66FF] hover:bg-[#8450e6] text-white"
+                    size="sm"
+                  >
+                    {categoriaEditando ? 'Atualizar' : 'Criar'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setMostrarFormCategoria(false)
+                      setCategoriaEditando(null)
+                      setCategoriaNome('')
+                      setCategoriaDescricao('')
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Lista de categorias */}
+            {carregandoCategorias ? (
+              <div className="text-center py-4 text-zinc-500">
+                Carregando categorias...
+              </div>
+            ) : categorias.length === 0 ? (
+              <div className="text-center py-8 text-zinc-500">
+                <Tags className="w-12 h-12 mx-auto mb-2 text-zinc-300" />
+                <p>Nenhuma categoria cadastrada</p>
+                <p className="text-sm mt-1">
+                  Clique em "Nova Categoria" para criar uma
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {categorias.map((categoria) => (
+                  <div
+                    key={categoria.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-zinc-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <h4 className="font-medium text-zinc-900">
+                        {categoria.nome}
+                      </h4>
+                      {categoria.descricao && (
+                        <p className="text-sm text-zinc-500 mt-1">
+                          {categoria.descricao}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditCategoria(categoria)}
+                        className="h-8 w-8"
+                      >
+                        <Edit className="w-4 h-4 text-zinc-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteCategoria(categoria.id)}
+                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

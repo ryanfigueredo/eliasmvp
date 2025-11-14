@@ -1,4 +1,3 @@
-// components/EditarLoteModal.tsx
 'use client'
 
 import {
@@ -7,35 +6,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useState, useTransition, useEffect } from 'react'
-import { Pencil } from 'lucide-react'
+import { Edit } from 'lucide-react'
 
-interface EditarLoteModalProps {
-  loteId: string
-  nomeAtual: string
-  inicioAtual: string
-  fimAtual: string
+interface EditarCategoriaDocumentoModalProps {
+  documentoId: string
   categoriaAtualId?: string | null
+  categoriaAtualNome?: string | null
   onUpdated?: () => void
 }
 
-export default function EditarLoteModal({
-  loteId,
-  nomeAtual,
-  inicioAtual,
-  fimAtual,
+export default function EditarCategoriaDocumentoModal({
+  documentoId,
   categoriaAtualId,
+  categoriaAtualNome,
   onUpdated,
-}: EditarLoteModalProps) {
+}: EditarCategoriaDocumentoModalProps) {
   const [open, setOpen] = useState(false)
-  const [nome, setNome] = useState(nomeAtual)
-  const [inicio, setInicio] = useState(inicioAtual.split('T')[0]) // Formatar como yyyy-mm-dd
-  const [fim, setFim] = useState(fimAtual.split('T')[0])
   const [categoriaId, setCategoriaId] = useState<string>(categoriaAtualId || '')
   const [categorias, setCategorias] = useState<
     Array<{ id: string; nome: string; descricao: string | null }>
@@ -69,37 +59,45 @@ export default function EditarLoteModal({
     }
   }, [open])
 
+  // Resetar categoria quando abrir o modal
+  useEffect(() => {
+    if (open) {
+      setCategoriaId(categoriaAtualId || '')
+    }
+  }, [open, categoriaAtualId])
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    if (!nome || !inicio || !fim) {
-      return toast.error('Preencha todos os campos obrigatórios.')
-    }
-
     startTransition(async () => {
       try {
-        const res = await fetch(`/api/lotes/${loteId}`, {
-          method: 'PUT',
+        const res = await fetch(`/api/document/${documentoId}`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            nome,
-            inicio,
-            fim,
             categoriaServicoId: categoriaId || null,
           }),
         })
 
         if (res.ok) {
-          toast.success('Lote atualizado com sucesso!')
+          toast.success('Categoria atualizada com sucesso!')
           setOpen(false)
           if (onUpdated) onUpdated()
-          window.location.reload()
         } else {
-          toast.error('Erro ao atualizar lote.')
+          const data = await res.json().catch(() => ({}))
+          
+          // Se a tabela não existir (503), fechar modal silenciosamente
+          if (res.status === 503) {
+            setCategoriasDisponiveis(false)
+            setOpen(false)
+            return
+          }
+          
+          toast.error(data.message || 'Erro ao atualizar categoria.')
         }
       } catch (error) {
         console.error(error)
-        toast.error('Erro inesperado.')
+        toast.error('Erro inesperado ao atualizar categoria.')
       }
     })
   }
@@ -107,60 +105,46 @@ export default function EditarLoteModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center gap-1">
-          <Pencil className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Edit className="w-4 h-4 text-[#9C66FF]" />
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-md border bg-white rounded-xl shadow-xl px-6 py-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
-            Editar Lote
+            Editar Categoria do Documento
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Nome do lote</label>
-            <Input
-              placeholder="Nome do lote"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              required
-            />
+        {!categoriasDisponiveis ? (
+          <div className="py-8 text-center">
+            <p className="text-sm text-zinc-500 mb-4">
+              Funcionalidade de categorias ainda não está disponível neste ambiente.
+            </p>
+            <p className="text-xs text-zinc-400">
+              A migração do banco de dados precisa ser aplicada para habilitar esta funcionalidade.
+            </p>
           </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Data de início</label>
-            <Input
-              type="date"
-              value={inicio}
-              onChange={(e) => setInicio(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Data de fim</label>
-            <Input
-              type="date"
-              value={fim}
-              onChange={(e) => setFim(e.target.value)}
-              required
-            />
-          </div>
-
-          {categoriasDisponiveis && (
-            <div className="space-y-1">
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            <div className="space-y-2">
               <label className="text-sm font-medium">
-                Categoria de Serviço (opcional)
+                Categoria atual:{' '}
+                <span className="text-zinc-500 font-normal">
+                  {categoriaAtualNome || 'Sem categoria'}
+                </span>
               </label>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Nova Categoria</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm"
                 value={categoriaId}
                 onChange={(e) => setCategoriaId(e.target.value)}
               >
-                <option value="">Nenhuma categoria</option>
+                <option value="">Sem categoria</option>
                 {categorias.map((categoria) => (
                   <option key={categoria.id} value={categoria.id}>
                     {categoria.nome}
@@ -173,20 +157,23 @@ export default function EditarLoteModal({
                 </p>
               )}
             </div>
-          )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
                 Cancelar
               </Button>
-            </DialogClose>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Salvando...' : 'Salvar alterações'}
-            </Button>
-          </div>
-        </form>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   )
 }
+

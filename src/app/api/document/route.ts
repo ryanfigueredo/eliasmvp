@@ -384,7 +384,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Tentar buscar com categoriaServico primeiro, se falhar, buscar sem ela
-    let documentos
+    let documentos: any[] = []
+    let categoriaExiste = true
+
     try {
       documentos = await prisma.document.findMany({
         where,
@@ -434,40 +436,113 @@ export async function GET(req: NextRequest) {
         console.log(
           '⚠️ Coluna categoriaServicoId não existe, buscando sem ela...',
         )
+        categoriaExiste = false
+        
+        // Tentar buscar sem categoriaServico usando query raw SQL
         try {
-          documentos = await prisma.document.findMany({
-            where,
-            include: {
-              user: {
-                select: {
-                  name: true,
-                  admin: { select: { name: true } },
-                },
-              },
-              cliente: {
-                select: {
-                  id: true,
-                  nome: true,
-                  cpfCnpj: true,
-                  valor: true,
-                  limite: true,
-                  user: { select: { name: true } },
-                },
-              },
-              lote: {
-                select: {
-                  id: true,
-                  nome: true,
-                  inicio: true,
-                  fim: true,
-                },
-              },
-            },
-            orderBy: { updatedAt: 'desc' },
-          })
-        } catch (fallbackError: any) {
-          console.error('Erro no fallback:', fallbackError)
-          throw fallbackError
+          // Construir condições WHERE dinamicamente
+          const conditions: string[] = [`d."ownerId" = '${ownerId}'`]
+          
+          if (clienteId) {
+            conditions.push(`d."clienteId" = '${clienteId}'`)
+          }
+          
+          if (loteId) {
+            conditions.push(`d."loteId" = '${loteId}'`)
+          }
+          
+          if (role === 'consultor' && userId) {
+            conditions.push(`d."userId" = '${userId}'`)
+          }
+          
+          if (role === 'admin' && userId) {
+            // Admin pode ver documentos dele ou dos consultores dele
+            conditions.push(`(d."userId" = '${userId}' OR u."adminId" = '${userId}')`)
+          }
+          
+          const whereClause = conditions.join(' AND ')
+          
+          // Buscar os documentos usando query raw
+          const docs = await prisma.$queryRawUnsafe<any[]>(`
+            SELECT 
+              d.id,
+              d."userId",
+              d."clienteId",
+              d."loteId",
+              d.valor,
+              d.tipo,
+              d.orgao,
+              d.status,
+              d."fileUrl",
+              d."agrupadorId",
+              d."ownerId",
+              d."createdAt",
+              d."updatedAt",
+              u.name as "userName",
+              a.name as "adminName",
+              c.id as "clienteId",
+              c.nome as "clienteNome",
+              c."cpfCnpj" as "clienteCpfCnpj",
+              c.valor as "clienteValor",
+              c.limite as "clienteLimite",
+              l.id as "loteId",
+              l.nome as "loteNome",
+              l.inicio as "loteInicio",
+              l.fim as "loteFim"
+            FROM "Document" d
+            LEFT JOIN "User" u ON d."userId" = u.id
+            LEFT JOIN "User" a ON u."adminId" = a.id
+            LEFT JOIN "Cliente" c ON d."clienteId" = c.id
+            LEFT JOIN "Lote" l ON d."loteId" = l.id
+            WHERE ${whereClause}
+            ORDER BY d."updatedAt" DESC
+          `)
+
+          // Transformar os resultados para o formato esperado
+          documentos = docs.map((doc: any) => ({
+            id: doc.id,
+            userId: doc.userId,
+            clienteId: doc.clienteId,
+            loteId: doc.loteId,
+            valor: parseFloat(doc.valor),
+            tipo: doc.tipo,
+            orgao: doc.orgao,
+            status: doc.status,
+            fileUrl: doc.fileUrl,
+            agrupadorId: doc.agrupadorId,
+            ownerId: doc.ownerId,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            user: doc.userName
+              ? {
+                  name: doc.userName,
+                  admin: doc.adminName ? { name: doc.adminName } : undefined,
+                }
+              : undefined,
+            cliente: doc.clienteId
+              ? {
+                  id: doc.clienteId,
+                  nome: doc.clienteNome,
+                  cpfCnpj: doc.clienteCpfCnpj,
+                  valor: parseFloat(doc.clienteValor || 0),
+                  limite: parseFloat(doc.clienteLimite || 0),
+                  user: undefined,
+                }
+              : undefined,
+            lote: doc.loteId
+              ? {
+                  id: doc.loteId,
+                  nome: doc.loteNome,
+                  inicio: doc.loteInicio,
+                  fim: doc.loteFim,
+                }
+              : undefined,
+            categoriaServico: null,
+          }))
+        } catch (rawError: any) {
+          console.error('Erro no fallback com query raw:', rawError)
+          // Se ainda falhar, tentar uma abordagem mais simples
+          throw rawError
         }
       } else {
         throw error

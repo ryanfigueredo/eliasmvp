@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ReactNode } from 'react'
-import { Home, Users, UserCheck, FileText, ListChecks } from 'lucide-react'
+import { Home, Users, UserCheck, FileText, ListChecks, Tags } from 'lucide-react'
 
 export function SidebarContent({
   role,
@@ -46,6 +46,16 @@ export function SidebarContent({
           collapsed={collapsed}
         >
           Histórico
+        </SidebarLink>
+      )}
+
+      {role === 'master' && (
+        <SidebarLink
+          href="/categorias"
+          icon={<Tags className="w-5 h-5" />}
+          collapsed={collapsed}
+        >
+          Categorias
         </SidebarLink>
       )}
     </nav>

@@ -41,13 +41,37 @@ export async function PUT(
   }
 
   try {
+    // Preparar dados de atualização
+    const updateData: any = {
+      nome: body.nome,
+      inicio: new Date(body.inicio),
+      fim: new Date(body.fim),
+    }
+
+    // Adicionar categoriaServicoId se fornecido e se a coluna existir
+    if (body.categoriaServicoId !== undefined) {
+      updateData.categoriaServicoId = body.categoriaServicoId || null
+    }
+
     const loteAtualizado = await prisma.lote.update({
       where: { id: loteId },
-      data: {
-        nome: body.nome,
-        inicio: new Date(body.inicio),
-        fim: new Date(body.fim),
-      },
+      data: updateData,
+    }).catch((error: any) => {
+      // Se a coluna categoriaServicoId não existir, tentar atualizar sem ela
+      if (
+        error?.code === 'P2022' ||
+        error?.message?.includes('categoriaServicoId')
+      ) {
+        console.log(
+          '⚠️ Coluna categoriaServicoId não existe no Lote, atualizando sem ela...',
+        )
+        delete updateData.categoriaServicoId
+        return prisma.lote.update({
+          where: { id: loteId },
+          data: updateData,
+        })
+      }
+      throw error
     })
 
     return NextResponse.json(loteAtualizado)

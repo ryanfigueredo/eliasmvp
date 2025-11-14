@@ -60,9 +60,14 @@ export default function NovoDocumentoModal({
     })),
   )
   const [categoriaId, setCategoriaId] = useState<string>('')
+  const [categoriaInput, setCategoriaInput] = useState<string>('')
+  const [mostrarCategoriasDropdown, setMostrarCategoriasDropdown] =
+    useState(false)
+  const [criandoCategoria, setCriandoCategoria] = useState(false)
   const [categorias, setCategorias] = useState<
     Array<{ id: string; nome: string; descricao: string | null }>
   >([])
+  const [categoriasDisponiveis, setCategoriasDisponiveis] = useState(true)
 
   const [loteIdState, setLoteIdState] = useState(loteId || '')
   const [lotes, setLotes] = useState<Lote[]>([])
@@ -95,17 +100,96 @@ export default function NovoDocumentoModal({
 
     // Buscar categorias de serviços
     fetch('/api/categorias-servico')
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 503) {
+          // Funcionalidade não disponível neste ambiente
+          setCategoriasDisponiveis(false)
+          setCategorias([])
+          return
+        }
+        return res.json()
+      })
       .then((data) => {
         if (Array.isArray(data)) {
           setCategorias(data)
+          setCategoriasDisponiveis(true)
         }
       })
       .catch((err) => {
         console.error('Erro ao buscar categorias:', err)
         setCategorias([])
+        setCategoriasDisponiveis(false)
       })
   }, [userId])
+
+  // Função para criar nova categoria
+  const handleCriarCategoria = async (nome: string) => {
+    if (!nome.trim()) return
+
+    setCriandoCategoria(true)
+    try {
+      const res = await fetch('/api/categorias-servico', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: nome.trim(),
+          descricao: null,
+        }),
+      })
+
+      if (res.ok) {
+        const novaCategoria = await res.json()
+        setCategorias((prev) => [...prev, novaCategoria])
+        setCategoriaId(novaCategoria.id)
+        setCategoriaInput(novaCategoria.nome)
+        setMostrarCategoriasDropdown(false)
+        toast.success('Categoria criada com sucesso!')
+        } else {
+          const data = await res.json().catch(() => ({}))
+          
+          // Se a tabela não existir (503), não mostrar erro, apenas silenciosamente não criar
+          if (res.status === 503) {
+            setCategoriasDisponiveis(false)
+            setCategoriaInput('')
+            setCategoriaId('')
+            // Não mostrar toast de erro, apenas silenciosamente falhar
+            return
+          } else {
+            toast.error(data.message || 'Erro ao criar categoria')
+          }
+        }
+    } catch (error) {
+      console.error('Erro ao criar categoria:', error)
+      toast.error(
+        'Erro ao criar categoria. Verifique sua conexão e tente novamente.'
+      )
+    } finally {
+      setCriandoCategoria(false)
+    }
+  }
+
+  // Filtrar categorias baseado no input
+  const categoriasFiltradas = categoriaInput
+    ? categorias.filter((cat) =>
+        cat.nome.toLowerCase().includes(categoriaInput.toLowerCase()),
+      )
+    : categorias
+
+  // Verificar se o input corresponde a uma categoria existente
+  const categoriaExiste = categorias.some(
+    (cat) => cat.nome.toLowerCase() === categoriaInput.toLowerCase(),
+  )
+
+  // Quando selecionar uma categoria do dropdown
+  const handleSelecionarCategoria = (categoria: {
+    id: string
+    nome: string
+    descricao: string | null
+  }) => {
+    setCategoriaId(categoria.id)
+    setCategoriaInput(categoria.nome)
+    setMostrarCategoriasDropdown(false)
+  }
 
   // Atualiza o loteId quando a prop mudar
   useEffect(() => {
@@ -184,8 +268,13 @@ export default function NovoDocumentoModal({
       return
     }
 
-    if (!nome || !cpfCnpj || !valor || !loteIdState || !categoriaId) {
+    if (!nome || !cpfCnpj || !valor || !loteIdState) {
       return toast.error('Preencha todos os campos obrigatórios.')
+    }
+
+    // Só exigir categoria se a funcionalidade estiver disponível
+    if (categoriasDisponiveis && !categoriaId) {
+      return toast.error('Selecione uma categoria de serviço.')
     }
 
     if (!isValidCpfCnpj(cpfCnpj)) {
@@ -342,13 +431,18 @@ export default function NovoDocumentoModal({
               { file: rg, tipo: 'RG', descricao: 'RG' },
               { file: consulta, tipo: 'CONSULTA', descricao: 'Consulta' },
               { file: contrato, tipo: 'CONTRATO', descricao: 'Contrato' },
-              { file: comprovante, tipo: 'COMPROVANTE', descricao: 'Comprovante de Pagamento' },
+              {
+                file: comprovante,
+                tipo: 'COMPROVANTE',
+                descricao: 'Comprovante de Pagamento',
+              },
               ...documentosAdicionais
                 .filter((doc) => doc.file)
                 .map((doc, index) => ({
                   file: doc.file!,
                   tipo: `ADICIONAL_${index + 1}`,
-                  descricao: doc.descricao || `Documento Adicional ${index + 1}`,
+                  descricao:
+                    doc.descricao || `Documento Adicional ${index + 1}`,
                 })),
             ].filter(({ file }) => file)
 
@@ -430,12 +524,15 @@ export default function NovoDocumentoModal({
             if (consulta) formData.append('consulta', consulta)
             if (contrato) formData.append('contrato', contrato)
             if (comprovante) formData.append('comprovante', comprovante)
-            
+
             // Adicionar documentos adicionais
             documentosAdicionais.forEach((doc, index) => {
               if (doc.file) {
                 formData.append(`adicional_${index + 1}`, doc.file)
-                formData.append(`adicional_${index + 1}_descricao`, doc.descricao || `Documento Adicional ${index + 1}`)
+                formData.append(
+                  `adicional_${index + 1}_descricao`,
+                  doc.descricao || `Documento Adicional ${index + 1}`,
+                )
               }
             })
 
@@ -605,150 +702,234 @@ export default function NovoDocumentoModal({
 
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="usarLimite"
-                checked={usarLimite}
-                onChange={(e) => {
-                  setUsarLimite(e.target.checked)
-                  if (!e.target.checked) {
-                    setLimite('')
-                  }
-                }}
-                className="h-4 w-4 text-[#9C66FF] focus:ring-[#9C66FF] border-gray-300 rounded"
-              />
-              <label
-                htmlFor="usarLimite"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Definir limite de crédito
-                <span className="text-xs text-zinc-500 ml-1">
-                  (mín. R$ 500)
-                </span>
-              </label>
-            </div>
-            {usarLimite && (
-              <Input
-                type="text"
-                placeholder="R$ 0,00"
-                value={limite}
-                onChange={(e) => setLimite(formatCurrency(e.target.value))}
-              />
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Categoria de Serviço <span className="text-red-500">*</span>
-            </label>
-            <select
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={categoriaId}
-              onChange={(e) => setCategoriaId(e.target.value)}
-              required
-            >
-              <option value="">Selecione uma categoria</option>
-              {categorias.map((categoria) => (
-                <option key={categoria.id} value={categoria.id}>
-                  {categoria.nome}
-                </option>
-              ))}
-            </select>
-            {categorias.length === 0 && (
-              <p className="text-xs text-zinc-500">
-                Nenhuma categoria cadastrada. Crie uma na página de configurações.
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Lote</label>
-            <select
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={loteIdState}
-              onChange={(e) => setLoteIdState(e.target.value)}
-              required
-              disabled={!!loteId}
-            >
-              <option value="">Selecione um lote</option>
-              {Array.isArray(lotes) &&
-                lotes.map((lote) => (
-                  <option key={lote.id} value={lote.id}>
-                    {lote.nome} ({new Date(lote.inicio).toLocaleDateString()}{' '}
-                    até {new Date(lote.fim).toLocaleDateString()})
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Documento: RG</label>
-            <Input
-              type="file"
-              onChange={(e) => setRg(e.target.files?.[0] ?? null)}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Documento: Consulta</label>
-            <Input
-              type="file"
-              onChange={(e) => setConsulta(e.target.files?.[0] ?? null)}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Documento: Contrato</label>
-            <Input
-              type="file"
-              onChange={(e) => setContrato(e.target.files?.[0] ?? null)}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Comprovante de Pagamento
-            </label>
-            <Input
-              type="file"
-              onChange={(e) => setComprovante(e.target.files?.[0] ?? null)}
-            />
-          </div>
-
-          <div className="space-y-3 pt-2 border-t">
-            <label className="text-sm font-medium text-zinc-700">
-              Documentos Adicionais
-            </label>
-            {documentosAdicionais.map((doc, index) => (
-              <div key={index} className="space-y-1">
+                <input
+                  type="checkbox"
+                  id="usarLimite"
+                  checked={usarLimite}
+                  onChange={(e) => {
+                    setUsarLimite(e.target.checked)
+                    if (!e.target.checked) {
+                      setLimite('')
+                    }
+                  }}
+                  className="h-4 w-4 text-[#9C66FF] focus:ring-[#9C66FF] border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="usarLimite"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Definir limite de crédito
+                  <span className="text-xs text-zinc-500 ml-1">
+                    (mín. R$ 500)
+                  </span>
+                </label>
+              </div>
+              {usarLimite && (
                 <Input
                   type="text"
-                  placeholder={`Descrição do documento ${index + 1} (opcional)`}
-                  value={doc.descricao}
-                  onChange={(e) => {
-                    const novos = [...documentosAdicionais]
-                    novos[index].descricao = e.target.value
-                    setDocumentosAdicionais(novos)
-                  }}
-                  className="text-sm"
+                  placeholder="R$ 0,00"
+                  value={limite}
+                  onChange={(e) => setLimite(formatCurrency(e.target.value))}
                 />
-                <Input
-                  type="file"
-                  onChange={(e) => {
-                    const novos = [...documentosAdicionais]
-                    novos[index].file = e.target.files?.[0] ?? null
-                    setDocumentosAdicionais(novos)
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-
-          {uploadProgress && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-sm text-blue-800">{uploadProgress}</p>
+              )}
             </div>
-          )}
+
+             {categoriasDisponiveis && (
+               <div className="space-y-1 relative">
+                 <label className="text-sm font-medium">
+                   Categoria de Serviço <span className="text-red-500">*</span>
+                 </label>
+                 <div className="relative">
+                   <Input
+                     type="text"
+                     placeholder="Digite ou selecione uma categoria"
+                     value={categoriaInput}
+                     onChange={(e) => {
+                       setCategoriaInput(e.target.value)
+                       setMostrarCategoriasDropdown(true)
+
+                       // Se encontrar uma correspondência exata, selecionar
+                       const categoriaExata = categorias.find(
+                         (cat) =>
+                           cat.nome.toLowerCase() === e.target.value.toLowerCase(),
+                       )
+                       if (categoriaExata) {
+                         setCategoriaId(categoriaExata.id)
+                       } else {
+                         setCategoriaId('')
+                       }
+                     }}
+                     onKeyDown={(e) => {
+                       if (
+                         e.key === 'Enter' &&
+                         categoriaInput &&
+                         !categoriaExiste
+                       ) {
+                       e.preventDefault()
+                       handleCriarCategoria(categoriaInput)
+                       }
+                     }}
+                     onFocus={() => setMostrarCategoriasDropdown(true)}
+                     onBlur={() => {
+                       // Delay para permitir clique no dropdown
+                       setTimeout(() => setMostrarCategoriasDropdown(false), 200)
+                     }}
+                     required={!categoriaId}
+                     className="pr-10"
+                   />
+
+                 {/* Dropdown de categorias */}
+                 {mostrarCategoriasDropdown && (
+                   <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                     {categoriaInput && !categoriaExiste && categorias.length >= 0 && (
+                       <button
+                         type="button"
+                         onClick={() => handleCriarCategoria(categoriaInput)}
+                         disabled={criandoCategoria || !categoriaInput.trim()}
+                         className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 flex items-center gap-2 text-[#9C66FF] font-medium border-b disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                         <span className="text-lg">+</span>
+                         {criandoCategoria
+                           ? 'Criando...'
+                           : `Criar "${categoriaInput.trim()}"`}
+                       </button>
+                     )}
+
+                    {categoriasFiltradas.length > 0 ? (
+                      categoriasFiltradas.map((categoria) => (
+                        <button
+                          key={categoria.id}
+                          type="button"
+                          onClick={() => handleSelecionarCategoria(categoria)}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 transition-colors"
+                        >
+                          <div className="font-medium">{categoria.nome}</div>
+                          {categoria.descricao && (
+                            <div className="text-xs text-zinc-500 mt-0.5">
+                              {categoria.descricao}
+                            </div>
+                          )}
+                        </button>
+                      ))
+                    ) : categoriaInput ? (
+                      <div className="px-4 py-2 text-sm text-zinc-500">
+                        Nenhuma categoria encontrada
+                      </div>
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-zinc-500">
+                        Digite para buscar ou criar uma categoria
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {!categoriaId && categoriaInput && (
+                <p className="text-xs text-zinc-500 flex items-center gap-1">
+                  <span></span>
+                  <span>
+                    Pressione Enter ou clique em "Criar" para criar uma nova
+                    categoria
+                  </span>
+                </p>
+              )}
+
+               {!categoriaInput && categorias.length === 0 && (
+                 <p className="text-xs text-zinc-500">
+                   Digite o nome de uma nova categoria para criar
+                 </p>
+               )}
+               </div>
+             )}
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Lote</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={loteIdState}
+                onChange={(e) => setLoteIdState(e.target.value)}
+                required
+                disabled={!!loteId}
+              >
+                <option value="">Selecione um lote</option>
+                {Array.isArray(lotes) &&
+                  lotes.map((lote) => (
+                    <option key={lote.id} value={lote.id}>
+                      {lote.nome} ({new Date(lote.inicio).toLocaleDateString()}{' '}
+                      até {new Date(lote.fim).toLocaleDateString()})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Documento: RG</label>
+              <Input
+                type="file"
+                onChange={(e) => setRg(e.target.files?.[0] ?? null)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Documento: Consulta</label>
+              <Input
+                type="file"
+                onChange={(e) => setConsulta(e.target.files?.[0] ?? null)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Documento: Contrato</label>
+              <Input
+                type="file"
+                onChange={(e) => setContrato(e.target.files?.[0] ?? null)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium">
+                Comprovante de Pagamento
+              </label>
+              <Input
+                type="file"
+                onChange={(e) => setComprovante(e.target.files?.[0] ?? null)}
+              />
+            </div>
+
+            <div className="space-y-3 pt-2 border-t">
+              <label className="text-sm font-medium text-zinc-700">
+                Documentos Adicionais
+              </label>
+              {documentosAdicionais.map((doc, index) => (
+                <div key={index} className="space-y-1">
+                  <Input
+                    type="text"
+                    placeholder={`Descrição do documento ${index + 1} (opcional)`}
+                    value={doc.descricao}
+                    onChange={(e) => {
+                      const novos = [...documentosAdicionais]
+                      novos[index].descricao = e.target.value
+                      setDocumentosAdicionais(novos)
+                    }}
+                    className="text-sm"
+                  />
+                  <Input
+                    type="file"
+                    onChange={(e) => {
+                      const novos = [...documentosAdicionais]
+                      novos[index].file = e.target.files?.[0] ?? null
+                      setDocumentosAdicionais(novos)
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {uploadProgress && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">{uploadProgress}</p>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 mt-4">

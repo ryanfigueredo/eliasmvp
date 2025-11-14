@@ -98,10 +98,18 @@ async function createCategoria(req: NextRequest) {
       return NextResponse.json(categoria, { status: 201 })
     } catch (error: any) {
       // Se a tabela não existir (P2021), retorna erro específico
-      if (error?.code === 'P2021' || error?.message?.includes('CategoriaServico')) {
+      if (
+        error?.code === 'P2021' ||
+        error?.message?.includes('CategoriaServico') ||
+        error?.message?.includes('does not exist')
+      ) {
         console.log('⚠️ Tabela CategoriaServico não existe')
         return NextResponse.json(
-          { message: 'Funcionalidade de categorias ainda não disponível neste ambiente' },
+          {
+            message:
+              'Funcionalidade de categorias ainda não disponível neste ambiente. A migração do banco de dados precisa ser aplicada.',
+            code: 'TABLE_NOT_EXISTS',
+          },
           { status: 503 },
         )
       }
@@ -109,6 +117,23 @@ async function createCategoria(req: NextRequest) {
     }
   } catch (error: any) {
     console.error('Erro ao criar categoria:', error)
+    
+    // Verificar se é erro de tabela não existente no catch externo também
+    if (
+      error?.code === 'P2021' ||
+      error?.message?.includes('CategoriaServico') ||
+      error?.message?.includes('does not exist')
+    ) {
+      return NextResponse.json(
+        {
+          message:
+            'Funcionalidade de categorias ainda não disponível neste ambiente. A migração do banco de dados precisa ser aplicada.',
+          code: 'TABLE_NOT_EXISTS',
+        },
+        { status: 503 },
+      )
+    }
+    
     return NextResponse.json(
       { message: 'Erro ao criar categoria', error: error.message },
       { status: 500 },
