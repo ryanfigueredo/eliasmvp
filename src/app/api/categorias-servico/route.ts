@@ -19,17 +19,26 @@ async function getCategorias(req: NextRequest) {
 
     const masterId = await getMasterId(token.id as string)
 
-    const categorias = await prisma.categoriaServico.findMany({
-      where: {
-        ownerId: masterId,
-        ativo: true,
-      },
-      orderBy: {
-        nome: 'asc',
-      },
-    })
+    try {
+      const categorias = await prisma.categoriaServico.findMany({
+        where: {
+          ownerId: masterId,
+          ativo: true,
+        },
+        orderBy: {
+          nome: 'asc',
+        },
+      })
 
-    return NextResponse.json(categorias)
+      return NextResponse.json(categorias)
+    } catch (error: any) {
+      // Se a tabela não existir (P2021), retorna array vazio
+      if (error?.code === 'P2021' || error?.message?.includes('CategoriaServico')) {
+        console.log('⚠️ Tabela CategoriaServico não existe, retornando array vazio')
+        return NextResponse.json([])
+      }
+      throw error
+    }
   } catch (error: any) {
     console.error('Erro ao buscar categorias:', error)
     return NextResponse.json(
@@ -62,30 +71,42 @@ async function createCategoria(req: NextRequest) {
 
     const masterId = await getMasterId(token.id as string)
 
-    // Verificar se já existe categoria com mesmo nome
-    const existente = await prisma.categoriaServico.findFirst({
-      where: {
-        nome: nome.trim(),
-        ownerId: masterId,
-      },
-    })
+    try {
+      // Verificar se já existe categoria com mesmo nome
+      const existente = await prisma.categoriaServico.findFirst({
+        where: {
+          nome: nome.trim(),
+          ownerId: masterId,
+        },
+      })
 
-    if (existente) {
-      return NextResponse.json(
-        { message: 'Já existe uma categoria com este nome' },
-        { status: 400 },
-      )
+      if (existente) {
+        return NextResponse.json(
+          { message: 'Já existe uma categoria com este nome' },
+          { status: 400 },
+        )
+      }
+
+      const categoria = await prisma.categoriaServico.create({
+        data: {
+          nome: nome.trim(),
+          descricao: descricao?.trim() || null,
+          ownerId: masterId,
+        },
+      })
+
+      return NextResponse.json(categoria, { status: 201 })
+    } catch (error: any) {
+      // Se a tabela não existir (P2021), retorna erro específico
+      if (error?.code === 'P2021' || error?.message?.includes('CategoriaServico')) {
+        console.log('⚠️ Tabela CategoriaServico não existe')
+        return NextResponse.json(
+          { message: 'Funcionalidade de categorias ainda não disponível neste ambiente' },
+          { status: 503 },
+        )
+      }
+      throw error
     }
-
-    const categoria = await prisma.categoriaServico.create({
-      data: {
-        nome: nome.trim(),
-        descricao: descricao?.trim() || null,
-        ownerId: masterId,
-      },
-    })
-
-    return NextResponse.json(categoria, { status: 201 })
   } catch (error: any) {
     console.error('Erro ao criar categoria:', error)
     return NextResponse.json(

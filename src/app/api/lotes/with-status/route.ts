@@ -54,46 +54,89 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const lotes = await prisma.lote.findMany({
-      where: {
-        ownerId,
-        ...(userIds.length > 0
-          ? {
-              OR: [
-                { documentos: { some: { userId: { in: userIds } } } },
-                { criadoPorId: { in: userIds } },
-              ],
-            }
-          : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        documentos: {
-          where: {
-            ...(statusFiltro &&
-              Object.values(DocumentoStatus).includes(
-                statusFiltro as DocumentoStatus,
-              ) && { status: statusFiltro as DocumentoStatus }),
-            ...(userIdFiltro && { userId: userIdFiltro }),
-          },
-          select: { 
-            status: true,
-            categoriaServico: {
-              select: {
-                id: true,
-                nome: true,
+    // Tentar buscar com categoriaServico primeiro
+    let lotes
+    try {
+      lotes = await prisma.lote.findMany({
+        where: {
+          ownerId,
+          ...(userIds.length > 0
+            ? {
+                OR: [
+                  { documentos: { some: { userId: { in: userIds } } } },
+                  { criadoPorId: { in: userIds } },
+                ],
               }
-            }
+            : {}),
+        },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          documentos: {
+            where: {
+              ...(statusFiltro &&
+                Object.values(DocumentoStatus).includes(
+                  statusFiltro as DocumentoStatus,
+                ) && { status: statusFiltro as DocumentoStatus }),
+              ...(userIdFiltro && { userId: userIdFiltro }),
+            },
+            select: { 
+              status: true,
+              categoriaServico: {
+                select: {
+                  id: true,
+                  nome: true,
+                }
+              }
+            },
           },
         },
-      },
-    })
+      })
+    } catch (error: any) {
+      // Se a coluna categoriaServicoId não existir, buscar sem ela
+      if (
+        error?.code === 'P2022' ||
+        error?.message?.includes('categoriaServicoId') ||
+        error?.message?.includes('categoriaServico')
+      ) {
+        console.log('⚠️ Coluna categoriaServicoId não existe, buscando sem ela...')
+        lotes = await prisma.lote.findMany({
+          where: {
+            ownerId,
+            ...(userIds.length > 0
+              ? {
+                  OR: [
+                    { documentos: { some: { userId: { in: userIds } } } },
+                    { criadoPorId: { in: userIds } },
+                  ],
+                }
+              : {}),
+          },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            documentos: {
+              where: {
+                ...(statusFiltro &&
+                  Object.values(DocumentoStatus).includes(
+                    statusFiltro as DocumentoStatus,
+                  ) && { status: statusFiltro as DocumentoStatus }),
+                ...(userIdFiltro && { userId: userIdFiltro }),
+              },
+              select: { 
+                status: true,
+              },
+            },
+          },
+        })
+      } else {
+        throw error
+      }
+    }
 
     const lotesComStatus = lotes.map((lote) => {
-      // Extrair categorias únicas dos documentos do lote
+      // Extrair categorias únicas dos documentos do lote (se existir)
       const categoriasUnicas = Array.from(
         new Set(
-          lote.documentos
+          (lote.documentos as any[])
             .filter((doc) => doc.categoriaServico)
             .map((doc) => doc.categoriaServico?.nome)
             .filter(Boolean)
@@ -106,7 +149,7 @@ export async function GET(req: NextRequest) {
         inicio: lote.inicio,
         fim: lote.fim,
         status: lote.status || 'INICIADO',
-        categorias: categoriasUnicas,
+        categorias: categoriasUnicas || [],
       }
     })
 

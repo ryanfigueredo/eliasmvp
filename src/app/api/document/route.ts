@@ -426,41 +426,49 @@ export async function GET(req: NextRequest) {
       // Se a coluna categoriaServicoId não existir, buscar sem ela
       if (
         error?.code === 'P2022' ||
-        error?.message?.includes('categoriaServicoId')
+        error?.code === 'P2021' ||
+        error?.message?.includes('categoriaServicoId') ||
+        error?.message?.includes('CategoriaServico') ||
+        error?.message?.includes('categoriaServico')
       ) {
         console.log(
           '⚠️ Coluna categoriaServicoId não existe, buscando sem ela...',
         )
-        documentos = await prisma.document.findMany({
-          where,
-          include: {
-            user: {
-              select: {
-                name: true,
-                admin: { select: { name: true } },
+        try {
+          documentos = await prisma.document.findMany({
+            where,
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  admin: { select: { name: true } },
+                },
+              },
+              cliente: {
+                select: {
+                  id: true,
+                  nome: true,
+                  cpfCnpj: true,
+                  valor: true,
+                  limite: true,
+                  user: { select: { name: true } },
+                },
+              },
+              lote: {
+                select: {
+                  id: true,
+                  nome: true,
+                  inicio: true,
+                  fim: true,
+                },
               },
             },
-            cliente: {
-              select: {
-                id: true,
-                nome: true,
-                cpfCnpj: true,
-                valor: true,
-                limite: true,
-                user: { select: { name: true } },
-              },
-            },
-            lote: {
-              select: {
-                id: true,
-                nome: true,
-                inicio: true,
-                fim: true,
-              },
-            },
-          },
-          orderBy: { updatedAt: 'desc' },
-        })
+            orderBy: { updatedAt: 'desc' },
+          })
+        } catch (fallbackError: any) {
+          console.error('Erro no fallback:', fallbackError)
+          throw fallbackError
+        }
       } else {
         throw error
       }
