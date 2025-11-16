@@ -144,24 +144,24 @@ export default function NovoDocumentoModal({
         setCategoriaInput(novaCategoria.nome)
         setMostrarCategoriasDropdown(false)
         toast.success('Categoria criada com sucesso!')
+      } else {
+        const data = await res.json().catch(() => ({}))
+
+        // Se a tabela não existir (503), não mostrar erro, apenas silenciosamente não criar
+        if (res.status === 503) {
+          setCategoriasDisponiveis(false)
+          setCategoriaInput('')
+          setCategoriaId('')
+          // Não mostrar toast de erro, apenas silenciosamente falhar
+          return
         } else {
-          const data = await res.json().catch(() => ({}))
-          
-          // Se a tabela não existir (503), não mostrar erro, apenas silenciosamente não criar
-          if (res.status === 503) {
-            setCategoriasDisponiveis(false)
-            setCategoriaInput('')
-            setCategoriaId('')
-            // Não mostrar toast de erro, apenas silenciosamente falhar
-            return
-          } else {
-            toast.error(data.message || 'Erro ao criar categoria')
-          }
+          toast.error(data.message || 'Erro ao criar categoria')
         }
+      }
     } catch (error) {
       console.error('Erro ao criar categoria:', error)
       toast.error(
-        'Erro ao criar categoria. Verifique sua conexão e tente novamente.'
+        'Erro ao criar categoria. Verifique sua conexão e tente novamente.',
       )
     } finally {
       setCriandoCategoria(false)
@@ -625,9 +625,12 @@ export default function NovoDocumentoModal({
           }
 
           // Mensagem final de sucesso é disparada nas funções de upload quando apropriado
-        } catch (error) {
+        } catch (error: any) {
           console.error('💥 Erro inesperado:', error)
-          toast.error('Erro inesperado ao processar documentos.')
+          const message =
+            (error && (error.message || error.error || error.statusText)) ||
+            'Erro inesperado ao processar documentos.'
+          toast.error(message)
         }
       })()
     })
@@ -637,7 +640,7 @@ export default function NovoDocumentoModal({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-          className="bg-[#9C66FF] hover:bg-[#8450e6] text-white"
+          className="text-white"
           disabled={disabled}
           title={disabled ? disabledReason || 'Ação indisponível' : undefined}
         >
@@ -712,7 +715,7 @@ export default function NovoDocumentoModal({
                       setLimite('')
                     }
                   }}
-                  className="h-4 w-4 text-[#9C66FF] focus:ring-[#9C66FF] border-gray-300 rounded"
+                  className="h-4 w-4 text-[var(--brand-primary)] border-gray-300 rounded"
                 />
                 <label
                   htmlFor="usarLimite"
@@ -734,113 +737,118 @@ export default function NovoDocumentoModal({
               )}
             </div>
 
-             {categoriasDisponiveis && (
-               <div className="space-y-1 relative">
-                 <label className="text-sm font-medium">
-                   Categoria de Serviço <span className="text-red-500">*</span>
-                 </label>
-                 <div className="relative">
-                   <Input
-                     type="text"
-                     placeholder="Digite ou selecione uma categoria"
-                     value={categoriaInput}
-                     onChange={(e) => {
-                       setCategoriaInput(e.target.value)
-                       setMostrarCategoriasDropdown(true)
+            {categoriasDisponiveis && (
+              <div className="space-y-1 relative">
+                <label className="text-sm font-medium">
+                  Categoria de Serviço <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Digite ou selecione uma categoria"
+                    value={categoriaInput}
+                    onChange={(e) => {
+                      setCategoriaInput(e.target.value)
+                      setMostrarCategoriasDropdown(true)
 
-                       // Se encontrar uma correspondência exata, selecionar
-                       const categoriaExata = categorias.find(
-                         (cat) =>
-                           cat.nome.toLowerCase() === e.target.value.toLowerCase(),
-                       )
-                       if (categoriaExata) {
-                         setCategoriaId(categoriaExata.id)
-                       } else {
-                         setCategoriaId('')
-                       }
-                     }}
-                     onKeyDown={(e) => {
-                       if (
-                         e.key === 'Enter' &&
-                         categoriaInput &&
-                         !categoriaExiste
-                       ) {
-                       e.preventDefault()
-                       handleCriarCategoria(categoriaInput)
-                       }
-                     }}
-                     onFocus={() => setMostrarCategoriasDropdown(true)}
-                     onBlur={() => {
-                       // Delay para permitir clique no dropdown
-                       setTimeout(() => setMostrarCategoriasDropdown(false), 200)
-                     }}
-                     required={!categoriaId}
-                     className="pr-10"
-                   />
+                      // Se encontrar uma correspondência exata, selecionar
+                      const categoriaExata = categorias.find(
+                        (cat) =>
+                          cat.nome.toLowerCase() ===
+                          e.target.value.toLowerCase(),
+                      )
+                      if (categoriaExata) {
+                        setCategoriaId(categoriaExata.id)
+                      } else {
+                        setCategoriaId('')
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key === 'Enter' &&
+                        categoriaInput &&
+                        !categoriaExiste
+                      ) {
+                        e.preventDefault()
+                        handleCriarCategoria(categoriaInput)
+                      }
+                    }}
+                    onFocus={() => setMostrarCategoriasDropdown(true)}
+                    onBlur={() => {
+                      // Delay para permitir clique no dropdown
+                      setTimeout(() => setMostrarCategoriasDropdown(false), 200)
+                    }}
+                    required={!categoriaId}
+                    className="pr-10"
+                  />
 
-                 {/* Dropdown de categorias */}
-                 {mostrarCategoriasDropdown && (
-                   <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                     {categoriaInput && !categoriaExiste && categorias.length >= 0 && (
-                       <button
-                         type="button"
-                         onClick={() => handleCriarCategoria(categoriaInput)}
-                         disabled={criandoCategoria || !categoriaInput.trim()}
-                         className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 flex items-center gap-2 text-[#9C66FF] font-medium border-b disabled:opacity-50 disabled:cursor-not-allowed"
-                       >
-                         <span className="text-lg">+</span>
-                         {criandoCategoria
-                           ? 'Criando...'
-                           : `Criar "${categoriaInput.trim()}"`}
-                       </button>
-                     )}
+                  {/* Dropdown de categorias */}
+                  {mostrarCategoriasDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {categoriaInput &&
+                        !categoriaExiste &&
+                        categorias.length >= 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleCriarCategoria(categoriaInput)}
+                            disabled={
+                              criandoCategoria || !categoriaInput.trim()
+                            }
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 flex items-center gap-2 text-[var(--brand-primary)] font-medium border-b disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <span className="text-lg">+</span>
+                            {criandoCategoria
+                              ? 'Criando...'
+                              : `Criar "${categoriaInput.trim()}"`}
+                          </button>
+                        )}
 
-                    {categoriasFiltradas.length > 0 ? (
-                      categoriasFiltradas.map((categoria) => (
-                        <button
-                          key={categoria.id}
-                          type="button"
-                          onClick={() => handleSelecionarCategoria(categoria)}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 transition-colors"
-                        >
-                          <div className="font-medium">{categoria.nome}</div>
-                          {categoria.descricao && (
-                            <div className="text-xs text-zinc-500 mt-0.5">
-                              {categoria.descricao}
-                            </div>
-                          )}
-                        </button>
-                      ))
-                    ) : categoriaInput ? (
-                      <div className="px-4 py-2 text-sm text-zinc-500">
-                        Nenhuma categoria encontrada
-                      </div>
-                    ) : (
-                      <div className="px-4 py-2 text-sm text-zinc-500">
-                        Digite para buscar ou criar uma categoria
-                      </div>
-                    )}
-                  </div>
+                      {categoriasFiltradas.length > 0 ? (
+                        categoriasFiltradas.map((categoria) => (
+                          <button
+                            key={categoria.id}
+                            type="button"
+                            onClick={() => handleSelecionarCategoria(categoria)}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 transition-colors"
+                          >
+                            <div className="font-medium">{categoria.nome}</div>
+                            {categoria.descricao && (
+                              <div className="text-xs text-zinc-500 mt-0.5">
+                                {categoria.descricao}
+                              </div>
+                            )}
+                          </button>
+                        ))
+                      ) : categoriaInput ? (
+                        <div className="px-4 py-2 text-sm text-zinc-500">
+                          Nenhuma categoria encontrada
+                        </div>
+                      ) : (
+                        <div className="px-4 py-2 text-sm text-zinc-500">
+                          Digite para buscar ou criar uma categoria
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {!categoriaId && categoriaInput && (
+                  <p className="text-xs text-zinc-500 flex items-center gap-1">
+                    <span></span>
+                    <span>
+                      Pressione Enter ou clique em "Criar" para criar uma nova
+                      categoria
+                    </span>
+                  </p>
+                )}
+
+                {!categoriaInput && categorias.length === 0 && (
+                  <p className="text-xs text-zinc-500">
+                    Digite o nome de uma nova categoria para criar
+                  </p>
                 )}
               </div>
-
-              {!categoriaId && categoriaInput && (
-                <p className="text-xs text-zinc-500 flex items-center gap-1">
-                  <span></span>
-                  <span>
-                    Pressione Enter ou clique em "Criar" para criar uma nova
-                    categoria
-                  </span>
-                </p>
-              )}
-
-               {!categoriaInput && categorias.length === 0 && (
-                 <p className="text-xs text-zinc-500">
-                   Digite o nome de uma nova categoria para criar
-                 </p>
-               )}
-               </div>
-             )}
+            )}
 
             <div className="space-y-1">
               <label className="text-sm font-medium">Lote</label>

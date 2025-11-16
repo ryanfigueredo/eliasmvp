@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import {
   ShieldCheck,
@@ -12,11 +11,14 @@ import {
   Palette,
   Database,
   ArrowRight,
+  Layers,
+  CheckCircle2,
+  Cog,
 } from 'lucide-react'
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-[radial-gradient(1000px_600px_at_10%_-10%,rgba(212,175,55,0.06),transparent_60%),radial-gradient(800px_500px_at_90%_-20%,rgba(16,16,16,0.05),transparent_60%)] bg-white text-zinc-900">
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <Hero />
@@ -24,8 +26,6 @@ export default function Landing() {
         <HowItWorks />
         <Screenshots />
         <Pricing />
-        <Testimonials />
-        <FAQ />
         <CTA />
       </main>
       <Footer />
@@ -38,14 +38,8 @@ function Navbar() {
     <header className="sticky top-0 z-40 w-full backdrop-blur supports-[backdrop-filter]:bg-white/60 bg-white/70 border-b">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link href="#" className="flex items-center gap-2 font-semibold">
-          <Image
-            src="/logo.jpeg"
-            alt="Evans Proc"
-            width={28}
-            height={28}
-            className="rounded"
-          />
-          <span>Evans Proc</span>
+          <Layers className="h-6 w-6 text-[var(--brand-primary)]" />
+          <span className="tracking-tight">Evans Proc</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-700">
           <a href="#recursos" className="hover:text-zinc-900">
@@ -60,19 +54,13 @@ function Navbar() {
           <a href="#precos" className="hover:text-zinc-900">
             Preços
           </a>
-          <a href="#depoimentos" className="hover:text-zinc-900">
-            Depoimentos
-          </a>
-          <a href="#faq" className="hover:text-zinc-900">
-            FAQ
-          </a>
           <a href="#contato" className="hover:text-zinc-900">
             Contato
           </a>
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/login">
-            <Button className="bg-[#9C66FF] hover:bg-[#8450e6] text-white">
+            <Button>
               Entrar
             </Button>
           </Link>
@@ -104,41 +92,40 @@ function SectionTitle({
 function Hero() {
   return (
     <section className="pt-16 sm:pt-20 md:pt-24 pb-12">
-      <div className="grid md:grid-cols-2 gap-10 items-center">
-        <div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">
-            Gestão de Documentos simples, rápida e preparada para White Label.
-          </h1>
-          <p className="mt-4 text-lg text-zinc-600">
-            Organize clientes, lotes e documentos com segurança, permissões por
-            perfil e armazenamento em nuvem.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/login">
-              <Button className="bg-[#9C66FF] hover:bg-[#8450e6] text-white">
-                Entrar
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <a href="#recursos">
-              <Button variant="outline">Ver Recursos</Button>
-            </a>
-          </div>
-          <p className="mt-4 text-sm text-zinc-500">
-            Testado em operações reais.
-          </p>
+      <div className="max-w-3xl">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">
+          Gestão de Documentos simples, rápida e preparada para White Label.
+        </h1>
+        <p className="mt-4 text-lg text-zinc-600">
+          Organize clientes, lotes e documentos com segurança, permissões por
+          perfil e armazenamento em nuvem. Sem distrações — foco total na sua operação.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/login">
+            <Button>
+              Entrar
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+          <a href="#recursos">
+            <Button variant="outline">Ver Recursos</Button>
+          </a>
         </div>
-        <div className="relative">
-          <div className="rounded-2xl shadow-lg border bg-white p-4">
-            <Image
-              src="/window.svg"
-              alt="Preview"
-              width={800}
-              height={500}
-              className="w-full h-auto"
-            />
+        <div className="mt-6 flex flex-wrap gap-6 text-sm text-zinc-600">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-[var(--brand-primary)]" />
+            Segurança e controle de acesso
+          </div>
+          <div className="flex items-center gap-2">
+            <Database className="h-4 w-4 text-[var(--brand-primary)]" />
+            Base sólida em PostgreSQL
+          </div>
+          <div className="flex items-center gap-2">
+            <Palette className="h-4 w-4 text-[var(--brand-primary)]" />
+            White label pronto
           </div>
         </div>
+        <p className="mt-4 text-sm text-zinc-500">Testado em operações reais.</p>
       </div>
     </section>
   )
@@ -186,7 +173,7 @@ function Features() {
             key={i}
             className="rounded-2xl border bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
           >
-            <div className="h-10 w-10 rounded-lg bg-[#9C66FF]/10 text-[#9C66FF] flex items-center justify-center">
+            <div className="h-10 w-10 rounded-lg bg-[color-mix(in_oklab,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)] flex items-center justify-center">
               <it.icon className="h-5 w-5" />
             </div>
             <h3 className="mt-4 font-semibold">{it.title}</h3>
@@ -219,7 +206,7 @@ function HowItWorks() {
       <div className="grid md:grid-cols-3 gap-6">
         {steps.map((s, i) => (
           <div key={i} className="rounded-2xl border bg-white p-6 shadow-sm">
-            <div className="text-[#9C66FF] font-bold">Passo {i + 1}</div>
+            <div className="text-[var(--brand-primary)] font-bold">Passo {i + 1}</div>
             <h3 className="mt-2 font-semibold">{s.title}</h3>
             <p className="mt-2 text-sm text-zinc-600">{s.desc}</p>
           </div>
@@ -233,29 +220,44 @@ function Screenshots() {
   return (
     <section id="screenshots" className="py-12">
       <SectionTitle
-        title="Screenshots"
-        subtitle="Uma prévia do que você verá ao entrar."
+        title="Visão Geral"
+        subtitle="Sem imagens por enquanto — aqui está o que você encontrará ao acessar."
       />
       <div className="grid md:grid-cols-3 gap-6">
-        <Shot src="/window.svg" label="Dashboard" />
-        <Shot src="/globe.svg" label="Documentos por Lote" />
-        <Shot src="/logo.jpeg" label="Cadastro de Usuários" />
+        <TextShot icon={Layers} title="Dashboard">
+          Resumo de documentos, lotes, status e indicadores em tempo real.
+        </TextShot>
+        <TextShot icon={FolderTree} title="Documentos por Lote">
+          Organização por clientes e lotes com filtros rápidos e exportações.
+        </TextShot>
+        <TextShot icon={Users} title="Gestão de Usuários">
+          Convide a equipe, controle permissões e acompanhe atividades.
+        </TextShot>
       </div>
     </section>
   )
 }
 
-function Shot({ src, label }: { src: string; label: string }) {
+function TextShot({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: any
+  title: string
+  children: React.ReactNode
+}) {
   return (
-    <div className="rounded-2xl border bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      <Image
-        src={src}
-        alt={label}
-        width={600}
-        height={380}
-        className="w-full h-auto rounded-lg"
-      />
-      <div className="mt-3 text-sm text-zinc-600">{label}</div>
+    <div className="rounded-2xl border bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 rounded-lg bg-[color-mix(in_oklab,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)] flex items-center justify-center">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="font-semibold">{title}</div>
+          <div className="mt-1 text-sm text-zinc-600">{children}</div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -302,12 +304,12 @@ function Plan({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-6 shadow-sm bg-white ${highlight ? 'ring-2 ring-[#9C66FF]' : ''}`}
+      className={`rounded-2xl border p-6 shadow-sm bg-white ${highlight ? 'ring-2 ring-[var(--brand-primary)]' : ''}`}
     >
       <div className="text-sm text-zinc-500">{name}</div>
       <h3 className="mt-1 font-semibold">{desc}</h3>
       <a href="#contato">
-        <Button className="mt-4 bg-[#9C66FF] hover:bg-[#8450e6] text-white w-full">
+        <Button className="mt-4 w-full">
           {cta}
         </Button>
       </a>
@@ -370,17 +372,28 @@ function CTA() {
   return (
     <section id="contato" className="py-16">
       <div className="rounded-2xl border bg-white p-8 shadow-sm text-center">
-        <h3 className="text-2xl font-bold">
-          Pronto para conhecer o Evans Proc?
-        </h3>
+        <h3 className="text-2xl font-bold">Pronto para conhecer o Evans Proc?</h3>
         <p className="mt-2 text-zinc-600">
-          Clique em Entrar para ver o sistema e falar com a equipe.
+          Fale com nosso especialista para tirar dúvidas e receber uma apresentação.
         </p>
-        <Link href="/login">
-          <Button className="mt-4 bg-[#9C66FF] hover:bg-[#8450e6] text-white">
-            Entrar
+        <p className="mt-1 text-sm text-zinc-500">
+          Especialista em restauração de crédito, CADIN, BACEN e limpa nome.
+        </p>
+        <a
+          href="https://wa.me/554488318897?text=Ol%C3%A1%2C%20vim%20do%20site%20Evans%20Proc%20e%20gostaria%20de%20conhecer%20a%20plataforma."
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button className="mt-4">
+            Falar no WhatsApp
           </Button>
-        </Link>
+        </a>
+        <div className="mt-3 text-xs text-zinc-500">
+          ou{' '}
+          <Link href="/login" className="underline">
+            entrar no sistema
+          </Link>
+        </div>
       </div>
     </section>
   )

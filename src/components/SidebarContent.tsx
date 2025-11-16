@@ -2,7 +2,14 @@
 
 import Link from 'next/link'
 import { ReactNode } from 'react'
-import { Home, Users, UserCheck, FileText, ListChecks, Tags } from 'lucide-react'
+import {
+  Home,
+  Users,
+  UserCheck,
+  FileText,
+  ListChecks,
+  Tags,
+} from 'lucide-react'
 
 export function SidebarContent({
   role,
@@ -78,7 +85,7 @@ function SidebarLink({
       href={href}
       className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium text-zinc-200 hover:text-white hover:bg-zinc-800/50 transition-all duration-200 group"
     >
-      <span className="flex-shrink-0 group-hover:text-[#9C66FF] transition-colors">
+      <span className="flex-shrink-0 group-hover:text-[var(--brand-primary)] transition-colors">
         {icon}
       </span>
       {!collapsed && <span className="flex-1">{children}</span>}

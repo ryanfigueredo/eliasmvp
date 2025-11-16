@@ -17,6 +17,7 @@ export default function PerfilPage() {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
+  const [activeTab, setActiveTab] = useState<'pessoal' | 'sistema'>('pessoal')
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
@@ -37,7 +38,8 @@ export default function PerfilPage() {
   const [carregandoCategorias, setCarregandoCategorias] = useState(false)
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [color, setColor] = useState<string>('roxo')
+  const [primaryColor, setPrimaryColor] = useState<string>('#D4AF37')
+  const [textColor, setTextColor] = useState<string>('#111111')
 
   useEffect(() => {
     async function loadUser() {
@@ -80,17 +82,18 @@ export default function PerfilPage() {
     loadUser()
 
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark'
-    const savedColor = localStorage.getItem('color') || 'roxo'
+    const savedPrimary = localStorage.getItem('brand-primary') || '#D4AF37'
+    const savedText = localStorage.getItem('brand-text') || '#111111'
 
     if (savedTheme) {
       setTheme(savedTheme)
       document.documentElement.classList.remove('light', 'dark')
       document.documentElement.classList.add(savedTheme)
     }
-    if (savedColor) {
-      setColor(savedColor)
-      document.documentElement.setAttribute('data-theme-color', savedColor)
-    }
+    setPrimaryColor(savedPrimary)
+    setTextColor(savedText)
+    document.documentElement.style.setProperty('--brand-primary', savedPrimary)
+    document.documentElement.style.setProperty('--brand-text', savedText)
   }, [])
 
   useEffect(() => {
@@ -254,28 +257,55 @@ export default function PerfilPage() {
         <p className="text-zinc-600 mt-1">Gerencie suas informações pessoais e credenciais</p>
       </div>
 
+      {/* Tabs de Configurações */}
+      {userRole === 'master' && (
+        <div className="flex items-center gap-2 border-b">
+          <button
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+              activeTab === 'pessoal'
+                ? 'border-[var(--brand-primary)] text-zinc-900'
+                : 'border-transparent text-zinc-500 hover:text-zinc-800'
+            }`}
+            onClick={() => setActiveTab('pessoal')}
+          >
+            Atualizar Perfil Pessoal
+          </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+              activeTab === 'sistema'
+                ? 'border-[var(--brand-primary)] text-zinc-900'
+                : 'border-transparent text-zinc-500 hover:text-zinc-800'
+            }`}
+            onClick={() => setActiveTab('sistema')}
+          >
+            Alterar Sistema (White Label)
+          </button>
+        </div>
+      )}
+
       {/* Foto do Perfil */}
+      {activeTab === 'pessoal' && (
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-6">
             <div className="relative">
               <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
-                <AvatarImage
-                  src={signedAvatarUrl || ''}
-                  alt="Avatar"
-                  className="rounded-full object-cover"
-                />
-                <AvatarFallback className="bg-[#9C66FF] text-white text-2xl font-bold">
+          <AvatarImage
+            src={signedAvatarUrl || ''}
+            alt="Avatar"
+            className="rounded-full object-cover"
+          />
+                <AvatarFallback className="bg-[var(--brand-primary)] text-white text-2xl font-bold">
                   {nome?.charAt(0).toUpperCase()}
                 </AvatarFallback>
-              </Avatar>
-              <label className="absolute bottom-0 right-0 bg-[#9C66FF] text-white rounded-full p-2 cursor-pointer hover:bg-[#8450e6] transition-colors shadow-md">
+        </Avatar>
+              <label className="absolute bottom-0 right-0 bg-[var(--brand-primary)] text-white rounded-full p-2 cursor-pointer hover:opacity-90 transition-colors shadow-md">
                 <Camera className="w-4 h-4" />
-                <input
-                  name="foto"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setFoto(e.target.files?.[0] || null)}
+        <input
+          name="foto"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFoto(e.target.files?.[0] || null)}
                   className="hidden"
                 />
               </label>
@@ -285,15 +315,17 @@ export default function PerfilPage() {
               <p className="text-sm text-zinc-600">{email}</p>
               <p className="text-xs text-zinc-500 mt-1">Clique no ícone da câmera para alterar sua foto</p>
             </div>
-          </div>
+      </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Informações Pessoais */}
+      {activeTab === 'pessoal' && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5 text-[#9C66FF]" />
+            <User className="w-5 h-5 text-[var(--brand-primary)]" />
             Informações Pessoais
           </CardTitle>
           <CardDescription>
@@ -303,32 +335,33 @@ export default function PerfilPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-zinc-700">Nome completo</label>
-            <Input
+        <Input
               placeholder="Digite seu nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
               className="h-11"
-            />
+        />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-zinc-700">E-mail</label>
-            <Input
+        <Input
               type="email"
               placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
               className="h-11"
-            />
+        />
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Personalização da Logo (apenas Master) */}
-      {userRole === 'master' && (
+      {userRole === 'master' && activeTab === 'sistema' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-[#9C66FF]" />
+              <ImageIcon className="w-5 h-5 text-[var(--brand-primary)]" />
               Personalizar Logo da Plataforma
             </CardTitle>
             <CardDescription>
@@ -415,13 +448,13 @@ export default function PerfilPage() {
       )}
 
       {/* Categorias de Serviço (apenas Master) */}
-      {userRole === 'master' && (
+      {userRole === 'master' && activeTab === 'sistema' && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <Tags className="w-5 h-5 text-[#9C66FF]" />
+                  <Tags className="w-5 h-5 text-[var(--brand-primary)]" />
                   Categorias de Serviço
                 </CardTitle>
                 <CardDescription>
@@ -490,11 +523,7 @@ export default function PerfilPage() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    onClick={handleSaveCategoria}
-                    className="bg-[#9C66FF] hover:bg-[#8450e6] text-white"
-                    size="sm"
-                  >
+                  <Button onClick={handleSaveCategoria} size="sm">
                     {categoriaEditando ? 'Atualizar' : 'Criar'}
                   </Button>
                   <Button
@@ -570,10 +599,11 @@ export default function PerfilPage() {
       )}
 
       {/* Segurança */}
+      {activeTab === 'pessoal' && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Lock className="w-5 h-5 text-[#9C66FF]" />
+            <Lock className="w-5 h-5 text-[var(--brand-primary)]" />
             Segurança
           </CardTitle>
           <CardDescription>
@@ -583,37 +613,116 @@ export default function PerfilPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-zinc-700">Nova senha</label>
-            <Input
-              type="password"
+        <Input
+          type="password"
               placeholder="Deixe em branco para manter a senha atual"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
               className="h-11"
-            />
+        />
             <p className="text-xs text-zinc-500">
               Use no mínimo 8 caracteres com letras e números
             </p>
-          </div>
+      </div>
         </CardContent>
       </Card>
+      )}
+
+      {/* Personalização de Cores (apenas Master) */}
+      {userRole === 'master' && activeTab === 'sistema' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-[var(--brand-primary)]" />
+              Cores da Marca
+            </CardTitle>
+            <CardDescription>Defina as cores principais da sua plataforma</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700">Cor primária</label>
+                <div className="flex gap-3 items-center">
+                  <Input
+                    type="color"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="h-11 w-16 p-1"
+                  />
+                  <Input
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700">Cor do texto</label>
+                <div className="flex gap-3 items-center">
+                  <Input
+                    type="color"
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
+                    className="h-11 w-16 p-1"
+                  />
+                  <Input
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={async () => {
+                  document.documentElement.style.setProperty('--brand-primary', primaryColor)
+                  document.documentElement.style.setProperty('--brand-text', textColor)
+                  localStorage.setItem('brand-primary', primaryColor)
+                  localStorage.setItem('brand-text', textColor)
+                  try {
+                    if (userId) {
+                      await fetch('/api/config/colors', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          userId,
+                          primaryColor,
+                          textColor,
+                        }),
+                      })
+                    }
+                    toast.success('Cores atualizadas!')
+                  } catch {
+                    toast.error('Não foi possível salvar as cores no servidor.')
+                  }
+                }}
+              >
+                Aplicar cores
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Botão de Salvar */}
-      <div className="flex justify-end gap-3">
-        <Button 
-          variant="outline" 
-          onClick={() => router.back()}
-          disabled={isPending}
-        >
-          Cancelar
-        </Button>
-        <Button 
-          onClick={handleSubmit} 
-          disabled={isPending}
-          className="bg-[#9C66FF] hover:bg-[#8450e6] text-white"
-        >
-          {isPending ? 'Salvando...' : 'Salvar alterações'}
-        </Button>
-      </div>
+      {activeTab === 'pessoal' && (
+        <div className="flex justify-end gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => router.back()}
+            disabled={isPending}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isPending}
+          >
+            {isPending ? 'Salvando...' : 'Salvar alterações'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -8,19 +8,35 @@
 /* Fontes e layout base */
 html,
 body {
-  @apply font-sans bg-gray-50 text-gray-900;
+  @apply font-sans bg-gray-50;
+  color: var(--brand-text, #111111);
 }
 
 /* Links */
 a {
-  @apply text-[#9C66FF] hover:underline;
+  color: var(--brand-primary, #d4af37);
+  text-decoration: underline transparent;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
+}
+a:hover {
+  text-decoration-color: currentColor;
 }
 
 /* Inputs e botões */
 input,
 select,
 textarea {
-  @apply border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#9C66FF];
+  @apply border border-gray-300 rounded-md px-3 py-2 w-full text-sm focus:outline-none;
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 3px
+    color-mix(in oklab, var(--brand-primary, #d4af37) 20%, transparent);
+  border-color: color-mix(in oklab, var(--brand-primary, #d4af37) 60%, #d1d5db);
 }
 
 button {
@@ -38,6 +54,13 @@ h2,
 h3,
 h4 {
   @apply font-semibold text-[#333];
+}
+
+/* Brand CSS variables with sensible defaults */
+:root {
+  --brand-primary: #d4af37; /* gold */
+  --brand-text: #111111;
+  --brand-sidebar-bg: #242424;
 }
 
 h1 {

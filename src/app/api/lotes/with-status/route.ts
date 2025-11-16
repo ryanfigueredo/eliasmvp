@@ -58,27 +58,27 @@ export async function GET(req: NextRequest) {
     let lotes
     try {
       lotes = await prisma.lote.findMany({
-        where: {
-          ownerId,
-          ...(userIds.length > 0
-            ? {
-                OR: [
-                  { documentos: { some: { userId: { in: userIds } } } },
-                  { criadoPorId: { in: userIds } },
-                ],
-              }
-            : {}),
-        },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          documentos: {
-            where: {
-              ...(statusFiltro &&
-                Object.values(DocumentoStatus).includes(
-                  statusFiltro as DocumentoStatus,
-                ) && { status: statusFiltro as DocumentoStatus }),
-              ...(userIdFiltro && { userId: userIdFiltro }),
-            },
+      where: {
+        ownerId,
+        ...(userIds.length > 0
+          ? {
+              OR: [
+                { documentos: { some: { userId: { in: userIds } } } },
+                { criadoPorId: { in: userIds } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        documentos: {
+          where: {
+            ...(statusFiltro &&
+              Object.values(DocumentoStatus).includes(
+                statusFiltro as DocumentoStatus,
+              ) && { status: statusFiltro as DocumentoStatus }),
+            ...(userIdFiltro && { userId: userIdFiltro }),
+          },
             select: { 
               status: true,
               categoriaServico: {
@@ -124,9 +124,9 @@ export async function GET(req: NextRequest) {
               select: { 
                 status: true,
               },
-            },
-          },
-        })
+        },
+      },
+    })
       } else {
         throw error
       }

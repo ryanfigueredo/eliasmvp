@@ -244,23 +244,28 @@ export default function DocumentosContent({ role, userId }: Props) {
                   </td>
                   <td className="p-4">
                     {lote.categorias && lote.categorias.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-col gap-1">
                         {lote.categorias.map((categoria, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-1 text-xs bg-[#9C66FF]/10 text-[#9C66FF] rounded-full font-medium"
+                            className="inline-block px-2 py-1 text-xs rounded-full font-medium bg-[color-mix(in_oklab,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)]"
                           >
                             {categoria}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-zinc-400">Sem categorias</span>
+                      <span
+                        className="text-xs text-zinc-400 cursor-help"
+                        title="Sem categorias. Envie um documento e selecione uma categoria; elas aparecerão aqui."
+                      >
+                        Sem categorias
+                      </span>
                     )}
                   </td>
                   <td className="p-4 flex gap-2">
                     <Button
-                      className="bg-[#9C66FF] hover:bg-[#8450e6] text-white text-sm"
+                      className="text-white text-sm"
                       onClick={() => setLoteSelecionado(lote.id)}
                     >
                       Ver documentos

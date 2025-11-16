@@ -117,16 +117,16 @@ export async function POST(req: NextRequest) {
       for (const item of uploads as Array<{ key: string; tipo: string }>) {
         // Criar documento com ou sem categoriaServicoId dependendo se a coluna existe
         const documentData: any = {
-          userId,
-          clienteId,
-          loteId,
-          valor: parseFloat(String(valor)),
-          tipo: item.tipo,
-          orgao: Orgao.SERASA,
-          status: DocumentoStatus.INICIADO,
-          fileUrl: item.key,
-          ownerId,
-          agrupadorId,
+            userId,
+            clienteId,
+            loteId,
+            valor: parseFloat(String(valor)),
+            tipo: item.tipo,
+            orgao: Orgao.SERASA,
+            status: DocumentoStatus.INICIADO,
+            fileUrl: item.key,
+            ownerId,
+            agrupadorId,
         }
 
         // Só adiciona categoriaServicoId se existir no schema
@@ -277,16 +277,16 @@ export async function POST(req: NextRequest) {
 
         // Criar documento com ou sem categoriaServicoId dependendo se a coluna existe
         const documentData: any = {
-          userId,
-          clienteId,
-          loteId,
-          valor: parseFloat(valor),
-          tipo: item.tipo,
-          orgao: Orgao.SERASA,
-          status: DocumentoStatus.INICIADO,
-          fileUrl,
-          ownerId,
-          agrupadorId,
+            userId,
+            clienteId,
+            loteId,
+            valor: parseFloat(valor),
+            tipo: item.tipo,
+            orgao: Orgao.SERASA,
+            status: DocumentoStatus.INICIADO,
+            fileUrl,
+            ownerId,
+            agrupadorId,
         }
 
         // Só adiciona categoriaServicoId se existir no schema
@@ -297,7 +297,7 @@ export async function POST(req: NextRequest) {
         try {
           await prisma.document.create({
             data: documentData,
-          })
+        })
         } catch (createError: any) {
           // Se a coluna não existir, tentar criar sem ela
           if (
@@ -389,41 +389,41 @@ export async function GET(req: NextRequest) {
 
     try {
       documentos = await prisma.document.findMany({
-        where,
-        include: {
-          user: {
-            select: {
-              name: true,
-              admin: { select: { name: true } },
-            },
+      where,
+      include: {
+        user: {
+          select: {
+            name: true,
+            admin: { select: { name: true } },
           },
-          cliente: {
-            select: {
-              id: true,
-              nome: true,
-              cpfCnpj: true,
-              valor: true,
-              limite: true,
-              user: { select: { name: true } },
-            },
+        },
+        cliente: {
+          select: {
+            id: true,
+            nome: true,
+            cpfCnpj: true,
+            valor: true,
+            limite: true,
+            user: { select: { name: true } },
           },
-          lote: {
-            select: {
-              id: true,
-              nome: true,
-              inicio: true,
-              fim: true,
-            },
+        },
+        lote: {
+          select: {
+            id: true,
+            nome: true,
+            inicio: true,
+            fim: true,
           },
+        },
           categoriaServico: {
             select: {
               id: true,
               nome: true,
             },
           },
-        },
-        orderBy: { updatedAt: 'desc' },
-      })
+      },
+      orderBy: { updatedAt: 'desc' },
+    })
     } catch (error: any) {
       // Se a coluna categoriaServicoId não existir, buscar sem ela
       if (

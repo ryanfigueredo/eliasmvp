@@ -122,32 +122,32 @@ export default function EditarLoteModal({
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-1">
             <label className="text-sm font-medium">Nome do lote</label>
-            <Input
-              placeholder="Nome do lote"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
+          <Input
+            placeholder="Nome do lote"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
               required
-            />
+          />
           </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium">Data de início</label>
-            <Input
-              type="date"
-              value={inicio}
-              onChange={(e) => setInicio(e.target.value)}
+          <Input
+            type="date"
+            value={inicio}
+            onChange={(e) => setInicio(e.target.value)}
               required
-            />
+          />
           </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium">Data de fim</label>
-            <Input
-              type="date"
-              value={fim}
-              onChange={(e) => setFim(e.target.value)}
+          <Input
+            type="date"
+            value={fim}
+            onChange={(e) => setFim(e.target.value)}
               required
-            />
+          />
           </div>
 
           {categoriasDisponiveis && (

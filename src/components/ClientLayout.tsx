@@ -44,6 +44,23 @@ export function ClientLayout({
   const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null)
 
   useEffect(() => {
+    // Apply saved brand colors if present
+    try {
+      const savedPrimary = localStorage.getItem('brand-primary')
+      const savedText = localStorage.getItem('brand-text')
+      if (savedPrimary) {
+        document.documentElement.style.setProperty(
+          '--brand-primary',
+          savedPrimary,
+        )
+      }
+      if (savedText) {
+        document.documentElement.style.setProperty('--brand-text', savedText)
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
     async function loadUser() {
       try {
         const [userRes, logoRes] = await Promise.all([
@@ -57,6 +74,25 @@ export function ClientLayout({
         setImageKey(userData.image)
         if (logoData.url) {
           setSignedLogoUrl(logoData.url)
+        }
+
+        // Load colors from backend (inherits from master if applicable)
+        try {
+          const colorsRes = await fetch(`/api/config/colors?userId=${sessionUser.id}`)
+          if (colorsRes.ok) {
+            const colors = await colorsRes.json()
+            if (colors.primaryColor) {
+              document.documentElement.style.setProperty('--brand-primary', colors.primaryColor)
+            }
+            if (colors.textColor) {
+              document.documentElement.style.setProperty('--brand-text', colors.textColor)
+            }
+            if (colors.sidebarBg) {
+              document.documentElement.style.setProperty('--brand-sidebar-bg', colors.sidebarBg)
+            }
+          }
+        } catch (e) {
+          console.warn('[SIDEBAR] falha ao carregar cores do backend', e)
         }
       } catch (err) {
         console.error('[SIDEBAR] Erro ao buscar dados:', err)
@@ -86,8 +122,8 @@ export function ClientLayout({
     <div className="min-h-screen flex bg-zinc-100">
       {/* Sidebar */}
       <aside
-        className={`h-screen bg-[#242424] text-white border-r flex flex-col justify-between transition-all duration-300 ${
-          isCollapsed ? 'w-20 items-center' : 'w-72 items-start'
+        className={`h-screen bg-[var(--brand-sidebar-bg)] text-white border-r flex flex-col justify-between transition-all duration-300 ${
+          isCollapsed ? 'w-20 items-center' : 'w-60 items-start'
         }`}
       >
         {/* Topo da sidebar */}
@@ -143,7 +179,7 @@ export function ClientLayout({
                   alt="Avatar"
                   className="object-cover rounded-full"
                 />
-                <AvatarFallback className="bg-[#9C66FF] text-white text-lg font-semibold">
+                <AvatarFallback className="bg-[var(--brand-primary)] text-white text-lg font-semibold">
                   {user.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>

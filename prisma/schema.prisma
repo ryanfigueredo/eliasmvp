@@ -55,6 +55,9 @@ model User {
 model Config {
   id     String  @id @default(uuid())
   logo   String?
+  primaryColor String?
+  textColor    String?
+  sidebarBg    String?
   userId String  @unique
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

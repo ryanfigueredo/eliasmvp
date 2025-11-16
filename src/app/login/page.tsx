@@ -50,16 +50,13 @@ export default function LoginPage() {
           />
           <a
             href="/auth/forgot-password"
-            className="text-[#9C66FF] hover:underline text-[12px] font-medium"
+            className="text-[var(--brand-primary)] hover:underline text-[12px] font-medium"
           >
             Esqueci minha senha
           </a>
         </div>
 
-        <Button
-          onClick={handleLogin}
-          className="w-full bg-[#9C66FF] text-white hover:bg-[#8450e6]"
-        >
+        <Button onClick={handleLogin} className="w-full">
           Entrar
         </Button>
 
@@ -67,7 +64,7 @@ export default function LoginPage() {
           Ainda não tem conta?{' '}
           <Link
             href="/register"
-            className="text-[#9C66FF] hover:underline font-medium"
+            className="text-[var(--brand-primary)] hover:underline font-medium"
           >
             Cadastre-se aqui
           </Link>
