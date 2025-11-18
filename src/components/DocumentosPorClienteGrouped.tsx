@@ -1,8 +1,8 @@
 'use client'
 
 import { DocumentoStatus } from '@prisma/client'
-import { useState, useEffect } from 'react'
-import { Download, Eye, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { Eye, Trash2, Tags } from 'lucide-react'
 import PreviewDocumentoModal from './PreviewDocumentoModal'
 import EditarCategoriaDocumentoModal from './EditarCategoriaDocumentoModal'
 import { Button } from './ui/button'
@@ -63,21 +63,62 @@ export default function DocumentosPorClienteGrouped({
   const isGestor = role === 'master'
   const isAdmin = role === 'admin'
   const [openGrupo, setOpenGrupo] = useState<string | null>(null)
+  const [openCategoria, setOpenCategoria] = useState<string | null>(null)
 
   const documentosFiltrados = documentos.filter(
     (doc) => doc.lote?.id === loteSelecionado,
   )
 
-  const documentosPorEnvio = documentosFiltrados.reduce<
-    Record<string, { documentos: DocumentoComLote[] }>
+  // Agrupar primeiro por categoria
+  const documentosPorCategoria = documentosFiltrados.reduce<
+    Record<
+      string,
+      {
+        categoriaId: string | null
+        categoriaNome: string
+        documentos: DocumentoComLote[]
+      }
+    >
   >((acc, doc) => {
-    const chave = doc.agrupadorId ?? doc.id
-    if (!acc[chave]) {
-      acc[chave] = { documentos: [] }
+    const categoriaKey = doc.categoriaServico?.id || 'sem-categoria'
+    const categoriaNome = doc.categoriaServico?.nome || 'Sem categoria'
+
+    if (!acc[categoriaKey]) {
+      acc[categoriaKey] = {
+        categoriaId: doc.categoriaServico?.id || null,
+        categoriaNome,
+        documentos: [],
+      }
     }
-    acc[chave].documentos.push(doc)
+    acc[categoriaKey].documentos.push(doc)
     return acc
   }, {})
+
+  // Dentro de cada categoria, agrupar por envio (agrupadorId)
+  const categoriasComEnvios = Object.entries(documentosPorCategoria).map(
+    ([categoriaKey, { categoriaId, categoriaNome, documentos: docs }]) => {
+      const enviosPorCategoria = docs.reduce<
+        Record<string, { documentos: DocumentoComLote[] }>
+      >((acc, doc) => {
+        const chave = doc.agrupadorId ?? doc.id
+        if (!acc[chave]) {
+          acc[chave] = { documentos: [] }
+        }
+        acc[chave].documentos.push(doc)
+        return acc
+      }, {})
+
+      return {
+        categoriaKey,
+        categoriaId,
+        categoriaNome,
+        envios: Object.entries(enviosPorCategoria).map(([grupoId, { documentos }]) => ({
+          grupoId,
+          documentos,
+        })),
+      }
+    },
+  )
 
   async function handleExcluirGrupo(agrupadorId: string) {
     const confirm = window.confirm(
@@ -105,7 +146,7 @@ export default function DocumentosPorClienteGrouped({
   }
 
   return (
-    <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2 border rounded-xl">
+    <div className="space-y-6">
       {(isGestor || isAdmin) && (
         <ExportarDocumentos
           documentos={documentosFiltrados.map((doc) => ({
@@ -115,133 +156,234 @@ export default function DocumentosPorClienteGrouped({
         />
       )}
 
-      {Object.entries(documentosPorEnvio).length === 0 && (
-        <div className="text-center text-sm text-zinc-500 mt-4">
+      {categoriasComEnvios.length === 0 && (
+        <div className="text-center text-sm text-zinc-500 mt-4 p-8 border rounded-xl">
           Nenhum documento encontrado para este lote.
         </div>
       )}
 
-      {Object.entries(documentosPorEnvio)
-        .sort(([, a], [, b]) => {
-          const aDate = new Date(a.documentos[0].updatedAt).getTime()
-          const bDate = new Date(b.documentos[0].updatedAt).getTime()
-          return bDate - aDate
+      {categoriasComEnvios
+        .sort((a, b) => {
+          // Sem categoria vai pro final
+          if (a.categoriaKey === 'sem-categoria') return 1
+          if (b.categoriaKey === 'sem-categoria') return -1
+          // Ordenar por nome da categoria
+          return a.categoriaNome.localeCompare(b.categoriaNome)
         })
-        .map(([grupoId, { documentos }]) => {
-          const clienteNome =
-            documentos[0].cliente?.nome ?? 'Cliente não identificado'
-          const responsavel = documentos[0].user?.admin?.name ?? '—'
-          const inputado = documentos[0].user?.name ?? '—'
-          const limite = documentos[0].cliente?.limite
-
-          const docsOrdenados = documentos.sort(
-            (a, b) =>
-              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        .map(({ categoriaKey, categoriaId, categoriaNome, envios }) => {
+          const totalDocsNaCategoria = envios.reduce(
+            (sum, envio) => sum + envio.documentos.length,
+            0,
           )
 
           return (
-            <div key={grupoId} className="border rounded-xl shadow">
-              <div className="flex justify-between items-center p-4 bg-zinc-100">
-                <div>
-                  <p className="font-semibold text-zinc-700">
-                    {clienteNome} ({documentos.length} documentos)
-                  </p>
-                  <div className="text-sm text-zinc-500">
-                    Enviado em:{' '}
-                    {new Date(
-                      docsOrdenados[0].createdAt ?? docsOrdenados[0].updatedAt,
-                    ).toLocaleDateString('pt-BR')}
+            <div key={categoriaKey} className="border rounded-xl shadow-sm overflow-hidden">
+              {/* Header da Categoria */}
+              <div
+                className="flex justify-between items-center p-4 bg-gradient-to-r from-zinc-50 to-zinc-100 border-b cursor-pointer hover:bg-zinc-100 transition-colors"
+                onClick={() =>
+                  setOpenCategoria(
+                    openCategoria === categoriaKey ? null : categoriaKey,
+                  )
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-[color-mix(in_oklab,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)] flex items-center justify-center">
+                    <Tags className="h-5 w-5" />
                   </div>
-                  <div className="text-sm text-zinc-500 mt-1">
-                    <span className="font-medium">Responsável: </span>
-                    {responsavel}
+                  <div>
+                    <h3 className="font-semibold text-zinc-900 text-lg">
+                      {categoriaNome}
+                    </h3>
+                    <p className="text-sm text-zinc-600">
+                      {totalDocsNaCategoria} documento{totalDocsNaCategoria !== 1 ? 's' : ''} • {envios.length} envio{envios.length !== 1 ? 's' : ''}
+                    </p>
                   </div>
-                  <div className="text-sm text-zinc-500">
-                    <span className="font-medium">Inputado por: </span>
-                    {inputado}
-                  </div>
-                  {limite && (
-                    <div className="text-sm text-zinc-500">
-                      <span className="font-medium">Limite de Crédito: </span>
-                      {limite.toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      })}
-                    </div>
-                  )}
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-red-600"
-                    onClick={() => {
-                      const idOuGrupo =
-                        documentos[0].agrupadorId || documentos[0].id
-                      handleExcluirGrupo(idOuGrupo)
-                    }}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setOpenGrupo(openGrupo === grupoId ? null : grupoId)
-                    }
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Ver documentos
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setOpenCategoria(
+                      openCategoria === categoriaKey ? null : categoriaKey,
+                    )
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  {openCategoria === categoriaKey ? 'Ocultar' : 'Ver envios'}
+                </Button>
               </div>
 
-              {openGrupo === grupoId && (
-                <table className="w-full bg-white text-sm">
-                  <thead className="bg-zinc-50">
-                    <tr>
-                      <th className="p-4 text-left">Tipo</th>
-                      <th className="p-4 text-left">Categoria</th>
-                      <th className="p-4 text-left">Responsável</th>
-                      <th className="p-4 text-left">Inputado por</th>
-                      <th className="p-4 text-left">Visualizar</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {docsOrdenados.map((doc) => (
-                      <tr key={doc.id} className="border-t">
-                        <td className="p-4">
-                          {doc.tipo
-                            ? doc.tipo.charAt(0).toUpperCase() +
-                              doc.tipo.slice(1).toLowerCase()
-                            : 'Documento desconhecido'}
-                        </td>
-                        <td className="p-4">
-                          {doc.categoriaServico ? (
-                            <span className="px-2 py-1 text-xs bg-[#9C66FF]/10 text-[#9C66FF] rounded-full font-medium">
-                              {doc.categoriaServico.nome}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-zinc-400">Sem categoria</span>
+              {/* Lista de Envios dentro da Categoria */}
+              {openCategoria === categoriaKey && (
+                <div className="divide-y">
+                  {envios
+                    .sort((a, b) => {
+                      const aDate = new Date(
+                        a.documentos[0].updatedAt,
+                      ).getTime()
+                      const bDate = new Date(
+                        b.documentos[0].updatedAt,
+                      ).getTime()
+                      return bDate - aDate
+                    })
+                    .map(({ grupoId, documentos }) => {
+                      const clienteNome =
+                        documentos[0].cliente?.nome ??
+                        'Cliente não identificado'
+                      const responsavel =
+                        documentos[0].user?.admin?.name ?? '—'
+                      const inputado = documentos[0].user?.name ?? '—'
+                      const limite = documentos[0].cliente?.limite
+
+                      const docsOrdenados = documentos.sort(
+                        (a, b) =>
+                          new Date(b.updatedAt).getTime() -
+                          new Date(a.updatedAt).getTime(),
+                      )
+
+                      return (
+                        <div
+                          key={grupoId}
+                          className="bg-white border-l-4 border-l-[var(--brand-primary)]"
+                        >
+                          <div className="flex justify-between items-center p-4 bg-white hover:bg-zinc-50 transition-colors">
+                            <div className="flex-1">
+                              <p className="font-semibold text-zinc-900">
+                                {clienteNome} ({documentos.length} documento
+                                {documentos.length !== 1 ? 's' : ''})
+                              </p>
+                              <div className="text-sm text-zinc-600 mt-1">
+                                Enviado em:{' '}
+                                {new Date(
+                                  docsOrdenados[0].createdAt ??
+                                    docsOrdenados[0].updatedAt,
+                                ).toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </div>
+                              <div className="flex flex-wrap gap-4 mt-2 text-xs text-zinc-500">
+                                <span>
+                                  <span className="font-medium">Responsável: </span>
+                                  {responsavel}
+                                </span>
+                                <span>
+                                  <span className="font-medium">Inputado por: </span>
+                                  {inputado}
+                                </span>
+                                {limite && (
+                                  <span>
+                                    <span className="font-medium">Limite: </span>
+                                    {limite.toLocaleString('pt-BR', {
+                                      style: 'currency',
+                                      currency: 'BRL',
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 ml-4">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  const idOuGrupo =
+                                    documentos[0].agrupadorId ||
+                                    documentos[0].id
+                                  handleExcluirGrupo(idOuGrupo)
+                                }}
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setOpenGrupo(
+                                    openGrupo === grupoId ? null : grupoId,
+                                  )
+                                }
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                Ver documentos
+                              </Button>
+                            </div>
+                          </div>
+
+                          {openGrupo === grupoId && (
+                            <div className="bg-zinc-50 border-t">
+                              <table className="w-full bg-white text-sm">
+                                <thead className="bg-zinc-100">
+                                  <tr>
+                                    <th className="p-3 text-left text-xs font-semibold text-zinc-700">
+                                      Tipo
+                                    </th>
+                                    <th className="p-3 text-left text-xs font-semibold text-zinc-700">
+                                      Responsável
+                                    </th>
+                                    <th className="p-3 text-left text-xs font-semibold text-zinc-700">
+                                      Inputado por
+                                    </th>
+                                    <th className="p-3 text-left text-xs font-semibold text-zinc-700">
+                                      Visualizar
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {docsOrdenados.map((doc) => (
+                                    <tr
+                                      key={doc.id}
+                                      className="border-t hover:bg-zinc-50"
+                                    >
+                                      <td className="p-3">
+                                        {doc.tipo
+                                          ? doc.tipo
+                                              .charAt(0)
+                                              .toUpperCase() +
+                                            doc.tipo.slice(1).toLowerCase()
+                                          : 'Documento desconhecido'}
+                                      </td>
+                                      <td className="p-3 text-zinc-600">
+                                        {responsavel}
+                                      </td>
+                                      <td className="p-3 text-zinc-600">
+                                        {inputado}
+                                      </td>
+                                      <td className="p-3">
+                                        <div className="flex items-center gap-2">
+                                          <PreviewDocumentoModal
+                                            fileUrl={doc.fileUrl}
+                                          />
+                                          <EditarCategoriaDocumentoModal
+                                            documentoId={doc.id}
+                                            categoriaAtualId={
+                                              doc.categoriaServico?.id || null
+                                            }
+                                            categoriaAtualNome={
+                                              doc.categoriaServico?.nome || null
+                                            }
+                                            onUpdated={refreshDocumentos}
+                                          />
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           )}
-                        </td>
-                        <td className="p-4">{responsavel}</td>
-                        <td className="p-4">{inputado}</td>
-                        <td className="p-4 flex items-center gap-2">
-                          <PreviewDocumentoModal fileUrl={doc.fileUrl} />
-                          <EditarCategoriaDocumentoModal
-                            documentoId={doc.id}
-                            categoriaAtualId={doc.categoriaServico?.id || null}
-                            categoriaAtualNome={doc.categoriaServico?.nome || null}
-                            onUpdated={refreshDocumentos}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      )
+                    })}
+                </div>
               )}
             </div>
           )
