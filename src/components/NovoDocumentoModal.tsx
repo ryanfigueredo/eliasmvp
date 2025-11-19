@@ -403,27 +403,20 @@ export default function NovoDocumentoModal({
           const agrupadorId = uuid()
           console.log('🆔 Agrupador ID:', agrupadorId)
 
-          // Verificar se deve usar upload direto ao S3
-          const usePresignedUpload = true
-          console.log('🔧 Presigned uploads enabled:', usePresignedUpload)
-
-          if (usePresignedUpload) {
-            console.log('☁️ Usando upload direto ao S3...')
-            try {
-              await uploadWithPresignedUrls()
-            } catch (error) {
-              console.error(
-                '❌ Erro no upload direto, tentando upload tradicional:',
-                error,
-              )
-              toast.error(
-                'Erro no upload direto. Tentando método alternativo...',
-              )
-              await uploadWithFormData()
-            }
-          } else {
-            console.log('📤 Usando upload tradicional...')
-            await uploadWithFormData()
+          // Sempre usar presigned URLs para evitar FUNCTION_PAYLOAD_TOO_LARGE
+          console.log('☁️ Usando upload direto ao S3 (presigned URLs)...')
+          
+          try {
+            await uploadWithPresignedUrls()
+          } catch (error: any) {
+            console.error('❌ Erro no upload direto:', error)
+            const errorMessage = error?.message || 'Erro desconhecido no upload'
+            
+            // Não tentar fallback para FormData - sempre falhar com erro claro
+            toast.error(
+              `Erro ao fazer upload: ${errorMessage}. Verifique o tamanho dos arquivos (máx. 50MB cada) e tente novamente.`,
+            )
+            throw error // Re-throw para não continuar
           }
 
           async function uploadWithPresignedUrls() {
@@ -446,6 +439,16 @@ export default function NovoDocumentoModal({
                 })),
             ].filter(({ file }) => file)
 
+            // Validar tamanho dos arquivos antes de tentar upload
+            const maxSize = 50 * 1024 * 1024 // 50MB
+            for (const { file, tipo } of files) {
+              if (file && file.size > maxSize) {
+                throw new Error(
+                  `Arquivo ${tipo} (${file.name}) é muito grande. Tamanho máximo: 50MB. Tamanho atual: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+                )
+              }
+            }
+
             const uploadedFiles = []
 
             for (const { file, tipo } of files) {
@@ -453,39 +456,56 @@ export default function NovoDocumentoModal({
 
               const key = `${Date.now()}-${tipo.toLowerCase()}-${file.name}`
 
-              // Gerar URL pré-assinada
-              const presignRes = await fetch('/api/uploads/presign', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  key,
-                  contentType: file.type,
-                  fileSize: file.size,
-                }),
-              })
+              try {
+                // Gerar URL pré-assinada
+                const presignRes = await fetch('/api/uploads/presign', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    key,
+                    contentType: file.type || 'application/pdf',
+                    fileSize: file.size,
+                  }),
+                })
 
-              if (!presignRes.ok) {
-                const error = await presignRes.json()
-                throw new Error(error.error || 'Erro ao gerar URL de upload')
+                if (!presignRes.ok) {
+                  const error = await presignRes.json().catch(() => ({}))
+                  throw new Error(
+                    error.error ||
+                      `Erro ao gerar URL de upload para ${tipo} (${presignRes.status})`,
+                  )
+                }
+
+                const { url } = await presignRes.json()
+
+                if (!url) {
+                  throw new Error(`URL de upload não retornada para ${tipo}`)
+                }
+
+                // Upload direto ao S3
+                const uploadRes = await fetch(url, {
+                  method: 'PUT',
+                  body: file,
+                  headers: {
+                    'Content-Type': file.type || 'application/pdf',
+                  },
+                })
+
+                if (!uploadRes.ok) {
+                  const errorText = await uploadRes.text().catch(() => '')
+                  throw new Error(
+                    `Erro no upload do arquivo ${tipo} para S3: ${uploadRes.status} ${uploadRes.statusText} ${errorText}`,
+                  )
+                }
+
+                uploadedFiles.push({ key, tipo })
+                console.log(`✅ ${tipo} enviado para S3:`, key)
+              } catch (error: any) {
+                console.error(`❌ Erro ao processar ${tipo}:`, error)
+                throw new Error(
+                  `Falha ao fazer upload de ${tipo}: ${error.message || error}`,
+                )
               }
-
-              const { url } = await presignRes.json()
-
-              // Upload direto ao S3
-              const uploadRes = await fetch(url, {
-                method: 'PUT',
-                body: file,
-                headers: {
-                  'Content-Type': file.type,
-                },
-              })
-
-              if (!uploadRes.ok) {
-                throw new Error(`Erro no upload do arquivo ${tipo}`)
-              }
-
-              uploadedFiles.push({ key, tipo })
-              console.log(`✅ ${tipo} enviado para S3:`, key)
             }
 
             // Salvar documentos no banco via API
@@ -507,6 +527,10 @@ export default function NovoDocumentoModal({
               const error = await saveRes.json().catch(() => ({}))
               throw new Error(error.message || 'Erro ao salvar documentos')
             }
+
+            toast.success('Documentos enviados com sucesso!')
+            console.log('✅ Todos os documentos processados com sucesso!')
+            window.location.reload()
           }
 
           async function uploadWithFormData() {
