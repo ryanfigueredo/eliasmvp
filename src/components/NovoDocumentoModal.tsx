@@ -403,8 +403,8 @@ export default function NovoDocumentoModal({
           const agrupadorId = uuid()
           console.log('🆔 Agrupador ID:', agrupadorId)
 
-          // Sempre usar presigned URLs para evitar FUNCTION_PAYLOAD_TOO_LARGE
-          console.log('☁️ Usando upload direto ao S3 (presigned URLs)...')
+          // Tentar presigned URLs primeiro, com fallback para FormData se falhar
+          console.log('☁️ Tentando upload direto ao S3 (presigned URLs)...')
           
           try {
             await uploadWithPresignedUrls()
@@ -412,11 +412,62 @@ export default function NovoDocumentoModal({
             console.error('❌ Erro no upload direto:', error)
             const errorMessage = error?.message || 'Erro desconhecido no upload'
             
-            // Não tentar fallback para FormData - sempre falhar com erro claro
-            toast.error(
-              `Erro ao fazer upload: ${errorMessage}. Verifique o tamanho dos arquivos (máx. 50MB cada) e tente novamente.`,
-            )
-            throw error // Re-throw para não continuar
+            // Se for erro de CORS ou conexão, tentar fallback para FormData (método antigo)
+            const isCorsError = (error as any)?.isCorsError ||
+                               errorMessage.includes('CORS') || 
+                               errorMessage.includes('Failed to fetch') ||
+                               errorMessage.includes('conexão') ||
+                               errorMessage.includes('CORS_OR_CONNECTION_ERROR')
+            
+            if (isCorsError) {
+              // Verificar tamanho total dos arquivos antes de tentar fallback
+              const files = [
+                rg,
+                consulta,
+                contrato,
+                comprovante,
+                ...documentosAdicionais.map(d => d.file).filter((f): f is File => f !== null)
+              ].filter((f): f is File => f !== null)
+              const totalSize = files.reduce((sum, file) => sum + file.size, 0)
+              const maxSizeForFallback = 10 * 1024 * 1024 // 10MB total
+              
+              if (totalSize > maxSizeForFallback) {
+                toast.error(
+                  `Arquivos muito grandes para método alternativo (${(totalSize / 1024 / 1024).toFixed(2)}MB). Configure CORS no bucket S3 para uploads diretos funcionarem.`,
+                )
+                throw new Error(
+                  'Arquivos muito grandes. Configure CORS no bucket S3 para permitir uploads diretos.',
+                )
+              }
+              
+              console.log('⚠️ Erro de CORS/conexão detectado, tentando método alternativo (FormData)...')
+              toast.warning('Upload direto falhou, usando método alternativo...')
+              
+              try {
+                await uploadWithFormData()
+              } catch (fallbackError: any) {
+                console.error('❌ Fallback também falhou:', fallbackError)
+                
+                // Se for erro de payload muito grande, sugerir CORS
+                if (fallbackError.message?.includes('PAYLOAD_TOO_LARGE') || 
+                    fallbackError.message?.includes('413')) {
+                  toast.error(
+                    `Arquivos muito grandes. Configure CORS no bucket S3 para uploads diretos funcionarem.`,
+                  )
+                } else {
+                  toast.error(
+                    `Erro ao fazer upload: ${fallbackError.message || fallbackError}`,
+                  )
+                }
+                throw fallbackError
+              }
+            } else {
+              // Outros erros, mostrar mensagem clara
+              toast.error(
+                `Erro ao fazer upload: ${errorMessage}. Verifique o tamanho dos arquivos (máx. 50MB cada) e tente novamente.`,
+              )
+              throw error
+            }
           }
 
           async function uploadWithPresignedUrls() {
@@ -536,10 +587,11 @@ export default function NovoDocumentoModal({
                     )
                   }
                   
-                  if (fetchError.message?.includes('Failed to fetch')) {
-                    throw new Error(
-                      `Erro de conexão no upload de ${tipo}. Verifique: 1) CORS configurado no bucket S3, 2) Conexão com internet, 3) Tamanho do arquivo (máx. 50MB).`,
-                    )
+                  if (fetchError.message?.includes('Failed to fetch') || fetchError.name === 'TypeError') {
+                    // Marcar como erro de CORS/conexão para tentar fallback
+                    const corsError = new Error('CORS_OR_CONNECTION_ERROR')
+                    ;(corsError as any).isCorsError = true
+                    throw corsError
                   }
                   
                   throw fetchError
