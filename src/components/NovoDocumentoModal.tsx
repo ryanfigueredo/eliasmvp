@@ -457,6 +457,8 @@ export default function NovoDocumentoModal({
               const key = `${Date.now()}-${tipo.toLowerCase()}-${file.name}`
 
               try {
+                console.log(`📤 Gerando presigned URL para ${tipo}...`)
+                
                 // Gerar URL pré-assinada
                 const presignRes = await fetch('/api/uploads/presign', {
                   method: 'POST',
@@ -470,36 +472,78 @@ export default function NovoDocumentoModal({
 
                 if (!presignRes.ok) {
                   const error = await presignRes.json().catch(() => ({}))
+                  console.error(`❌ Erro ao gerar presigned URL para ${tipo}:`, error)
                   throw new Error(
                     error.error ||
                       `Erro ao gerar URL de upload para ${tipo} (${presignRes.status})`,
                   )
                 }
 
-                const { url } = await presignRes.json()
+                const presignData = await presignRes.json()
+                const { url } = presignData
 
                 if (!url) {
+                  console.error(`❌ URL não retornada para ${tipo}:`, presignData)
                   throw new Error(`URL de upload não retornada para ${tipo}`)
                 }
 
-                // Upload direto ao S3
-                const uploadRes = await fetch(url, {
-                  method: 'PUT',
-                  body: file,
-                  headers: {
-                    'Content-Type': file.type || 'application/pdf',
-                  },
-                })
+                console.log(`🔗 Presigned URL gerada para ${tipo}, iniciando upload...`)
 
-                if (!uploadRes.ok) {
-                  const errorText = await uploadRes.text().catch(() => '')
-                  throw new Error(
-                    `Erro no upload do arquivo ${tipo} para S3: ${uploadRes.status} ${uploadRes.statusText} ${errorText}`,
-                  )
+                // Upload direto ao S3 com timeout e melhor tratamento de erro
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutos
+
+                try {
+                  const uploadRes = await fetch(url, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                      'Content-Type': file.type || 'application/pdf',
+                    },
+                    signal: controller.signal,
+                  })
+
+                  clearTimeout(timeoutId)
+
+                  if (!uploadRes.ok) {
+                    const errorText = await uploadRes.text().catch(() => '')
+                    console.error(`❌ Erro no upload para S3 (${tipo}):`, {
+                      status: uploadRes.status,
+                      statusText: uploadRes.statusText,
+                      errorText,
+                    })
+                    
+                    // Se for erro de CORS, dar mensagem mais clara
+                    if (uploadRes.status === 0 || errorText.includes('CORS')) {
+                      throw new Error(
+                        `Erro de CORS no upload. Verifique se o bucket S3 tem CORS configurado para permitir uploads do domínio atual.`,
+                      )
+                    }
+                    
+                    throw new Error(
+                      `Erro no upload do arquivo ${tipo} para S3: ${uploadRes.status} ${uploadRes.statusText}`,
+                    )
+                  }
+
+                  uploadedFiles.push({ key, tipo })
+                  console.log(`✅ ${tipo} enviado para S3 com sucesso:`, key)
+                } catch (fetchError: any) {
+                  clearTimeout(timeoutId)
+                  
+                  if (fetchError.name === 'AbortError') {
+                    throw new Error(
+                      `Timeout no upload de ${tipo}. Arquivo muito grande ou conexão lenta.`,
+                    )
+                  }
+                  
+                  if (fetchError.message?.includes('Failed to fetch')) {
+                    throw new Error(
+                      `Erro de conexão no upload de ${tipo}. Verifique: 1) CORS configurado no bucket S3, 2) Conexão com internet, 3) Tamanho do arquivo (máx. 50MB).`,
+                    )
+                  }
+                  
+                  throw fetchError
                 }
-
-                uploadedFiles.push({ key, tipo })
-                console.log(`✅ ${tipo} enviado para S3:`, key)
               } catch (error: any) {
                 console.error(`❌ Erro ao processar ${tipo}:`, error)
                 throw new Error(
