@@ -2,25 +2,19 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies()
     const session = await getServerSession(authOptions)
 
     if (!session?.user) {
-      console.error('[APPROVE-USER] Sem sessão:', { session })
       return NextResponse.json({ message: 'Não autorizado.' }, { status: 401 })
     }
 
     const userId = session.user.id
     const role = session.user.role
 
-    console.log('[APPROVE-USER] Sessão:', { userId, role })
-
     if (role !== 'master') {
-      console.error('[APPROVE-USER] Role não é master:', { role })
       return NextResponse.json({ message: 'Acesso negado. Apenas masters podem aprovar usuários.' }, { status: 403 })
     }
 
