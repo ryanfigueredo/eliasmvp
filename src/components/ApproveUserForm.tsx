@@ -57,6 +57,7 @@ export default function ApproveUserForm({
         method: 'POST',
         body: JSON.stringify({ id: userId, ownerId: selectedOwnerId }),
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -73,7 +74,7 @@ export default function ApproveUserForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default" size="sm">
+        <Button variant="default" size="sm" className="bg-[var(--brand-primary)] text-white hover:opacity-90">
           Aprovar
         </Button>
       </DialogTrigger>
@@ -109,6 +110,7 @@ export default function ApproveUserForm({
               onClick={handleApprove}
               disabled={isPending || !selectedOwnerId}
               variant="default"
+              className="bg-[var(--brand-primary)] text-white hover:opacity-90"
             >
               {isPending ? 'Aprovando...' : 'Aprovar'}
             </Button>
