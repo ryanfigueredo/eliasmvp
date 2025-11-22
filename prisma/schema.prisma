@@ -21,6 +21,7 @@ model User {
   password  String
   role      String   @default("consultor")
   status    String   @default("aguardando")
+  whatsapp  String?
   createdAt DateTime @default(now())
   image     String?
 

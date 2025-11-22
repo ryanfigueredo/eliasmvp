@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { name, cpf, email, password, role, status, adminId, ownerId } = body
+    const { name, cpf, email, password, role, status, whatsapp, adminId, ownerId } = body
 
     if (!email || !password || !cpf) {
       return NextResponse.json(
@@ -74,6 +74,7 @@ export async function POST(req: Request) {
         password: hashed,
         role,
         status,
+        whatsapp: whatsapp || null,
         adminId: role === 'consultor' ? session.user.id : null,
         ownerId: finalOwnerId,
       },

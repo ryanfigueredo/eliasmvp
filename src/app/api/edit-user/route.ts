@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { id, name, cpf, email, password, role, status } = body
+    const { id, name, cpf, email, password, role, status, whatsapp } = body
 
     if (!id || !name || !cpf || !email || !role || !status) {
       return NextResponse.json(
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const data: any = { name, cpf, email, role, status }
+    const data: any = { name, cpf, email, role, status, whatsapp: whatsapp || null }
 
     if (password && password.length >= 6) {
       data.password = await bcrypt.hash(password, 10)

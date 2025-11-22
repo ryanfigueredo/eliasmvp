@@ -74,7 +74,8 @@ export default function UsuarioFiltroModal({
               className="w-full border rounded px-3 py-2 text-sm bg-white"
             >
               <option value="">Todos os status</option>
-              <option value="aprovado">Aprovado</option>
+              <option value="aprovado">Apenas aprovados</option>
+              <option value="nao_aprovado">Apenas não aprovados</option>
               <option value="aguardando">Aguardando</option>
               <option value="inativo">Inativo</option>
             </select>

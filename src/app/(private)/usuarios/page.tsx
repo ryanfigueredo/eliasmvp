@@ -44,15 +44,27 @@ export default async function UsuariosPage() {
   // Mas apenas se não houver filtro de status específico
   const filters: any = isMaster
     ? status
-      ? // Se houver filtro de status, aplicar normalmente mas ainda incluir aguardando se necessário
-        {
-          OR: [
-            { ownerId, status }, // Usuários vinculados com o status filtrado
-            ...(status === 'aguardando'
-              ? [{ ownerId: null, status: 'aguardando' }]
-              : []), // Se filtrar por aguardando, incluir os sem ownerId
-          ],
-        }
+      ? // Se houver filtro de status, aplicar normalmente
+        status === 'nao_aprovado'
+          ? // Filtro "não aprovados" = aguardando + inativo
+            {
+              OR: [
+                { ownerId, status: { in: ['aguardando', 'inativo'] } },
+                { ownerId: null, status: 'aguardando' }, // Incluir aguardando sem ownerId
+              ],
+            }
+          : status === 'aprovado'
+            ? // Filtro "aprovados" = apenas aprovados vinculados
+              { ownerId, status: 'aprovado' }
+            : // Outros status específicos
+              {
+                OR: [
+                  { ownerId, status }, // Usuários vinculados com o status filtrado
+                  ...(status === 'aguardando'
+                    ? [{ ownerId: null, status: 'aguardando' }]
+                    : []), // Se filtrar por aguardando, incluir os sem ownerId
+                ],
+              }
       : // Sem filtro de status, mostrar todos (vinculados + aguardando)
         {
           OR: [
@@ -60,7 +72,13 @@ export default async function UsuariosPage() {
             { ownerId: null, status: 'aguardando' }, // Usuários aguardando aprovação
           ],
         }
-    : { ownerId }
+    : status === 'nao_aprovado'
+      ? { ownerId, status: { in: ['aguardando', 'inativo'] } }
+      : status === 'aprovado'
+        ? { ownerId, status: 'aprovado' }
+        : status
+          ? { ownerId, status }
+          : { ownerId }
 
   // Adicionar filtros de busca
   if (busca) {
@@ -102,6 +120,7 @@ export default async function UsuariosPage() {
       cpf: true,
       role: true,
       status: true,
+      whatsapp: true,
       createdAt: true,
       ownerId: true,
       admin: { select: { name: true } },

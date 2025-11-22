@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import SelectRole from '@/components/SelectRole'
 import SelectStatus from '@/components/SelectStatus'
@@ -19,6 +19,7 @@ type Usuario = {
   cpf: string
   role: string
   status: string
+  whatsapp?: string | null
   createdAt: string
   admin?: { name: string | null }
   ownerId?: string | null
@@ -120,6 +121,7 @@ export default function UsuariosContent({
                 </th>
                 <th className="p-4">Nome</th>
                 <th className="p-4">Email</th>
+                <th className="p-4">WhatsApp</th>
                 <th className="p-4">Situação</th>
                 <th className="p-4">Cargo</th>
                 <th className="p-4">Criado em</th>
@@ -139,6 +141,21 @@ export default function UsuariosContent({
                   </td>
                   <td className="p-4">{user.name || '-'}</td>
                   <td className="p-4">{user.email}</td>
+                  <td className="p-4">
+                    {user.whatsapp ? (
+                      <a
+                        href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[var(--brand-primary)] hover:underline"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        {user.whatsapp}
+                      </a>
+                    ) : (
+                      <span className="text-zinc-400">—</span>
+                    )}
+                  </td>
                   <td className="p-4">
                     <SelectStatus id={user.id} status={user.status} />
                   </td>

@@ -24,6 +24,7 @@ const schema = z.object({
   password: z.string().optional(),
   role: z.enum(['consultor', 'admin']),
   status: z.enum(['aprovado', 'aguardando', 'inativo']),
+  whatsapp: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -36,6 +37,7 @@ type Props = {
     email: string
     role: string
     status: string
+    whatsapp?: string | null
   }
 }
 
@@ -56,6 +58,7 @@ export default function EditarUsuarioModal({ user }: Props) {
       email: user.email,
       role: user.role as FormData['role'],
       status: user.status as FormData['status'],
+      whatsapp: user.whatsapp || '',
     },
   })
 
@@ -149,6 +152,27 @@ export default function EditarUsuarioModal({ user }: Props) {
             </select>
           </div>
 
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-zinc-700">
+              WhatsApp
+            </label>
+            <Input
+              placeholder="(00) 00000-0000"
+              {...register('whatsapp')}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\D/g, '')
+                let formatted = raw
+                if (raw.length <= 11) {
+                  formatted = raw
+                    .replace(/^(\d{2})(\d)/, '($1) $2')
+                    .replace(/(\d{5})(\d)/, '$1-$2')
+                }
+                e.target.value = formatted
+                return e
+              }}
+            />
+          </div>
+
           <div className="flex justify-end space-x-2 pt-2">
             <DialogClose asChild>
               <Button
@@ -160,7 +184,7 @@ export default function EditarUsuarioModal({ user }: Props) {
             </DialogClose>
             <Button
               type="submit"
-              className="bg-[#9C66FF] text-white hover:bg-[#8450e6]"
+              variant="default"
               disabled={isPending}
             >
               {isPending ? 'Salvando...' : 'Salvar'}
