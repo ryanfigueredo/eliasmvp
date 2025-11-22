@@ -9,6 +9,7 @@ import NovoUsuarioModal from '@/components/NovoUsuarioModal'
 import EditarUsuarioModal from '@/components/EditarUsuarioModal'
 import UsuarioFiltroModal from '@/components/UsuarioFiltroModal'
 import ExportarUsuarios from '@/components/ExportarUsuarios'
+import ApproveUserForm from '@/components/ApproveUserForm'
 import { toast } from 'sonner'
 
 type Usuario = {
@@ -20,6 +21,7 @@ type Usuario = {
   status: string
   createdAt: string
   admin?: { name: string | null }
+  ownerId?: string | null
 }
 
 export default function UsuariosContent({
@@ -93,11 +95,7 @@ export default function UsuariosContent({
           <UsuarioFiltroModal admins={admins} />
           <div className="gap-4 flex">
             {isMaster && selectedIds.length > 0 && (
-              <Button
-                onClick={handleDeleteSelected}
-                variant="destructive"
-                className="bg-red-600"
-              >
+              <Button onClick={handleDeleteSelected} variant="destructive">
                 Excluir selecionados ({selectedIds.length})
               </Button>
             )}
@@ -159,6 +157,12 @@ export default function UsuariosContent({
                   <td className="p-4">{user.admin?.name || '—'}</td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {isMaster && user.status === 'aguardando' && (
+                        <ApproveUserForm
+                          userId={user.id}
+                          currentOwnerId={user.ownerId}
+                        />
+                      )}
                       <EditarUsuarioModal
                         user={{ ...user, name: user.name || '' }}
                       />
@@ -166,7 +170,7 @@ export default function UsuariosContent({
                         <Button
                           onClick={() => handleDeleteUser(user.id)}
                           variant="ghost"
-                          className="text-red-600 text-xs px-0 hover:underline flex items-center gap-1"
+                          className="text-destructive text-xs px-0 hover:underline flex items-center gap-1"
                         >
                           <Trash2 className="w-4 h-4" />
                           Excluir

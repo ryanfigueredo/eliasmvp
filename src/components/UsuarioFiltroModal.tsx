@@ -107,10 +107,7 @@ export default function UsuarioFiltroModal({
             >
               <X className="w-4 h-4" /> Limpar
             </a>
-            <Button
-              type="submit"
-              className="bg-[#9C66FF] text-white hover:bg-[#8450e6]"
-            >
+            <Button type="submit" variant="default">
               Aplicar filtros
             </Button>
           </div>

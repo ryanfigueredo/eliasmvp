@@ -3,8 +3,8 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
 export async function GET() {
-  const email = 'master2@elias.com'
-  const plainPassword = 'senha123'
+  const email = 'ryan@dmtn.com.br'
+  const plainPassword = '123456'
   const hash = await bcrypt.hash(plainPassword, 10)
 
   const exists = await prisma.user.findUnique({ where: { email } })
@@ -16,7 +16,7 @@ export async function GET() {
     data: {
       email,
       password: hash,
-      name: 'Novo Master',
+      name: 'Ryan',
       cpf: '00000000001',
       role: 'master',
       status: 'aprovado',

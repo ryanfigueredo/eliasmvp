@@ -85,14 +85,14 @@ export default function EditarCategoriaDocumentoModal({
           if (onUpdated) onUpdated()
         } else {
           const data = await res.json().catch(() => ({}))
-          
+
           // Se a tabela não existir (503), fechar modal silenciosamente
           if (res.status === 503) {
             setCategoriasDisponiveis(false)
             setOpen(false)
             return
           }
-          
+
           toast.error(data.message || 'Erro ao atualizar categoria.')
         }
       } catch (error) {
@@ -106,7 +106,7 @@ export default function EditarCategoriaDocumentoModal({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Edit className="w-4 h-4 text-[#9C66FF]" />
+          <Edit className="w-4 h-4 text-[var(--brand-primary)]" />
         </Button>
       </DialogTrigger>
 
@@ -120,10 +120,12 @@ export default function EditarCategoriaDocumentoModal({
         {!categoriasDisponiveis ? (
           <div className="py-8 text-center">
             <p className="text-sm text-zinc-500 mb-4">
-              Funcionalidade de categorias ainda não está disponível neste ambiente.
+              Funcionalidade de categorias ainda não está disponível neste
+              ambiente.
             </p>
             <p className="text-xs text-zinc-400">
-              A migração do banco de dados precisa ser aplicada para habilitar esta funcionalidade.
+              A migração do banco de dados precisa ser aplicada para habilitar
+              esta funcionalidade.
             </p>
           </div>
         ) : (
@@ -153,7 +155,8 @@ export default function EditarCategoriaDocumentoModal({
               </select>
               {categorias.length === 0 && (
                 <p className="text-xs text-zinc-500">
-                  Nenhuma categoria cadastrada. Crie uma na página de configurações.
+                  Nenhuma categoria cadastrada. Crie uma na página de
+                  configurações.
                 </p>
               )}
             </div>
@@ -176,4 +179,3 @@ export default function EditarCategoriaDocumentoModal({
     </Dialog>
   )
 }
-

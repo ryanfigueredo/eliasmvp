@@ -26,27 +26,56 @@ export async function GET(req: NextRequest) {
 
   const ownerId = user?.role === 'master' ? userId : user?.ownerId
 
-  const filters: any = { ownerId }
+  // Se for master, incluir também usuários aguardando (sem ownerId)
+  // Mas apenas se não houver filtro de status específico
+  const filters: any = isMaster
+    ? status
+      ? // Se houver filtro de status, aplicar normalmente mas ainda incluir aguardando se necessário
+        {
+          OR: [
+            { ownerId, status }, // Usuários vinculados com o status filtrado
+            ...(status === 'aguardando'
+              ? [{ ownerId: null, status: 'aguardando' }]
+              : []), // Se filtrar por aguardando, incluir os sem ownerId
+          ],
+        }
+      : // Sem filtro de status, mostrar todos (vinculados + aguardando)
+        {
+          OR: [
+            { ownerId }, // Usuários já vinculados a este master
+            { ownerId: null, status: 'aguardando' }, // Usuários aguardando aprovação
+          ],
+        }
+    : { ownerId }
 
+  // Adicionar filtros de busca
   if (busca) {
-    filters.OR = [
-      { name: { contains: busca, mode: 'insensitive' } },
-      { email: { contains: busca, mode: 'insensitive' } },
+    filters.AND = [
+      ...(filters.AND || []),
+      {
+        OR: [
+          { name: { contains: busca, mode: 'insensitive' } },
+          { email: { contains: busca, mode: 'insensitive' } },
+        ],
+      },
     ]
   }
 
-  if (role) filters.role = role
-  if (status) filters.status = status
-  if (adminId) filters.adminId = adminId
+  // Adicionar outros filtros (exceto status que já foi tratado acima)
+  if (role) {
+    filters.AND = [...(filters.AND || []), { role }]
+  }
+  if (adminId) {
+    filters.AND = [...(filters.AND || []), { adminId }]
+  }
 
   if (!isMaster) {
     filters.AND = [
+      ...(filters.AND || []),
       {
         OR: [{ id: userId }, { adminId: userId, role: 'consultor' }],
       },
-      ...(filters.OR ? [{ OR: filters.OR }] : []),
     ]
-    delete filters.OR
   }
 
   try {
@@ -60,6 +89,7 @@ export async function GET(req: NextRequest) {
         role: true,
         status: true,
         createdAt: true,
+        ownerId: true,
         admin: { select: { name: true } },
       },
     })
