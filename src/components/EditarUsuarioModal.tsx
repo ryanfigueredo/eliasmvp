@@ -14,7 +14,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { useTransition, useState } from 'react'
+import { useTransition, useState, useEffect } from 'react'
 import { PencilLine } from 'lucide-react'
 
 const schema = z.object({
@@ -25,6 +25,7 @@ const schema = z.object({
   role: z.enum(['consultor', 'admin']),
   status: z.enum(['aprovado', 'aguardando', 'inativo']),
   whatsapp: z.string().optional(),
+  ownerId: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -38,18 +39,41 @@ type Props = {
     role: string
     status: string
     whatsapp?: string | null
+    ownerId?: string | null
   }
+  isMaster?: boolean
 }
 
-export default function EditarUsuarioModal({ user }: Props) {
+export default function EditarUsuarioModal({ user, isMaster = false }: Props) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [masters, setMasters] = useState<
+    Array<{ id: string; name: string; email: string }>
+  >([])
+
+  useEffect(() => {
+    if (isMaster) {
+      // Buscar lista de masters
+      fetch('/api/users?role=master&status=aprovado')
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setMasters(data)
+          }
+        })
+        .catch((err) => {
+          console.error('Erro ao buscar masters:', err)
+        })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMaster])
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -59,8 +83,12 @@ export default function EditarUsuarioModal({ user }: Props) {
       role: user.role as FormData['role'],
       status: user.status as FormData['status'],
       whatsapp: user.whatsapp || '',
+      ownerId: user.ownerId || '',
     },
   })
+
+  const selectedStatus = watch('status')
+  const showOwnerSelect = isMaster && (!user.ownerId || selectedStatus === 'aprovado')
 
   const onSubmit = (data: FormData) => {
     startTransition(async () => {
@@ -151,6 +179,28 @@ export default function EditarUsuarioModal({ user }: Props) {
               <option value="inativo">Inativo</option>
             </select>
           </div>
+
+          {showOwnerSelect && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-700">
+                Vincular ao Master:
+              </label>
+              <select
+                {...register('ownerId')}
+                className="w-full border rounded px-3 py-2 text-sm bg-white"
+              >
+                <option value="">Selecione um master</option>
+                {masters.map((master) => (
+                  <option key={master.id} value={master.id}>
+                    {master.name || master.email} ({master.email})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-zinc-500">
+                Selecione o master responsável por este usuário
+              </p>
+            </div>
+          )}
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-zinc-700">

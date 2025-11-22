@@ -9,7 +9,6 @@ import NovoUsuarioModal from '@/components/NovoUsuarioModal'
 import EditarUsuarioModal from '@/components/EditarUsuarioModal'
 import UsuarioFiltroModal from '@/components/UsuarioFiltroModal'
 import ExportarUsuarios from '@/components/ExportarUsuarios'
-import ApproveUserForm from '@/components/ApproveUserForm'
 import { toast } from 'sonner'
 
 type Usuario = {
@@ -36,7 +35,13 @@ export default function UsuariosContent({
 }) {
   const [usersState, setUsers] = useState<Usuario[]>(users)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<'aprovados' | 'aguardando'>('aprovados')
   const loading = false
+
+  // Filtrar usuários por aba
+  const aprovados = usersState.filter((u) => u.status === 'aprovado')
+  const aguardando = usersState.filter((u) => u.status === 'aguardando')
+  const displayedUsers = activeTab === 'aprovados' ? aprovados : aguardando
 
   const handleDeleteUser = async (userId: string) => {
     const res = await fetch(`/api/users/${userId}`, {
@@ -59,10 +64,11 @@ export default function UsuariosContent({
   }
 
   const handleSelectAll = () => {
-    if (selectedIds.length === usersState.length) {
+    const displayedIds = displayedUsers.map((u) => u.id)
+    if (selectedIds.length === displayedIds.length && displayedIds.length > 0) {
       setSelectedIds([])
     } else {
-      setSelectedIds(usersState.map((u) => u.id))
+      setSelectedIds(displayedIds)
     }
   }
 
@@ -92,6 +98,37 @@ export default function UsuariosContent({
     <div className="space-y-6">
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Todos os usuários</h1>
+        
+        {/* Abas */}
+        <div className="flex gap-2 border-b">
+          <button
+            onClick={() => {
+              setActiveTab('aprovados')
+              setSelectedIds([])
+            }}
+            className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+              activeTab === 'aprovados'
+                ? 'border-[var(--brand-primary)] text-[var(--brand-primary)]'
+                : 'border-transparent text-zinc-600 hover:text-zinc-900'
+            }`}
+          >
+            Aprovados ({aprovados.length})
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('aguardando')
+              setSelectedIds([])
+            }}
+            className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+              activeTab === 'aguardando'
+                ? 'border-[var(--brand-primary)] text-[var(--brand-primary)]'
+                : 'border-transparent text-zinc-600 hover:text-zinc-900'
+            }`}
+          >
+            Aguardando aprovação ({aguardando.length})
+          </button>
+        </div>
+
         <div className="flex space-x-6 justify-between items-center">
           <UsuarioFiltroModal admins={admins} />
           <div className="gap-4 flex">
@@ -115,7 +152,7 @@ export default function UsuariosContent({
                 <th className="p-4">
                   <input
                     type="checkbox"
-                    checked={selectedIds.length === usersState.length}
+                    checked={selectedIds.length === displayedUsers.length && displayedUsers.length > 0}
                     onChange={handleSelectAll}
                   />
                 </th>
@@ -130,7 +167,14 @@ export default function UsuariosContent({
               </tr>
             </thead>
             <tbody>
-              {usersState.map((user) => (
+              {displayedUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-zinc-500">
+                    Nenhum usuário {activeTab === 'aprovados' ? 'aprovado' : 'aguardando aprovação'}
+                  </td>
+                </tr>
+              ) : (
+                displayedUsers.map((user) => (
                 <tr key={user.id} className="border-t">
                   <td className="p-4">
                     <input
@@ -147,10 +191,10 @@ export default function UsuariosContent({
                         href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-[var(--brand-primary)] hover:underline"
+                        className="flex items-center gap-1 text-[var(--brand-primary)] hover:underline whitespace-nowrap"
                       >
-                        <MessageCircle className="w-4 h-4" />
-                        {user.whatsapp}
+                        <MessageCircle className="w-4 h-4 shrink-0" />
+                        <span className="whitespace-nowrap">{user.whatsapp}</span>
                       </a>
                     ) : (
                       <span className="text-zinc-400">—</span>
@@ -174,29 +218,26 @@ export default function UsuariosContent({
                   <td className="p-4">{user.admin?.name || '—'}</td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {isMaster && user.status === 'aguardando' && (
-                        <ApproveUserForm
-                          userId={user.id}
-                          currentOwnerId={user.ownerId}
-                        />
-                      )}
                       <EditarUsuarioModal
-                        user={{ ...user, name: user.name || '' }}
+                        user={{ ...user, name: user.name || '', ownerId: user.ownerId || null }}
+                        isMaster={isMaster}
                       />
                       {isMaster && (
                         <Button
                           onClick={() => handleDeleteUser(user.id)}
                           variant="ghost"
-                          className="text-destructive text-xs px-0 hover:underline flex items-center gap-1"
+                          size="icon"
+                          className="text-destructive hover:bg-destructive/10"
+                          title="Excluir usuário"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Excluir
                         </Button>
                       )}
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

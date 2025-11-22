@@ -15,16 +15,19 @@ export default function SelectStatus({ id, status }: Props) {
     const newStatus = e.target.value
 
     startTransition(async () => {
-      const res = await fetch('/api/update-status', {
-        method: 'POST',
+      const res = await fetch('/api/users/update', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
+        credentials: 'include',
       })
 
       if (res.ok) {
         toast.success('Status atualizado com sucesso!')
+        window.location.reload()
       } else {
-        toast.error('Erro ao atualizar status.')
+        const data = await res.json()
+        toast.error(data.message || 'Erro ao atualizar status.')
       }
     })
   }
@@ -38,8 +41,7 @@ export default function SelectStatus({ id, status }: Props) {
       disabled={isPending}
     >
       <option value="aprovado">Aprovado</option>
-      <option value="aguardando">Sem pagamento</option>
-      <option value="inativo">Inativo</option>
+      <option value="aguardando">Aguardando</option>
     </select>
   )
 }

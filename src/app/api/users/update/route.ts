@@ -20,9 +20,20 @@ export async function PUT(request: Request) {
       )
     }
 
+    // Buscar o usuário atual para verificar se tem ownerId
+    const currentUser = await prisma.user.findUnique({
+      where: { id },
+      select: { ownerId: true },
+    })
+
     const updates: Record<string, any> = {}
     if (name) updates.name = name
     if (status) updates.status = status
+
+    // Se mudou para aprovado e não tem ownerId, definir o master atual como ownerId
+    if (status === 'aprovado' && !currentUser?.ownerId && session.user.role === 'master') {
+      updates.ownerId = session.user.id
+    }
 
     if (role) {
       if (session.user.role !== 'master') {

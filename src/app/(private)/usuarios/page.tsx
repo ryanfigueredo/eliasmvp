@@ -40,45 +40,17 @@ export default async function UsuariosPage() {
     return redirect('/login')
   }
 
-  // Se for master, incluir também usuários aguardando (sem ownerId)
-  // Mas apenas se não houver filtro de status específico
+  // Se for master, mostrar todos os usuários vinculados (qualquer status) + aguardando/aprovados sem ownerId
+  // As abas no frontend vão filtrar por status
   const filters: any = isMaster
-    ? status
-      ? // Se houver filtro de status, aplicar normalmente
-        status === 'nao_aprovado'
-          ? // Filtro "não aprovados" = aguardando + inativo
-            {
-              OR: [
-                { ownerId, status: { in: ['aguardando', 'inativo'] } },
-                { ownerId: null, status: 'aguardando' }, // Incluir aguardando sem ownerId
-              ],
-            }
-          : status === 'aprovado'
-            ? // Filtro "aprovados" = apenas aprovados vinculados
-              { ownerId, status: 'aprovado' }
-            : // Outros status específicos
-              {
-                OR: [
-                  { ownerId, status }, // Usuários vinculados com o status filtrado
-                  ...(status === 'aguardando'
-                    ? [{ ownerId: null, status: 'aguardando' }]
-                    : []), // Se filtrar por aguardando, incluir os sem ownerId
-                ],
-              }
-      : // Sem filtro de status, mostrar todos (vinculados + aguardando)
-        {
-          OR: [
-            { ownerId }, // Usuários já vinculados a este master
-            { ownerId: null, status: 'aguardando' }, // Usuários aguardando aprovação
-          ],
-        }
-    : status === 'nao_aprovado'
-      ? { ownerId, status: { in: ['aguardando', 'inativo'] } }
-      : status === 'aprovado'
-        ? { ownerId, status: 'aprovado' }
-        : status
-          ? { ownerId, status }
-          : { ownerId }
+    ? {
+        OR: [
+          { ownerId }, // Todos os usuários vinculados a este master (qualquer status)
+          { ownerId: null, status: 'aguardando' }, // Usuários aguardando aprovação
+          { ownerId: null, status: 'aprovado' }, // Usuários aprovados sem ownerId (caso ainda não tenha sido vinculado)
+        ],
+      }
+    : { ownerId }
 
   // Adicionar filtros de busca
   if (busca) {
@@ -93,7 +65,7 @@ export default async function UsuariosPage() {
     ]
   }
 
-  // Adicionar outros filtros (exceto status que já foi tratado acima)
+  // Adicionar outros filtros (status será filtrado pelas abas no frontend)
   if (role) {
     filters.AND = [...(filters.AND || []), { role }]
   }
