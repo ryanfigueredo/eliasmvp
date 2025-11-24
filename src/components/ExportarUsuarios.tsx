@@ -8,7 +8,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 interface Props {
-  data: Pick<User, 'name' | 'email' | 'cpf' | 'role' | 'status' | 'createdAt'>[]
+  data: Pick<User, 'name' | 'email' | 'cpf' | 'role' | 'status' | 'createdAt' | 'whatsapp'>[]
 }
 
 export default function ExportarUsuarios({ data }: Props) {
@@ -18,6 +18,7 @@ export default function ExportarUsuarios({ data }: Props) {
         Nome: user.name,
         Email: user.email,
         CPF: user.cpf,
+        WhatsApp: user.whatsapp || '',
         Cargo: user.role,
         Status: user.status,
         CriadoEm: new Date(user.createdAt).toLocaleDateString(),
@@ -37,11 +38,12 @@ export default function ExportarUsuarios({ data }: Props) {
   const exportarPdf = () => {
     const doc = new jsPDF()
     autoTable(doc, {
-      head: [['Nome', 'Email', 'CPF', 'Cargo', 'Status', 'Criado em']],
+      head: [['Nome', 'Email', 'CPF', 'WhatsApp', 'Cargo', 'Status', 'Criado em']],
       body: data.map((user) => [
         user.name,
         user.email,
         user.cpf,
+        user.whatsapp || '',
         user.role,
         user.status,
         new Date(user.createdAt).toLocaleDateString(),

@@ -245,7 +245,12 @@ export default function UsuariosContent({
 
       <ExportarUsuarios
         data={usersState.map((user) => ({
-          ...user,
+          name: user.name,
+          email: user.email,
+          cpf: user.cpf,
+          role: user.role,
+          status: user.status,
+          whatsapp: user.whatsapp ?? null,
           createdAt: new Date(user.createdAt),
         }))}
       />
