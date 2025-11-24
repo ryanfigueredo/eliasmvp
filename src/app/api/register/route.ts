@@ -6,11 +6,11 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, cpf, password } = await req.json()
+    const { name, email, cpf, whatsapp, password } = await req.json()
 
-    if (!email || !cpf || !password) {
+    if (!name || !email || !cpf || !password) {
       return NextResponse.json(
-        { message: 'Todos os campos são obrigatórios.' },
+        { message: 'Nome, E-mail, CPF e Senha são obrigatórios.' },
         { status: 400 },
       )
     }
@@ -30,8 +30,10 @@ export async function POST(req: NextRequest) {
 
     await prisma.user.create({
       data: {
+        name,
         email,
         cpf,
+        whatsapp: whatsapp || null,
         password: hashedPassword,
         role: 'consultor',
         status: 'aguardando',
