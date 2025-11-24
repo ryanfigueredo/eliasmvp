@@ -8,17 +8,25 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 interface Props {
-  data: Pick<User, 'name' | 'email' | 'cpf' | 'role' | 'status' | 'createdAt' | 'whatsapp'>[]
+  data: Array<{
+    name: string | null
+    email: string
+    cpf: string
+    role: string
+    status: string
+    whatsapp: string | null
+    createdAt: Date
+  }>
 }
 
 export default function ExportarUsuarios({ data }: Props) {
   const exportarCsv = () => {
     const csv = Papa.unparse(
       data.map((user) => ({
-        Nome: user.name,
+        Nome: user.name || '',
         Email: user.email,
         CPF: user.cpf,
-        WhatsApp: user.whatsapp || '',
+        WhatsApp: user.whatsapp ?? '',
         Cargo: user.role,
         Status: user.status,
         CriadoEm: new Date(user.createdAt).toLocaleDateString(),
@@ -40,10 +48,10 @@ export default function ExportarUsuarios({ data }: Props) {
     autoTable(doc, {
       head: [['Nome', 'Email', 'CPF', 'WhatsApp', 'Cargo', 'Status', 'Criado em']],
       body: data.map((user) => [
-        user.name,
+        user.name || '',
         user.email,
         user.cpf,
-        user.whatsapp || '',
+        user.whatsapp ?? '',
         user.role,
         user.status,
         new Date(user.createdAt).toLocaleDateString(),

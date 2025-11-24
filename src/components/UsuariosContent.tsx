@@ -250,7 +250,7 @@ export default function UsuariosContent({
           cpf: user.cpf,
           role: user.role,
           status: user.status,
-          whatsapp: user.whatsapp ?? null,
+          whatsapp: (user.whatsapp ?? null) as string | null,
           createdAt: new Date(user.createdAt),
         }))}
       />
