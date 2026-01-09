@@ -36,6 +36,8 @@ export async function uploadToS3({
       Key: fileName,
       Body: fileBuffer,
       ContentType: contentType,
+      // Não incluir checksum para evitar problemas de assinatura
+      ChecksumAlgorithm: undefined,
     })
 
     console.log('📤 Enviando comando para S3...')

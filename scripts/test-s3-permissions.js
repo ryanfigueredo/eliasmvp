@@ -7,6 +7,7 @@ const {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } = require('@aws-sdk/client-s3')
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner')
 require('dotenv').config({ path: '.env' })
@@ -52,15 +53,49 @@ async function testS3Permissions() {
     console.log(`   Content-Type: ${testContentType}`)
     console.log(`   URL: ${presignedUrl.substring(0, 100)}...\n`)
 
-    // Teste 2: Tentar fazer upload de teste
-    console.log('2️⃣ Testando upload direto (simulação)...')
-    console.log('   Para testar o upload, execute:')
+    // Teste 2: Tentar fazer upload real pelo servidor (testa permissões)
+    console.log('2️⃣ Testando upload real pelo servidor (testa permissões IAM)...')
+    try {
+      const uploadCommand = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: testKey,
+        Body: Buffer.from('test content'),
+        ContentType: testContentType,
+      })
+      await s3.send(uploadCommand)
+      console.log('✅ Upload real pelo servidor funcionou!')
+      console.log('   Isso confirma que as permissões IAM estão corretas.\n')
+      
+      // Limpar arquivo de teste
+      try {
+        const deleteCommand = new DeleteObjectCommand({
+          Bucket: bucketName,
+          Key: testKey,
+        })
+        await s3.send(deleteCommand)
+        console.log('🧹 Arquivo de teste removido\n')
+      } catch (e) {
+        console.log('⚠️  Não foi possível remover arquivo de teste (não crítico)\n')
+      }
+    } catch (uploadError) {
+      console.error('❌ Upload real falhou:', uploadError.message)
+      if (uploadError.name === 'AccessDenied') {
+        console.error('\n🚨 PROBLEMA ENCONTRADO: Permissões IAM insuficientes!')
+        console.error('   O usuário IAM não tem permissão s3:PutObject')
+        console.error('   Veja VERIFICAR_PERMISSOES_AWS.md para corrigir\n')
+        throw uploadError
+      }
+      throw uploadError
+    }
+    
+    // Teste 3: Mostrar comando curl para testar presigned URL
+    console.log('3️⃣ Para testar presigned URL (upload direto do navegador):')
     console.log(`   curl -X PUT "${presignedUrl}" \\`)
     console.log(`     -H "Content-Type: ${testContentType}" \\`)
     console.log(`     --data-binary "test content"\n`)
 
-    // Teste 3: Verificar se consegue ler
-    console.log('3️⃣ Testando permissão de leitura...')
+    // Teste 4: Verificar se consegue ler
+    console.log('4️⃣ Testando permissão de leitura...')
     try {
       const getCommand = new GetObjectCommand({
         Bucket: bucketName,
@@ -87,9 +122,18 @@ async function testS3Permissions() {
       console.error('\n💡 AWS_ACCESS_KEY_ID inválida ou não encontrada')
     } else if (error.name === 'SignatureDoesNotMatch') {
       console.error('\n💡 AWS_SECRET_ACCESS_KEY incorreta')
-    } else if (error.name === 'AccessDenied') {
-      console.error('\n💡 Usuário IAM não tem permissão s3:PutObject')
-      console.error('   Adicione a política: s3:PutObject no bucket')
+    } else if (error.name === 'AccessDenied' || error.message?.includes('Access Denied')) {
+      console.error('\n💡 Usuário IAM não tem permissão suficiente')
+      console.error('\n📋 Permissões necessárias:')
+      console.error('   - s3:PutObject (para upload)')
+      console.error('   - s3:GetObject (para leitura)')
+      console.error('   - s3:DeleteObject (para exclusão)')
+      console.error('\n🔧 Como corrigir:')
+      console.error('   1. Acesse: https://console.aws.amazon.com/iam/')
+      console.error('   2. Vá em Users → Selecione o usuário')
+      console.error('   3. Adicione política com s3:PutObject')
+      console.error('   4. Resource: arn:aws:s3:::elias-docs/*')
+      console.error('\n📖 Veja VERIFICAR_PERMISSOES_AWS.md para instruções detalhadas')
     } else if (error.name === 'NoSuchBucket') {
       console.error(`\n💡 Bucket "${process.env.AWS_S3_BUCKET}" não existe`)
     }
