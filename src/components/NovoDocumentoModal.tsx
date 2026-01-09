@@ -531,25 +531,33 @@ export default function NovoDocumentoModal({
                 }
 
                 const presignData = await presignRes.json()
-                const { url } = presignData
+                const { url, key: presignedKey } = presignData
 
                 if (!url) {
                   console.error(`❌ URL não retornada para ${tipo}:`, presignData)
                   throw new Error(`URL de upload não retornada para ${tipo}`)
                 }
 
-                console.log(`🔗 Presigned URL gerada para ${tipo}, iniciando upload...`)
+                // Garantir que o Content-Type seja exatamente o mesmo usado no presign
+                const contentType = file.type || 'application/pdf'
+                
+                console.log(`🔗 Presigned URL gerada para ${tipo}`)
+                console.log(`📋 Key: ${presignedKey || key}`)
+                console.log(`📋 Content-Type: ${contentType}`)
+                console.log(`📋 File size: ${file.size} bytes`)
 
                 // Upload direto ao S3 com timeout e melhor tratamento de erro
                 const controller = new AbortController()
                 const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutos
 
                 try {
+                  // IMPORTANTE: O Content-Type deve ser EXATAMENTE o mesmo usado no presign
+                  // Não adicionar outros headers - o presigned URL já tem tudo assinado
                   const uploadRes = await fetch(url, {
                     method: 'PUT',
                     body: file,
                     headers: {
-                      'Content-Type': file.type || 'application/pdf',
+                      'Content-Type': contentType,
                     },
                     signal: controller.signal,
                   })
@@ -564,6 +572,19 @@ export default function NovoDocumentoModal({
                       errorText,
                     })
                     
+                    // Erro 403 pode ser: permissões IAM, bucket policy, ou Content-Type não correspondendo
+                    if (uploadRes.status === 403) {
+                      console.error(`❌ Detalhes do erro 403:`, {
+                        contentType: file.type,
+                        fileName: file.name,
+                        fileSize: file.size,
+                        errorText,
+                      })
+                      throw new Error(
+                        `Erro 403 Forbidden no upload de ${tipo}. Verifique: 1) Permissões IAM do usuário (s3:PutObject), 2) Bucket Policy não está bloqueando, 3) Content-Type corresponde exatamente ao usado no presign. Detalhes no console.`,
+                      )
+                    }
+                    
                     // Se for erro de CORS, dar mensagem mais clara
                     if (uploadRes.status === 0 || errorText.includes('CORS')) {
                       throw new Error(
@@ -572,7 +593,7 @@ export default function NovoDocumentoModal({
                     }
                     
                     throw new Error(
-                      `Erro no upload do arquivo ${tipo} para S3: ${uploadRes.status} ${uploadRes.statusText}`,
+                      `Erro no upload do arquivo ${tipo} para S3: ${uploadRes.status} ${uploadRes.statusText}. ${errorText ? `Detalhes: ${errorText}` : ''}`,
                     )
                   }
 

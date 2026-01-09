@@ -16,6 +16,7 @@
     "audit:health": "curl -f http://localhost:3000/api/health || echo 'Health check failed'",
     "s3:configure-cors": "node scripts/configure-s3-cors.js",
     "s3:test-cors": "node scripts/test-s3-cors.js",
+    "s3:test-permissions": "node scripts/test-s3-permissions.js",
     "fix:lote-status": "node scripts/fix-lote-status.js",
     "fix:all-lotes": "node scripts/fix-all-lotes.js"
   },
