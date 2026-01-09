@@ -34,6 +34,17 @@ export async function POST(req: Request) {
 
     const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`
 
+    if (!resend) {
+      console.warn('[FORGOT_PASSWORD] RESEND_API_KEY não configurada. Link de reset:', resetLink)
+      return NextResponse.json(
+        { 
+          message: 'Link de redefinição gerado. Verifique os logs do servidor para obter o link.',
+          resetLink: process.env.NODE_ENV === 'development' ? resetLink : undefined
+        },
+        { status: 200 }
+      )
+    }
+
     await resend.emails.send({
       from: 'onboarding@resend.dev',
       to: email,
