@@ -412,12 +412,15 @@ export default function NovoDocumentoModal({
             console.error('❌ Erro no upload direto:', error)
             const errorMessage = error?.message || 'Erro desconhecido no upload'
             
-            // Se for erro de CORS ou conexão, tentar fallback para FormData (método antigo)
+            // Se for erro de CORS, conexão, ou 403 (problema com presigned URL), tentar fallback para FormData
             const isCorsError = (error as any)?.isCorsError ||
+                               (error as any)?.needsFallback ||
                                errorMessage.includes('CORS') || 
                                errorMessage.includes('Failed to fetch') ||
                                errorMessage.includes('conexão') ||
-                               errorMessage.includes('CORS_OR_CONNECTION_ERROR')
+                               errorMessage.includes('CORS_OR_CONNECTION_ERROR') ||
+                               errorMessage.includes('PRESIGNED_UPLOAD_FAILED_403') ||
+                               errorMessage.includes('403 Forbidden')
             
             if (isCorsError) {
               // Verificar tamanho total dos arquivos antes de tentar fallback
@@ -440,8 +443,8 @@ export default function NovoDocumentoModal({
                 )
               }
               
-              console.log('⚠️ Erro de CORS/conexão detectado, tentando método alternativo (FormData)...')
-              toast.warning('Upload direto falhou, usando método alternativo...')
+              console.log('⚠️ Erro no upload direto detectado, tentando método alternativo (FormData pelo servidor)...')
+              toast.warning('Upload direto falhou, usando método alternativo pelo servidor...')
               
               try {
                 await uploadWithFormData()
@@ -572,17 +575,21 @@ export default function NovoDocumentoModal({
                       errorText,
                     })
                     
-                    // Erro 403 pode ser: permissões IAM, bucket policy, ou Content-Type não correspondendo
+                    // Erro 403 geralmente é problema com presigned URL (checksum, headers, etc)
+                    // Vamos fazer fallback para upload pelo servidor
                     if (uploadRes.status === 403) {
-                      console.error(`❌ Detalhes do erro 403:`, {
+                      console.error(`❌ Erro 403 no upload direto de ${tipo}:`, {
                         contentType: file.type,
                         fileName: file.name,
                         fileSize: file.size,
                         errorText,
                       })
-                      throw new Error(
-                        `Erro 403 Forbidden no upload de ${tipo}. Verifique: 1) Permissões IAM do usuário (s3:PutObject), 2) Bucket Policy não está bloqueando, 3) Content-Type corresponde exatamente ao usado no presign. Detalhes no console.`,
-                      )
+                      console.log(`🔄 Fazendo fallback para upload pelo servidor...`)
+                      // Marcar como erro que precisa de fallback
+                      const fallbackError = new Error('PRESIGNED_UPLOAD_FAILED_403')
+                      ;(fallbackError as any).needsFallback = true
+                      ;(fallbackError as any).tipo = tipo
+                      throw fallbackError
                     }
                     
                     // Se for erro de CORS, dar mensagem mais clara
@@ -619,6 +626,12 @@ export default function NovoDocumentoModal({
                 }
               } catch (error: any) {
                 console.error(`❌ Erro ao processar ${tipo}:`, error)
+                
+                // Se for erro de fallback (403), propagar sem modificar
+                if ((error as any)?.needsFallback) {
+                  throw error
+                }
+                
                 throw new Error(
                   `Falha ao fazer upload de ${tipo}: ${error.message || error}`,
                 )
