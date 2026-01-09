@@ -76,19 +76,23 @@ async function presignUpload(req: Request) {
 
     // Criar comando com ContentType para garantir que o presigned URL funcione corretamente
     // IMPORTANTE: O ContentType aqui deve ser EXATAMENTE o mesmo enviado no upload
+    // Não incluir checksum para evitar parâmetros extras que o navegador não envia
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET!,
       Key: key,
       ContentType: contentType,
-      // Não adicionar outros parâmetros que possam causar conflito
+      // Explicitamente não incluir ChecksumAlgorithm ou outros parâmetros de checksum
     })
 
     console.log(`🔑 Gerando presigned URL com ContentType: ${contentType}`)
     
-    // Gerar URL pré-assinada com os mesmos parâmetros
+    // Gerar URL pré-assinada
+    // O SDK pode adicionar parâmetros de checksum automaticamente
+    // Se isso causar 403, o navegador precisa enviar os mesmos headers
     const url = await getSignedUrl(s3, command, { expiresIn: 300 }) // 5 minutos
     
     console.log(`✅ Presigned URL gerada com sucesso para key: ${key}`)
+    console.log(`🔗 URL (primeiros 150 chars): ${url.substring(0, 150)}...`)
 
     logger.info({
       action: 'presign_upload',
