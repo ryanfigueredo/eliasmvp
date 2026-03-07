@@ -20,6 +20,12 @@ async function getCategorias(req: NextRequest) {
     const masterId = await getMasterId(token.id as string)
 
     try {
+      // Verificar se o modelo existe no Prisma Client antes de usar
+      if (typeof prisma.categoriaServico === 'undefined') {
+        console.error('❌ Prisma Client não tem modelo categoriaServico. Execute: npx prisma generate')
+        return NextResponse.json([], { status: 200 })
+      }
+
       const categorias = await prisma.categoriaServico.findMany({
         where: {
           ownerId: masterId,
@@ -32,6 +38,17 @@ async function getCategorias(req: NextRequest) {
 
       return NextResponse.json(categorias)
     } catch (error: any) {
+      // Se o modelo não existe (undefined), retorna array vazio
+      if (
+        error?.message?.includes('Cannot read properties of undefined') ||
+        error?.message?.includes('categoriaServico') ||
+        typeof prisma.categoriaServico === 'undefined'
+      ) {
+        console.log('⚠️ Modelo CategoriaServico não disponível no Prisma Client')
+        console.log('💡 Solução: Reinicie o servidor de desenvolvimento ou execute: npx prisma generate')
+        return NextResponse.json([], { status: 200 })
+      }
+      
       // Se a tabela não existir (P2021), retorna array vazio
       if (error?.code === 'P2021' || error?.message?.includes('CategoriaServico')) {
         console.log('⚠️ Tabela CategoriaServico não existe, retornando array vazio')
@@ -72,6 +89,19 @@ async function createCategoria(req: NextRequest) {
     const masterId = await getMasterId(token.id as string)
 
     try {
+      // Verificar se o modelo existe no Prisma Client antes de usar
+      if (typeof prisma.categoriaServico === 'undefined') {
+        console.error('❌ Prisma Client não tem modelo categoriaServico. Execute: npx prisma generate')
+        return NextResponse.json(
+          {
+            message:
+              'Modelo de categorias não disponível. O Prisma Client precisa ser regenerado.',
+            code: 'MODEL_NOT_AVAILABLE',
+          },
+          { status: 503 },
+        )
+      }
+
       // Verificar se já existe categoria com mesmo nome
       const existente = await prisma.categoriaServico.findFirst({
         where: {
@@ -97,10 +127,27 @@ async function createCategoria(req: NextRequest) {
 
       return NextResponse.json(categoria, { status: 201 })
     } catch (error: any) {
+      // Se o modelo não existe (undefined), retorna erro
+      if (
+        error?.message?.includes('Cannot read properties of undefined') ||
+        error?.message?.includes('categoriaServico') ||
+        typeof prisma.categoriaServico === 'undefined'
+      ) {
+        console.log('⚠️ Modelo CategoriaServico não disponível no Prisma Client')
+        console.log('💡 Solução: Reinicie o servidor de desenvolvimento ou execute: npx prisma generate')
+        return NextResponse.json(
+          {
+            message:
+              'Modelo de categorias não disponível. O Prisma Client precisa ser regenerado.',
+            code: 'MODEL_NOT_AVAILABLE',
+          },
+          { status: 503 },
+        )
+      }
+      
       // Se a tabela não existir (P2021), retorna erro específico
       if (
         error?.code === 'P2021' ||
-        error?.message?.includes('CategoriaServico') ||
         error?.message?.includes('does not exist')
       ) {
         console.log('⚠️ Tabela CategoriaServico não existe')
